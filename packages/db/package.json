@@ -1,0 +1,26 @@
+{
+    "name": "@packages/db",
+    "version": "0.0.1",
+    "type": "module",
+    "exports": {
+        "./auth": "./src/auth/index.ts",
+        "./schema/d1": "./src/schema/d1/index.ts",
+        "./schema/agent": "./src/schema/agent/index.ts",
+        "./types": "./src/types/index.ts"
+    },
+    "scripts": {
+        "db:generate:d1": "drizzle-kit generate --config=drizzle.d1.config.ts",
+        "db:generate:agent": "drizzle-kit generate --config=drizzle.agent.config.ts",
+        "db:generate": "bun run db:generate:d1 && bun run db:generate:agent",
+        "db:studio": "drizzle-kit studio --config=drizzle.d1.config.ts"
+    },
+    "dependencies": {
+        "better-auth": "catalog:database",
+        "drizzle-orm": "catalog:database"
+    },
+    "devDependencies": {
+        "drizzle-kit": "catalog:database",
+        "@cloudflare/workers-types": "^4.20241230.0",
+        "typescript": "catalog:core"
+    }
+}
