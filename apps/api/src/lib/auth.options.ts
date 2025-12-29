@@ -35,6 +35,12 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
             usePlural: false,
         }),
 
+        // Origins
+        trustedOrigins: [
+            "http://localhost:3000",
+            "https://loreland.vercel.app",
+        ],
+
         // Email + Password authentication
         emailAndPassword: {
             enabled: true,

@@ -23,6 +23,7 @@
         "zod": "catalog:validation",
       },
       "devDependencies": {
+        "@types/node": "^25.0.3",
         "wrangler": "^4.54.0",
       },
     },
@@ -66,7 +67,7 @@
         "vite": "catalog:core",
         "vitest": "^3.0.5",
         "web-vitals": "^5.1.0",
-        "wrangler": "^4.54.0",
+        "wrangler": "catalog:core",
       },
     },
     "packages/db": {
@@ -80,6 +81,7 @@
         "@cloudflare/workers-types": "^4.20241230.0",
         "drizzle-kit": "catalog:database",
         "typescript": "catalog:core",
+        "wrangler": "catalog:core",
       },
     },
     "packages/ui-logic": {
@@ -105,6 +107,7 @@
       "react-dom": "^19.2.0",
       "typescript": "^5.7.2",
       "vite": "^7.1.7",
+      "wrangler": "^4.54.0",
     },
     "database": {
       "drizzle-kit": "^0.30.1",
