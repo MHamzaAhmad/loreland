@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createApiClient, ApiClientProvider } from '@packages/ui-logic'
+import Header from '../components/Header'
 
 import appCss from '../styles.css?url'
 import retroCss from '../components/ui/8bit/styles/retro.css?url'
@@ -65,11 +66,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="bg-[var(--8bit-background)] text-[var(--8bit-foreground)] min-h-screen">
+      <body className="bg-[var(--8bit-background)] text-[var(--8bit-foreground)] min-h-screen flex flex-col">
         <QueryClientProvider client={queryClient}>
           <ApiClientProvider client={apiClient}>
-            <div className="font-['Press_Start_2P'] antialiased">
-              {children}
+            <div className="font-['Press_Start_2P'] antialiased flex-1 flex flex-col">
+              <Header />
+              <main className="flex-1">
+                {children}
+              </main>
             </div>
           </ApiClientProvider>
         </QueryClientProvider>

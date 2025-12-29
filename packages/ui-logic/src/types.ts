@@ -60,6 +60,27 @@ export interface UpdateGameInput {
     background?: string;
     instructions?: string;
     objective?: string;
+
+    // Additional fields
+    imageModel?: string;
+    imageStyle?: string;
+    previewImage?: string;
+    fullSizePreviewImage?: string;
+    allowChangeCharacterName?: boolean;
+    allowChangeCharacterDescription?: boolean;
+    allowChangeCharacterSkills?: boolean;
+    sharingPermission?: boolean;
+    editingPermission?: boolean;
+    favorite?: boolean;
+    firstTurn?: number;
+    maxTurns?: number;
+
+    // Nested updates
+    characters?: (Partial<Character> & { id?: string })[];
+    npcs?: (Partial<Npc> & { id?: string })[];
+    lorebookEntries?: { id?: string; name: string; content: string; keywords?: string[] }[];
+    trackedItems?: { id?: string; name: string; description?: string; dataType?: "text" | "number" | "boolean"; visibility?: "everyone" | "gm" | "hidden"; initialValue?: string }[];
+    triggerEvents?: { id?: string; name: string; triggerOnTurn?: number; condition?: string; effect?: string }[];
 }
 
 export interface GenerateGameInput {

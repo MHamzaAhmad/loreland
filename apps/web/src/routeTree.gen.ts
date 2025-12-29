@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesNewRouteImport } from './routes/games/new'
+import { Route as GamesMineRouteImport } from './routes/games/mine'
 import { Route as GamesIdRouteImport } from './routes/games/$id'
 import { Route as AuthLinkRouteImport } from './routes/auth/link'
+import { Route as GamesIdEditRouteImport } from './routes/games/$id/edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 const GamesNewRoute = GamesNewRouteImport.update({
   id: '/games/new',
   path: '/games/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesMineRoute = GamesMineRouteImport.update({
+  id: '/games/mine',
+  path: '/games/mine',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesIdRoute = GamesIdRouteImport.update({
@@ -34,38 +41,69 @@ const AuthLinkRoute = AuthLinkRouteImport.update({
   path: '/auth/link',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesIdEditRoute = GamesIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => GamesIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/link': typeof AuthLinkRoute
-  '/games/$id': typeof GamesIdRoute
+  '/games/$id': typeof GamesIdRouteWithChildren
+  '/games/mine': typeof GamesMineRoute
   '/games/new': typeof GamesNewRoute
+  '/games/$id/edit': typeof GamesIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/link': typeof AuthLinkRoute
-  '/games/$id': typeof GamesIdRoute
+  '/games/$id': typeof GamesIdRouteWithChildren
+  '/games/mine': typeof GamesMineRoute
   '/games/new': typeof GamesNewRoute
+  '/games/$id/edit': typeof GamesIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth/link': typeof AuthLinkRoute
-  '/games/$id': typeof GamesIdRoute
+  '/games/$id': typeof GamesIdRouteWithChildren
+  '/games/mine': typeof GamesMineRoute
   '/games/new': typeof GamesNewRoute
+  '/games/$id/edit': typeof GamesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth/link' | '/games/$id' | '/games/new'
+  fullPaths:
+    | '/'
+    | '/auth/link'
+    | '/games/$id'
+    | '/games/mine'
+    | '/games/new'
+    | '/games/$id/edit'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth/link' | '/games/$id' | '/games/new'
-  id: '__root__' | '/' | '/auth/link' | '/games/$id' | '/games/new'
+  to:
+    | '/'
+    | '/auth/link'
+    | '/games/$id'
+    | '/games/mine'
+    | '/games/new'
+    | '/games/$id/edit'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth/link'
+    | '/games/$id'
+    | '/games/mine'
+    | '/games/new'
+    | '/games/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthLinkRoute: typeof AuthLinkRoute
-  GamesIdRoute: typeof GamesIdRoute
+  GamesIdRoute: typeof GamesIdRouteWithChildren
+  GamesMineRoute: typeof GamesMineRoute
   GamesNewRoute: typeof GamesNewRoute
 }
 
@@ -85,6 +123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/mine': {
+      id: '/games/mine'
+      path: '/games/mine'
+      fullPath: '/games/mine'
+      preLoaderRoute: typeof GamesMineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/games/$id': {
       id: '/games/$id'
       path: '/games/$id'
@@ -99,13 +144,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLinkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/$id/edit': {
+      id: '/games/$id/edit'
+      path: '/edit'
+      fullPath: '/games/$id/edit'
+      preLoaderRoute: typeof GamesIdEditRouteImport
+      parentRoute: typeof GamesIdRoute
+    }
   }
 }
+
+interface GamesIdRouteChildren {
+  GamesIdEditRoute: typeof GamesIdEditRoute
+}
+
+const GamesIdRouteChildren: GamesIdRouteChildren = {
+  GamesIdEditRoute: GamesIdEditRoute,
+}
+
+const GamesIdRouteWithChildren =
+  GamesIdRoute._addFileChildren(GamesIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthLinkRoute: AuthLinkRoute,
-  GamesIdRoute: GamesIdRoute,
+  GamesIdRoute: GamesIdRouteWithChildren,
+  GamesMineRoute: GamesMineRoute,
   GamesNewRoute: GamesNewRoute,
 }
 export const routeTree = rootRouteImport

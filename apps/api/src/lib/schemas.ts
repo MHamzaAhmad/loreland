@@ -1,6 +1,75 @@
 import { z } from "zod";
 
 // ============================================================================
+// Character Schemas
+// ============================================================================
+
+export const createCharacterSchema = z.object({
+    name: z.string().min(1).max(100),
+    description: z.string().min(1).max(2000),
+    portrait: z.string().url().optional(),
+    position: z.number().int().optional(),
+});
+
+export type CreateCharacterInput = z.infer<typeof createCharacterSchema>;
+
+export const updateCharacterSchema = createCharacterSchema.partial();
+
+export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>;
+
+// ============================================================================
+// NPC Schemas
+// ============================================================================
+
+export const createNpcSchema = z.object({
+    name: z.string().min(1).max(100),
+    detail: z.string().max(2000).optional(),
+    oneLiner: z.string().max(200).optional(),
+    appearance: z.string().max(500).optional(),
+    location: z.string().max(200).optional(),
+    secretInfo: z.string().max(1000).optional(),
+    position: z.number().int().optional(),
+});
+
+export type CreateNpcInput = z.infer<typeof createNpcSchema>;
+
+export const updateNpcSchema = createNpcSchema.partial();
+
+export type UpdateNpcInput = z.infer<typeof updateNpcSchema>;
+
+// ============================================================================
+// Asset Schemas (Lore, Items, Triggers)
+// ============================================================================
+
+export const lorebookSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(100),
+    content: z.string().max(5000),
+    keywords: z.array(z.string()).optional(),
+    position: z.number().int().optional(),
+});
+
+export const trackedItemSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(100),
+    description: z.string().max(500).optional(),
+    dataType: z.enum(["text", "number", "boolean"]).optional(),
+    visibility: z.enum(["everyone", "gm", "hidden"]).optional(),
+    initialValue: z.string().optional(),
+    position: z.number().int().optional(),
+});
+
+export const triggerEventSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(100),
+    triggerOnTurn: z.number().int().optional(),
+    condition: z.string().optional(),
+    effect: z.string().optional(),
+    position: z.number().int().optional(),
+});
+
+
+// ============================================================================
 // Game Schemas
 // ============================================================================
 
@@ -38,6 +107,15 @@ export const updateGameSchema = createGameSchema.partial().extend({
     sharingPermission: z.boolean().optional(),
     editingPermission: z.boolean().optional(),
     favorite: z.boolean().optional(),
+    firstTurn: z.number().int().optional(),
+    maxTurns: z.number().int().optional(),
+
+    // Nested updates
+    characters: z.array(updateCharacterSchema.extend({ id: z.string().optional() })).optional(),
+    npcs: z.array(updateNpcSchema.extend({ id: z.string().optional() })).optional(),
+    lorebookEntries: z.array(lorebookSchema).optional(),
+    trackedItems: z.array(trackedItemSchema).optional(),
+    triggerEvents: z.array(triggerEventSchema).optional(),
 });
 
 export type UpdateGameInput = z.infer<typeof updateGameSchema>;
@@ -46,7 +124,7 @@ export type UpdateGameInput = z.infer<typeof updateGameSchema>;
  * Schema for game generation prompt
  */
 export const generateGameSchema = z.object({
-    prompt: z.string().min(10).max(2000),
+    prompt: z.string().min(1).max(2000),
     options: z.object({
         characterCount: z.number().int().min(1).max(6).optional().default(3),
         npcCount: z.number().int().min(0).max(10).optional().default(5),
@@ -72,41 +150,6 @@ export const listGamesQuerySchema = z.object({
 });
 
 export type ListGamesQuery = z.infer<typeof listGamesQuerySchema>;
-
-// ============================================================================
-// Character Schemas
-// ============================================================================
-
-export const createCharacterSchema = z.object({
-    name: z.string().min(1).max(100),
-    description: z.string().min(1).max(2000),
-    portrait: z.string().url().optional(),
-});
-
-export type CreateCharacterInput = z.infer<typeof createCharacterSchema>;
-
-export const updateCharacterSchema = createCharacterSchema.partial();
-
-export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>;
-
-// ============================================================================
-// NPC Schemas
-// ============================================================================
-
-export const createNpcSchema = z.object({
-    name: z.string().min(1).max(100),
-    detail: z.string().max(2000).optional(),
-    oneLiner: z.string().max(200).optional(),
-    appearance: z.string().max(500).optional(),
-    location: z.string().max(200).optional(),
-    secretInfo: z.string().max(1000).optional(),
-});
-
-export type CreateNpcInput = z.infer<typeof createNpcSchema>;
-
-export const updateNpcSchema = createNpcSchema.partial();
-
-export type UpdateNpcInput = z.infer<typeof updateNpcSchema>;
 
 // ============================================================================
 // Workflow Types
