@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { GameClient } from "../game/GameClient";
-import type { GameState, Turn, WebSocketResponse, CharacterStateSnapshot } from "../game/types";
+import type { WebSocketResponse, CharacterStateSnapshot } from "../game/types";
 
 export interface UseGameSessionProps {
     url: string;

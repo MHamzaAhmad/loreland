@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useGame, useDeleteGame, getImageUrl } from '@packages/ui-logic'
-import { Button } from '../../components/ui/8bit/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/8bit/card'
-import { ArrowLeft, Trash2, Users, UserCircle } from 'lucide-react'
+import { Button } from '@/components/ui/8bit/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/8bit/card'
+import { ArrowLeft, Trash2, Users, UserCircle, Play } from 'lucide-react'
 
-export const Route = createFileRoute('/games/$id')({
+export const Route = createFileRoute('/games/$id/')({
     component: GameDetail,
 })
 
@@ -95,6 +95,15 @@ function GameDetail() {
                                     <p className="text-xs">{game.objective}</p>
                                 </div>
                                 <div className="flex gap-2 pt-2">
+                                    <Link to="/games/$id/play" params={{ id: game.id }}>
+                                        <Button
+                                            variant="default"
+                                            size="sm"
+                                        >
+                                            <Play className="h-3 w-3" />
+                                            <span className="text-[10px]">ENTER SIMULATION</span>
+                                        </Button>
+                                    </Link>
                                     <Button
                                         variant="destructive"
                                         size="sm"

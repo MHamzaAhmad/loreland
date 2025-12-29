@@ -12,12 +12,12 @@
     },
     "dependencies": {
         "@packages/db": "workspace:*",
-        "@tanstack/react-query": "^5.80.2"
+        "@tanstack/react-query": "catalog:core"
     },
     "devDependencies": {
-        "@types/react": "^19.2.0"
+        "@types/react": "catalog:core"
     },
     "peerDependencies": {
-        "react": "^19.0.0"
+        "react": "catalog:core"
     }
 }

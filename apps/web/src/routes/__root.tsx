@@ -59,6 +59,20 @@ export const Route = createRootRoute({
   }),
 
   shellComponent: RootDocument,
+  notFoundComponent: () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4 space-y-4">
+      <h1 className="text-4xl md:text-6xl font-orbitron text-primary animate-pulse tracking-widest">
+        404
+      </h1>
+      <div className="h-px w-32 bg-primary/20" />
+      <p className="text-xl font-mono text-primary/60 uppercase tracking-widest">
+        SIGNAL_LOST // SECTOR_UNKNOWN
+      </p>
+      <p className="text-muted-foreground font-mono text-sm max-w-md">
+        The coordinates you requested do not exist in this timeline.
+      </p>
+    </div>
+  ),
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {

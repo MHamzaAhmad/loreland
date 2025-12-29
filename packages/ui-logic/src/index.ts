@@ -21,7 +21,11 @@ export {
     generationKeys,
     userKeys,
     useGameSession,
+    usePlaySession,
+    playKeys,
 } from "./hooks";
+
+export type { PlaySessionConfig, PlaySessionState, UsePlaySessionReturn } from "./hooks";
 
 // Types
 export type {

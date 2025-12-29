@@ -1,4 +1,4 @@
-import { type GameState, type WebSocketMessage, type WebSocketResponse, type GameClientConfig } from "./types";
+import { type WebSocketMessage, type WebSocketResponse, type GameClientConfig } from "./types";
 
 export class GameClient {
     private ws: WebSocket | null = null;

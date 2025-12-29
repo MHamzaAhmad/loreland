@@ -78,6 +78,18 @@
 		}
 	],
 	/**
+	 * Build configuration - esbuild rules for SQL files
+	 */
+	"rules": [
+		{
+			"type": "Text",
+			"globs": [
+				"**/*.sql"
+			],
+			"fallthrough": true
+		}
+	],
+	/**
 	 * Durable Objects - PlayAgent for game sessions
 	 */
 	"durable_objects": {

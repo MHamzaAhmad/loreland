@@ -62,6 +62,17 @@ export function createApiClient(options: ApiClientOptions) {
     }
 
     return {
+        baseUrl,
+
+        user: {
+            /**
+             * Get current user info
+             */
+            me: () => {
+                return request<{ authenticated: boolean; user: { id: string; email: string; name: string | null; image: string | null; isAnonymous: boolean } | null }>("/api/user/me");
+            },
+        },
+
         games: {
             /**
              * List games for current user
@@ -146,14 +157,21 @@ export function createApiClient(options: ApiClientOptions) {
              * List active sessions for a game
              */
             listSessions: (gameId: string) => {
-                return request<{ sessions: { id: string; createdAt: number }[] }>(`/api/games/${gameId}/play/sessions`);
+                return request<{ sessions: { id: string; createdAt: number }[] }>(`/api/games/${gameId}/sessions`);
             },
 
             /**
              * Start or resume a game session
              */
             start: (gameId: string, sessionId?: string, characterId?: string, model?: string) => {
-                return request<{ wsUrl: string; sessionId: string }>(`/api/games/${gameId}/play/start`, {
+                return request<{
+                    wsUrl: string;
+                    sessionId: string;
+                    currentTurn: number;
+                    characterId: string;
+                    characterName: string | null;
+                    model: string;
+                }>(`/api/games/${gameId}/play/start`, {
                     method: "POST",
                     body: JSON.stringify({ sessionId, characterId, model }),
                 });
