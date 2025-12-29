@@ -104,3 +104,16 @@ export interface SearchResponse {
     results: SearchResult[];
     count: number;
 }
+
+export interface User {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+    isAnonymous: boolean;
+}
+
+export interface AuthState {
+    authenticated: boolean;
+    user: User | null;
+}

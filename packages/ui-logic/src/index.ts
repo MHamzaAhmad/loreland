@@ -14,8 +14,11 @@ export {
     useSearchGames,
     useGenerateGame,
     useGenerationStatus,
+    useUser,
+    useAuth,
     gameKeys,
     generationKeys,
+    userKeys,
 } from "./hooks";
 
 // Types
@@ -31,4 +34,6 @@ export type {
     GamesListResponse,
     SearchResult,
     SearchResponse,
+    User,
+    AuthState,
 } from "./types";

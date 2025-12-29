@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesNewRouteImport } from './routes/games/new'
 import { Route as GamesIdRouteImport } from './routes/games/$id'
+import { Route as AuthLinkRouteImport } from './routes/auth/link'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,33 +29,42 @@ const GamesIdRoute = GamesIdRouteImport.update({
   path: '/games/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthLinkRoute = AuthLinkRouteImport.update({
+  id: '/auth/link',
+  path: '/auth/link',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth/link': typeof AuthLinkRoute
   '/games/$id': typeof GamesIdRoute
   '/games/new': typeof GamesNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth/link': typeof AuthLinkRoute
   '/games/$id': typeof GamesIdRoute
   '/games/new': typeof GamesNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth/link': typeof AuthLinkRoute
   '/games/$id': typeof GamesIdRoute
   '/games/new': typeof GamesNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/games/$id' | '/games/new'
+  fullPaths: '/' | '/auth/link' | '/games/$id' | '/games/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/games/$id' | '/games/new'
-  id: '__root__' | '/' | '/games/$id' | '/games/new'
+  to: '/' | '/auth/link' | '/games/$id' | '/games/new'
+  id: '__root__' | '/' | '/auth/link' | '/games/$id' | '/games/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthLinkRoute: typeof AuthLinkRoute
   GamesIdRoute: typeof GamesIdRoute
   GamesNewRoute: typeof GamesNewRoute
 }
@@ -82,11 +92,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/link': {
+      id: '/auth/link'
+      path: '/auth/link'
+      fullPath: '/auth/link'
+      preLoaderRoute: typeof AuthLinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthLinkRoute: AuthLinkRoute,
   GamesIdRoute: GamesIdRoute,
   GamesNewRoute: GamesNewRoute,
 }

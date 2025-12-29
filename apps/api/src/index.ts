@@ -4,6 +4,7 @@ import { injectDeps, injectSession, type AppEnv } from "./lib/context";
 import { gamesRouter } from "./routes/games";
 import { generateRouter } from "./routes/generate";
 import { searchRouter } from "./routes/search";
+import { userRouter } from "./routes/user";
 
 // Re-export workflow for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
@@ -39,6 +40,9 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// User routes
+app.route("/api/user", userRouter);
+
 // Search route (must be before games to avoid conflict with :id param)
 app.route("/api/games/search", searchRouter);
 
@@ -49,4 +53,5 @@ app.route("/api/games/generate", generateRouter);
 app.route("/api/games", gamesRouter);
 
 export default app;
+
 

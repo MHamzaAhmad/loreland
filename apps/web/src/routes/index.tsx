@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { Button } from '../components/ui/8bit/button'
 import { GameCard } from '../components/GameCard'
 import { SearchBar } from '../components/SearchBar'
+import { AuthButton } from '../components/AuthButton'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -27,7 +28,10 @@ function Home() {
   return (
     <div className="min-h-screen p-4 md:p-8">
       {/* Header */}
-      <header className="text-center mb-8">
+      <header className="text-center mb-8 relative">
+        <div className="absolute right-0 top-0">
+          <AuthButton />
+        </div>
         <h1 className="text-2xl md:text-4xl mb-2 text-[var(--8bit-primary)]">
           LORELAND
         </h1>

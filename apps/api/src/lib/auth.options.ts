@@ -1,12 +1,14 @@
 import type { BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { anonymous } from "better-auth/plugins"
+import { eq } from "drizzle-orm";
+import { games } from "@packages/db/schema/d1";
 
 /**
  * Configuration for creating auth options
  */
 export type AuthDatabaseConfig = {
-    db: unknown; // drizzle instance (typed as unknown for CLI compatibility)
+    db: any; // drizzle instance
     googleClientId?: string;
     googleClientSecret?: string;
 };
@@ -43,7 +45,27 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
         socialProviders,
 
         // plugins
-        plugins: [anonymous()],
+        plugins: [
+            anonymous({
+                /**
+                 * Migrate games when anonymous user links to a real account
+                 */
+                onLinkAccount: async ({ anonymousUser, newUser }) => {
+                    // Migrate all games from anonymous user to new user
+                    const anonId = anonymousUser.user.id;
+                    const newId = newUser.user.id;
+
+                    await config.db
+                        .update(games)
+                        .set({ userId: newId })
+                        .where(eq(games.userId, anonId));
+
+                    console.log(
+                        `Migrated games from anonymous user ${anonId} to ${newId}`
+                    );
+                },
+            }),
+        ],
 
         // Session configuration
         session: {
