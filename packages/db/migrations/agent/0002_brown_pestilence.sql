@@ -1,0 +1,1 @@
+ALTER TABLE `turns` ADD `scene_image_key` text;

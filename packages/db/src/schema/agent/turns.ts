@@ -19,8 +19,10 @@ export const turns = sqliteTable("turns", {
     assistantResponse: text("assistant_response").notNull(),
     suggestedActions: text("suggested_actions", { mode: "json" }).$type<string[]>().default([]),
     characterState: text("character_state", { mode: "json" }).$type<CharacterStateSnapshot>().notNull(),
+    sceneImageKey: text("scene_image_key"), // R2 key for AI-generated scene image
     createdAt: integer("created_at").notNull().default(sql`(unixepoch())`),
 });
 
 export type TurnRecord = typeof turns.$inferSelect;
 export type InsertTurn = typeof turns.$inferInsert;
+

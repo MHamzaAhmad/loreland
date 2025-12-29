@@ -15,6 +15,13 @@
       "when": 1767026905609,
       "tag": "0001_flaky_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1767028830568,
+      "tag": "0002_brown_pestilence",
+      "breakpoints": true
     }
   ]
 }

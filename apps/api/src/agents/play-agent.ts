@@ -265,6 +265,13 @@ Respond in a narrative style, immersing the player in the world.`;
                     }),
                     execute: async (args) => args,
                 }),
+                describeScene: tool({
+                    description: "Generate a visual description of the current scene for image generation. Call this after describing the scene in the narrative.",
+                    inputSchema: z.object({
+                        scenePrompt: z.string().describe("Detailed visual description: environment, lighting, mood, key elements. Max 100 words."),
+                    }),
+                    execute: async (args) => args,
+                }),
             },
         });
 
@@ -302,17 +309,35 @@ Respond in a narrative style, immersing the player in the world.`;
                 .where(eq(schema.characterState.id, 1));
         }
 
-        // Save turn
+        // Save turn (initially without scene image)
         const newTurnNumber = this.state.currentTurn + 1;
-        await this.db.insert(schema.turns).values({
+        const [insertedTurn] = await this.db.insert(schema.turns).values({
             turnNumber: newTurnNumber,
             userMessage,
             assistantResponse: text,
             suggestedActions,
             characterState: { health: newHealth, skillModifiers: newModifiers },
-        });
+        }).returning();
 
         this.setState({ ...this.state, currentTurn: newTurnNumber });
+
+        // Extract scene prompt from tool results
+        const scenePromptResult = toolResults?.find(tc => tc.toolName === "describeScene");
+        const scenePrompt = (scenePromptResult?.output as { scenePrompt: string } | undefined)?.scenePrompt;
+
+        // Generate scene image asynchronously (don't block the response)
+        let sceneImageKey: string | undefined;
+        if (scenePrompt) {
+            try {
+                sceneImageKey = await this.generateSceneImage(this.state.sessionId, newTurnNumber, scenePrompt);
+                // Update turn with scene image key
+                await this.db.update(schema.turns)
+                    .set({ sceneImageKey })
+                    .where(eq(schema.turns.id, insertedTurn.id));
+            } catch (error) {
+                console.error("Failed to generate scene image:", error);
+            }
+        }
 
         // Generate summary every 5 turns
         if (newTurnNumber % 5 === 0) {
@@ -324,6 +349,7 @@ Respond in a narrative style, immersing the player in the world.`;
             suggestedActions,
             characterState: { health: newHealth, skillModifiers: newModifiers },
             turnNumber: newTurnNumber,
+            sceneImageKey,
         };
     }
 
@@ -473,4 +499,67 @@ Provide an updated summary of the entire story so far (max 500 words).`,
             .from(schema.turns)
             .orderBy(schema.turns.turnNumber);
     }
+
+    /**
+     * Generate a scene image using Workers AI and store in R2
+     */
+    private async generateSceneImage(
+        sessionId: string,
+        turnNumber: number,
+        scenePrompt: string
+    ): Promise<string> {
+        const style = "cinematic fantasy illustration, dramatic lighting, detailed environment, digital art";
+        const prompt = `${style}, ${scenePrompt}`;
+
+        // Use Workers AI Flux model for image generation
+        const response = await this.env.AI.run(
+            "@cf/black-forest-labs/flux-1-schnell",
+            {
+                prompt,
+                width: 1024,
+                height: 576, // 16:9 cinematic aspect ratio
+                steps: 4,
+            }
+        );
+
+        // Convert response to ArrayBuffer
+        let imageData: ArrayBuffer;
+        if (response instanceof ReadableStream) {
+            const reader = response.getReader();
+            const chunks: Uint8Array[] = [];
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                chunks.push(value);
+            }
+            const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+            const result = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunks) {
+                result.set(chunk, offset);
+                offset += chunk.length;
+            }
+            imageData = result.buffer;
+        } else if (typeof response === "object" && response !== null && "image" in response) {
+            const base64String = (response as { image: string }).image;
+            const binaryString = atob(base64String);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            imageData = bytes.buffer;
+        } else {
+            throw new Error("Unexpected AI response format");
+        }
+
+        // Upload to R2
+        const key = `sessions/${sessionId}/turns/${turnNumber}/scene.png`;
+        await this.env.IMAGES.put(key, imageData, {
+            httpMetadata: { contentType: "image/png" },
+        });
+
+        return key;
+    }
 }
+

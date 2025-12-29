@@ -133,6 +133,29 @@ export class ImagesService {
     }
 
     /**
+     * Generate and upload a scene image for a gameplay turn
+     */
+    async generateSceneImage(
+        sessionId: string,
+        turnNumber: number,
+        scenePrompt: string,
+        style: string = "cinematic fantasy illustration, dramatic lighting, detailed environment"
+    ): Promise<string> {
+        const prompt = `${style}, ${scenePrompt}`;
+
+        const image = await this.generateImage(prompt, {
+            width: 1024,
+            height: 576, // 16:9 aspect ratio for cinematic feel
+            steps: 4,
+        });
+
+        const key = `sessions/${sessionId}/turns/${turnNumber}/scene.png`;
+        await this.uploadToR2(image, key);
+
+        return key;
+    }
+
+    /**
      * Get public URL for R2 object (requires R2 bucket to be public or custom domain)
      */
     getPublicUrl(key: string, bucketDomain?: string): string {
