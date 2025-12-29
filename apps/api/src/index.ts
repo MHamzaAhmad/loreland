@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { injectDeps, injectSession, type AppEnv } from "./lib/context";
 import { gamesRouter } from "./routes/games";
 import { generateRouter } from "./routes/generate";
+import { searchRouter } from "./routes/search";
 
 // Re-export workflow for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
@@ -47,10 +48,14 @@ app.get("/api/me", (c) => {
   return c.json({ user });
 });
 
+// Search route (must be before games to avoid conflict with :id param)
+app.route("/api/games/search", searchRouter);
+
+// Generation routes
+app.route("/api/games/generate", generateRouter);
+
 // Game CRUD routes
 app.route("/api/games", gamesRouter);
 
-// Generation routes (nested under games for clarity)
-app.route("/api/games/generate", generateRouter);
-
 export default app;
+

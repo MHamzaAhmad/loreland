@@ -11,6 +11,8 @@ export type AppEnv = {
         IMAGES: R2Bucket;
         AI: Ai;
         GAME_GENERATION_WORKFLOW: Workflow;
+        VECTORIZE: VectorizeIndex;
+        CACHE: KVNamespace;
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
     };

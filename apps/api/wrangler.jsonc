@@ -48,5 +48,25 @@
 			"name": "game-generation-workflow",
 			"class_name": "GameGenerationWorkflow"
 		}
+	],
+	/**
+	 * Vectorize - Semantic search for games
+	 * Create with: wrangler vectorize create game-search --dimensions=768 --metric=cosine
+	 */
+	"vectorize": [
+		{
+			"binding": "VECTORIZE",
+			"index_name": "game-search"
+		}
+	],
+	/**
+	 * KV Namespace - Caching for game data
+	 * Create with: wrangler kv namespace create CACHE
+	 */
+	"kv_namespaces": [
+		{
+			"binding": "CACHE",
+			"id": "TODO_CREATE_WITH_WRANGLER_KV_NAMESPACE_CREATE"
+		}
 	]
 }

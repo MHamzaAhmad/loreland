@@ -14,6 +14,7 @@ type Env = {
     DB: D1Database;
     IMAGES: R2Bucket;
     AI: Ai;
+    VECTORIZE: VectorizeIndex;
 };
 
 /**
@@ -28,6 +29,7 @@ type Env = {
  * 6. generate-character-portraits: Generate character images
  * 7. save-entities: Save characters and NPCs to database
  * 8. finalize-game: Update game record with all data
+ * 9. vectorize-game: Index game for semantic search
  */
 export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerationParams> {
     async run(event: WorkflowEvent<GameGenerationParams>, step: WorkflowStep) {
@@ -357,7 +359,46 @@ Return ONLY valid JSON array:
             return {
                 currentStep: "finalize-game",
                 stepsCompleted: 8,
-                message: "Game generation complete!",
+                message: "Game finalized, indexing for search...",
+            };
+        });
+
+        // Step 9: Vectorize game for semantic search
+        await step.do("vectorize-game", async () => {
+            // Generate embedding from title + description + background
+            const searchText = [
+                metadata.title,
+                metadata.description,
+                metadata.background,
+                metadata.objective,
+            ].join(" ").slice(0, 2000);
+
+            const embeddingResponse = await this.env.AI.run(
+                "@cf/baai/bge-base-en-v1.5",
+                { text: [searchText] }
+            );
+
+            const embedding = (embeddingResponse as { data: number[][] }).data[0];
+            if (!embedding) {
+                throw new Error("Failed to generate embedding");
+            }
+
+            // Upsert to Vectorize index
+            await this.env.VECTORIZE.upsert([
+                {
+                    id: gameId,
+                    values: embedding,
+                    metadata: {
+                        userId,
+                        title: metadata.title,
+                    },
+                },
+            ]);
+
+            return {
+                currentStep: "vectorize-game",
+                stepsCompleted: 9,
+                message: "Game indexed for search!",
             };
         });
 
@@ -370,8 +411,8 @@ Return ONLY valid JSON array:
             hasPreviewImage: !!previewImages.previewKey,
             progress: {
                 currentStep: "complete",
-                stepsCompleted: 8,
-                totalSteps: 8,
+                stepsCompleted: 9,
+                totalSteps: 9,
                 message: "Game generation complete!",
             },
         };
