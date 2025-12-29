@@ -7,9 +7,11 @@ import { searchRouter } from "./routes/search";
 import { userRouter } from "./routes/user";
 import { settingsRouter } from "./routes/settings";
 import { imagesRouter } from "./routes/images";
+import { playRouter } from "./routes/play";
 
-// Re-export workflow for Cloudflare
+// Re-export workflow and agent for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
+export { PlayAgent } from "./agents/play-agent";
 
 const app = new Hono<AppEnv>();
 
@@ -51,7 +53,9 @@ app.route("/api/games/search", searchRouter);
 // Generation routes
 app.route("/api/games/generate", generateRouter);
 
-// Game CRUD routes
+// Play routes (gameplay sessions)
+app.route("/api/games", playRouter);
+
 // Game CRUD routes
 app.route("/api/games", gamesRouter);
 
@@ -62,5 +66,6 @@ app.route("/api/settings", settingsRouter);
 app.route("/api/images", imagesRouter);
 
 export default app;
+
 
 

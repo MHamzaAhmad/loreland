@@ -6,6 +6,7 @@
         "./auth": "./src/auth/index.ts",
         "./schema/d1": "./src/schema/d1/index.ts",
         "./schema/agent": "./src/schema/agent/index.ts",
+        "./migrations/agent": "./migrations/agent/migrations.js",
         "./types": "./src/types/index.ts"
     },
     "scripts": {
@@ -22,7 +23,6 @@
     },
     "devDependencies": {
         "drizzle-kit": "catalog:database",
-        "@cloudflare/workers-types": "^4.20241230.0",
         "wrangler": "catalog:core",
         "typescript": "catalog:core"
     }

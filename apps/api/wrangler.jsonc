@@ -76,5 +76,27 @@
 			"binding": "CACHE",
 			"id": "loreland-cache"
 		}
+	],
+	/**
+	 * Durable Objects - PlayAgent for game sessions
+	 */
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "PLAY_AGENT",
+				"class_name": "PlayAgent"
+			}
+		]
+	},
+	/**
+	 * Migrations for Durable Objects with SQLite
+	 */
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"PlayAgent"
+			]
+		}
 	]
 }

@@ -1,6 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import { createAuth, type Auth } from "../auth";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
+import type { PlayAgent } from "../agents/play-agent";
 
 /**
  * Application environment types for Hono
@@ -13,6 +14,7 @@ export type AppEnv = {
         GAME_GENERATION_WORKFLOW: Workflow;
         VECTORIZE: VectorizeIndex;
         CACHE: KVNamespace;
+        PLAY_AGENT: DurableObjectNamespace<PlayAgent>;
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
     };
