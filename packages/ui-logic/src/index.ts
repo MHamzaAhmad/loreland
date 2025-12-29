@@ -1,6 +1,7 @@
 // API
 export { createApiClient, ApiError } from "./api";
 export type { ApiClient, ApiClientOptions } from "./api";
+export * from "./utils/images";
 
 // Hooks
 export {

@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import type { Game } from '@packages/ui-logic'
+import { getImageUrl } from '@packages/ui-logic'
 import {
     Card,
     CardDescription,
@@ -12,13 +13,15 @@ interface GameCardProps {
 }
 
 export function GameCard({ game }: GameCardProps) {
+    const imageUrl = getImageUrl(game.previewImage);
+
     return (
         <Link to="/games/$id" params={{ id: game.id }}>
             <Card className="h-full hover:scale-[1.02] transition-transform cursor-pointer">
                 <div className="aspect-square bg-[var(--8bit-muted)] relative overflow-hidden">
-                    {game.previewImage ? (
+                    {imageUrl ? (
                         <img
-                            src={game.previewImage}
+                            src={imageUrl}
                             alt={game.title}
                             className="w-full h-full object-cover pixelated"
                         />

@@ -6,6 +6,7 @@ import { generateRouter } from "./routes/generate";
 import { searchRouter } from "./routes/search";
 import { userRouter } from "./routes/user";
 import { settingsRouter } from "./routes/settings";
+import { imagesRouter } from "./routes/images";
 
 // Re-export workflow for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
@@ -56,6 +57,9 @@ app.route("/api/games", gamesRouter);
 
 // Settings routes
 app.route("/api/settings", settingsRouter);
+
+// Image proxy routes
+app.route("/api/images", imagesRouter);
 
 export default app;
 

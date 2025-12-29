@@ -74,7 +74,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
         const metadata = await step.do("generate-metadata", async () => {
             const gameMetadata = await aiService.generateObject({
                 schema: aiGameMetadataSchema,
-                systemPrompt: "You are a creative game designer. Generate engaging and detailed game metadata.",
+                systemPrompt: "You are a creative game designer. Generate engaging, detailed, and family-friendly game metadata. Ensure all content is safe for work (SFW) and suitable for a general audience. Avoid explicit violence, gore, or sexual themes.",
                 prompt: `Create a game based on this prompt: ${prompt}`,
             });
 
@@ -91,7 +91,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
             const characters = await aiService.generateArray({
                 itemSchema: aiCharacterSchema,
                 count: options.characterCount,
-                systemPrompt: "You are a creative character designer. Generate diverse and interesting playable characters.",
+                systemPrompt: "You are a creative character designer. Generate diverse and interesting playable characters. Ensure all descriptions are family-friendly and safe for work.",
                 prompt: `Create characters for a game titled "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
             });
 
@@ -117,7 +117,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
             const npcs = await aiService.generateArray({
                 itemSchema: aiNpcSchema,
                 count: options.npcCount,
-                systemPrompt: "You are a creative NPC designer. Generate memorable and diverse NPCs with distinct personalities.",
+                systemPrompt: "You are a creative NPC designer. Generate memorable and diverse NPCs with distinct personalities. Ensure all descriptions are family-friendly and safe for work.",
                 prompt: `Create NPCs for "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
             });
 

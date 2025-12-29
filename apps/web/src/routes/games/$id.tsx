@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useGame, useDeleteGame } from '@packages/ui-logic'
+import { useGame, useDeleteGame, getImageUrl } from '@packages/ui-logic'
 import { Button } from '../../components/ui/8bit/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/8bit/card'
 import { ArrowLeft, Trash2, Users, UserCircle } from 'lucide-react'
@@ -15,6 +15,7 @@ function GameDetail() {
     const deleteMutation = useDeleteGame()
 
     const game = gameQuery.data?.game
+    const previewUrl = game ? getImageUrl(game.previewImage) : undefined;
 
     const handleDelete = async () => {
         if (!confirm('Are you sure you want to delete this game?')) return
@@ -61,9 +62,9 @@ function GameDetail() {
                     <div className="md:flex">
                         {/* Preview Image */}
                         <div className="md:w-64 aspect-square bg-[var(--8bit-muted)] flex-shrink-0">
-                            {game.previewImage ? (
+                            {previewUrl ? (
                                 <img
-                                    src={game.previewImage}
+                                    src={previewUrl}
                                     alt={game.title}
                                     className="w-full h-full object-cover pixelated"
                                 />
@@ -125,7 +126,7 @@ function GameDetail() {
                                         <div className="aspect-square bg-[var(--8bit-muted)] border-4 border-[var(--8bit-border)]">
                                             {char.portrait ? (
                                                 <img
-                                                    src={char.portrait}
+                                                    src={getImageUrl(char.portrait)}
                                                     alt={char.name}
                                                     className="w-full h-full object-cover pixelated"
                                                 />
