@@ -3,145 +3,74 @@ import { type VariantProps, cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 import { Button as ShadcnButton } from "@/components/ui/button";
+import { soundService } from "@/lib/sounds";
 
-import "./styles/retro.css";
-
-export const buttonVariants = cva("", {
-  variants: {
-    font: {
-      normal: "",
-      retro: "retro",
+export const buttonVariants = cva(
+  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-bold uppercase tracking-[0.3em] transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 overflow-hidden group/btn",
+  {
+    variants: {
+      variant: {
+        default:
+          "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--hud-glow)] hover:scale-[1.02] active:scale-[0.98]",
+        destructive:
+          "bg-[var(--destructive)] text-[var(--destructive-foreground)] shadow-[0_0_15px_rgba(255,0,60,0.3)]",
+        outline:
+          "border border-[var(--primary)]/40 bg-transparent text-[var(--primary)] hover:bg-[var(--primary)]/10",
+        secondary:
+          "bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--secondary)]/90",
+        ghost: "hover:bg-[var(--primary)]/10 text-[var(--foreground)]",
+        link: "text-[var(--primary)] underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-12 px-8 py-3",
+        sm: "h-10 px-6 text-[10px]",
+        lg: "h-14 px-12 text-base",
+        icon: "size-12",
+      },
     },
-    variant: {
-      default: "bg-foreground",
-      destructive: "bg-foreground",
-      outline: "bg-foreground",
-      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-      ghost: "hover:bg-accent hover:text-accent-foreground",
-      link: "text-primary underline-offset-4 hover:underline",
+    defaultVariants: {
+      variant: "default",
+      size: "default",
     },
-    size: {
-      default: "h-9 px-4 py-2 has-[>svg]:px-3",
-      sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-      lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-      icon: "size-9",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-    size: "default",
-  },
-});
+  }
+);
 
 export interface BitButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   ref?: React.Ref<HTMLButtonElement>;
 }
 
-function Button({ children, asChild, ...props }: BitButtonProps) {
-  const { variant, size, className, font } = props;
-
-  const hasBorder =
-    variant !== "ghost" && variant !== "link" && size !== "icon";
-
+function Button({ children, asChild, className, variant, size, ...props }: BitButtonProps) {
   return (
     <ShadcnButton
       {...props}
-      className={cn(
-        "rounded-none active:translate-y-1 transition-transform relative inline-flex items-center justify-center gap-1.5 border-none m-1.5",
-        size === "icon" && "mx-1 my-0",
-        font !== "normal" && "retro",
-        className
-      )}
+      className={cn(buttonVariants({ variant, size, className }), "rounded-none")}
       size={size}
       variant={variant}
       asChild={asChild}
+      onMouseEnter={() => soundService.play('hover')}
+      onClick={(e) => {
+        soundService.play('click')
+        props.onClick?.(e)
+      }}
     >
-      {asChild ? (
-        <span className="relative inline-flex items-center justify-center gap-1.5">
-          {children}
+      <span className="relative z-10 flex items-center gap-2">
+        {children}
+      </span>
 
-          {variant !== "ghost" && variant !== "link" && size !== "icon" && (
-            <>
-              {/* Pixelated border */}
-              <div className="absolute -top-1.5 w-1/2 left-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute -top-1.5 w-1/2 right-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute -bottom-1.5 w-1/2 left-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute -bottom-1.5 w-1/2 right-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-0 left-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-0 right-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute bottom-0 left-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute bottom-0 right-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-1.5 -left-1.5 h-[calc(100%-12px)] w-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-1.5 -right-1.5 h-[calc(100%-12px)] w-1.5 bg-foreground dark:bg-ring" />
-              {variant !== "outline" && (
-                <>
-                  {/* Top shadow */}
-                  <div className="absolute top-0 left-0 w-full h-1.5 bg-foreground/20" />
-                  <div className="absolute top-1.5 left-0 w-3 h-1.5 bg-foreground/20" />
-
-                  {/* Bottom shadow */}
-                  <div className="absolute bottom-0 left-0 w-full h-1.5 bg-foreground/20" />
-                  <div className="absolute bottom-1.5 right-0 w-3 h-1.5 bg-foreground/20" />
-                </>
-              )}
-            </>
-          )}
-
-          {size === "icon" && (
-            <>
-              <div className="absolute top-0 left-0 w-full h-[5px] md:h-1.5 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute bottom-0 w-full h-[5px] md:h-1.5 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute top-1 -left-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute bottom-1 -left-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute top-1 -right-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute bottom-1 -right-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-            </>
-          )}
-        </span>
-      ) : (
+      {/* HUD Split-Border Brackets */}
+      {variant !== 'link' && variant !== 'ghost' && (
         <>
-          {children}
+          <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white/40 group-hover/btn:border-white transition-colors" />
+          <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white/40 group-hover/btn:border-white transition-colors" />
 
-          {variant !== "ghost" && variant !== "link" && size !== "icon" && (
-            <>
-              {/* Pixelated border */}
-              <div className="absolute -top-1.5 w-1/2 left-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute -top-1.5 w-1/2 right-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute -bottom-1.5 w-1/2 left-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute -bottom-1.5 w-1/2 right-1.5 h-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-0 left-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-0 right-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute bottom-0 left-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute bottom-0 right-0 size-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-1.5 -left-1.5 h-[calc(100%-12px)] w-1.5 bg-foreground dark:bg-ring" />
-              <div className="absolute top-1.5 -right-1.5 h-[calc(100%-12px)] w-1.5 bg-foreground dark:bg-ring" />
-              {variant !== "outline" && (
-                <>
-                  {/* Top shadow */}
-                  <div className="absolute top-0 left-0 w-full h-1.5 bg-foreground/20" />
-                  <div className="absolute top-1.5 left-0 w-3 h-1.5 bg-foreground/20" />
+          {/* Energy Swipe Effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
 
-                  {/* Bottom shadow */}
-                  <div className="absolute bottom-0 left-0 w-full h-1.5 bg-foreground/20" />
-                  <div className="absolute bottom-1.5 right-0 w-3 h-1.5 bg-foreground/20" />
-                </>
-              )}
-            </>
-          )}
-
-          {size === "icon" && (
-            <>
-              <div className="absolute top-0 left-0 w-full h-[5px] md:h-1.5 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute bottom-0 w-full h-[5px] md:h-1.5 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute top-1 -left-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute bottom-1 -left-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute top-1 -right-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-              <div className="absolute bottom-1 -right-1 w-[5px] md:w-1.5 h-1/2 bg-foreground dark:bg-ring pointer-events-none" />
-            </>
-          )}
+          {/* Subtle Scanline inside button */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px)] bg-[length:100%_3px]" />
         </>
       )}
     </ShadcnButton>

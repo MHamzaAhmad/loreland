@@ -4,9 +4,9 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createApiClient, ApiClientProvider } from '@packages/ui-logic'
 import Header from '../components/Header'
+import MatrixBackground from '../components/MatrixBackground'
 
 import appCss from '../styles.css?url'
-import retroCss from '../components/ui/8bit/styles/retro.css?url'
 
 // Create a client for React Query
 const queryClient = new QueryClient({
@@ -34,7 +34,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Loreland - Create Your Adventure',
+        title: 'Loreland - Vision Creation & Fantasy Living',
       },
     ],
     links: [
@@ -43,16 +43,17 @@ export const Route = createRootRoute({
         href: appCss,
       },
       {
-        rel: 'stylesheet',
-        href: retroCss,
-      },
-      {
         rel: 'preconnect',
         href: 'https://fonts.googleapis.com',
       },
       {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossOrigin: 'anonymous',
+      },
+      {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Rajdhani:wght@300;400;500;600;700&family=Fira+Code:wght@300..700&display=swap',
       },
     ],
   }),
@@ -62,16 +63,18 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <HeadContent />
       </head>
-      <body className="bg-[var(--8bit-background)] text-[var(--8bit-foreground)] min-h-screen flex flex-col">
+      <body className="bg-background text-foreground min-h-screen flex flex-col font-['Rajdhani'] antialiased selection:bg-[var(--primary)] selection:text-[var(--primary-foreground)]">
+        <MatrixBackground />
+        <div className="scanline-overlay" />
         <QueryClientProvider client={queryClient}>
           <ApiClientProvider client={apiClient}>
-            <div className="font-['Press_Start_2P'] antialiased flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col relative z-0">
               <Header />
-              <main className="flex-1">
+              <main className="flex-1 relative">
                 {children}
               </main>
             </div>
