@@ -14,7 +14,7 @@ export class EmbeddingsService {
      */
     async generateEmbedding(text: string): Promise<number[]> {
         const response = await this.ai.run(
-            "@cf/baai/bge-base-en-v1.5",
+            "@cf/baai/bge-large-en-v1.5",
             { text: [text] }
         );
 
