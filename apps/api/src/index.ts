@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { injectDeps, injectSession, type AppEnv } from "./lib/context";
+import { gamesRouter } from "./routes/games";
+import { generateRouter } from "./routes/generate";
+
+// Re-export workflow for Cloudflare
+export { GameGenerationWorkflow } from "./workflows/game-generation";
 
 const app = new Hono<AppEnv>();
 
@@ -9,11 +14,11 @@ app.use("*", injectDeps);
 
 // CORS middleware - must be registered before routes
 app.use(
-  "/api/auth/*",
+  "/api/*",
   cors({
     origin: ["http://localhost:3000", "https://loreland.pages.dev"],
     allowHeaders: ["Content-Type", "Authorization"],
-    allowMethods: ["POST", "GET", "OPTIONS"],
+    allowMethods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
     credentials: true,
@@ -41,5 +46,11 @@ app.get("/api/me", (c) => {
   }
   return c.json({ user });
 });
+
+// Game CRUD routes
+app.route("/api/games", gamesRouter);
+
+// Generation routes (nested under games for clarity)
+app.route("/api/games/generate", generateRouter);
 
 export default app;

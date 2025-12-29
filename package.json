@@ -28,6 +28,9 @@
     },
     "auth": {
       "better-auth": "^1.2.3"
+    },
+    "validation": {
+      "zod": "^3.24.1"
     }
   }
 }

@@ -9,6 +9,8 @@ export type AppEnv = {
     Bindings: {
         DB: D1Database;
         IMAGES: R2Bucket;
+        AI: Ai;
+        GAME_GENERATION_WORKFLOW: Workflow;
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
     };

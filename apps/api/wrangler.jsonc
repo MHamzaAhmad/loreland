@@ -32,5 +32,21 @@
 			"binding": "IMAGES",
 			"bucket_name": "loreland-images"
 		}
+	],
+	/**
+	 * Workers AI - For image generation (Flux 2 dev) and text generation
+	 */
+	"ai": {
+		"binding": "AI"
+	},
+	/**
+	 * Workflows - Durable multi-step game generation
+	 */
+	"workflows": [
+		{
+			"binding": "GAME_GENERATION_WORKFLOW",
+			"name": "game-generation-workflow",
+			"class_name": "GameGenerationWorkflow"
+		}
 	]
 }
