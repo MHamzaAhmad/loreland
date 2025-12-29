@@ -5,13 +5,14 @@
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy --minify",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings",
+		"db:generate": "bunx @better-auth/cli generate --config ./src/auth.static.ts --output ../../packages/db/src/schema/d1/auth.ts",
 		"db:migrate": "wrangler d1 migrations apply loreland --local",
 		"db:migrate:remote": "wrangler d1 migrations apply loreland --remote"
 	},
 	"dependencies": {
 		"@packages/db": "workspace:*",
 		"hono": "^4.11.3",
-		"better-auth": "catalog:database",
+		"better-auth": "catalog:auth",
 		"drizzle-orm": "catalog:database"
 	},
 	"devDependencies": {
