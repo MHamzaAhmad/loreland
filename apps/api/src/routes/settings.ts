@@ -5,18 +5,19 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import type { AppEnv } from "../lib/context";
 import { userSettings } from "@packages/db/schema/d1";
+import { getAllModels, getModelIds } from "../lib/models";
 
 const settingsRouter = new Hono<AppEnv>();
 
-// Allowed models validation
-const allowedModels = [
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-] as const;
+// Get allowed models from registry for validation
+// We use a looser validation here to allow for new models to be added without redeploying API if possible,
+// but for strict typing we validate against known keys.
+const allowedModels = getModelIds();
 
 const updateSettingsSchema = z.object({
-    modelPreference: z.enum(allowedModels).optional(),
+    modelPreference: z.string().refine((val) => allowedModels.includes(val), {
+        message: "Invalid model preference",
+    }).optional(),
 });
 
 /**
@@ -37,6 +38,23 @@ settingsRouter.get("/", async (c) => {
     return c.json({
         modelPreference: settings?.modelPreference ?? null,
     });
+});
+
+/**
+ * GET /api/settings/models - Get available AI models
+ */
+settingsRouter.get("/models", async (c) => {
+    // Public endpoint, but we could restrict if needed
+    const models = getAllModels().map(m => ({
+        id: m.id,
+        name: m.name,
+        displayName: m.displayName,
+        description: m.description,
+        tier: m.tier,
+        isDefault: m.isDefault
+    }));
+
+    return c.json({ models });
 });
 
 /**

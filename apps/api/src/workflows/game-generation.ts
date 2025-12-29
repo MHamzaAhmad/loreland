@@ -15,7 +15,7 @@ import {
     aiCharacterSchema,
     aiNpcSchema,
 } from "../lib/schemas";
-import { createAIConfig, getLanguageModel, type AIEnv } from "../lib/ai-config";
+import { getLanguageModel, type AIEnv } from "../lib/ai-config";
 
 // Workflow bindings type
 type Env = AIEnv & {
@@ -53,8 +53,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
             .get();
 
         // Initialize AI service with configured provider and user preference
-        const aiConfig = createAIConfig(this.env, userSettingsRecord?.modelPreference);
-        const model = getLanguageModel(aiConfig);
+        const model = getLanguageModel(userSettingsRecord?.modelPreference);
         const aiService = new AIService(model);
 
         // Step 1: Validate and create initial game record

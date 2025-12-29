@@ -19,7 +19,6 @@ export class GameClient {
         this.ws = new WebSocket(this.config.url);
 
         this.ws.onopen = () => {
-            console.log("Connected to Game Session");
             this.reconnectAttempts = 0;
             this.config.onOpen?.();
         };
@@ -39,7 +38,6 @@ export class GameClient {
         };
 
         this.ws.onclose = () => {
-            console.log("WebSocket connection closed");
             this.config.onClose?.();
             this.handleReconnect();
         };
@@ -75,8 +73,6 @@ export class GameClient {
 
         const delay = this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts);
         this.reconnectAttempts++;
-
-        console.log(`Attempting to reconnect in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
         setTimeout(() => {
             this.connect();

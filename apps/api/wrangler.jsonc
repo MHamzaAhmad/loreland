@@ -17,8 +17,8 @@
 	 * Environment variables for AI provider configuration
 	 */
 	"vars": {
-		"AI_PROVIDER": "gemini",
-		"AI_MODEL": "gemini-2.5-flash"
+		"DEFAULT_MODEL": "nova-flash"
+		// VERCEL_AI_GATEWAY_API_KEY should be set via secrets
 	},
 	/**
 	 * D1 Database - Central database for users, games, etc.

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { usePlaySession, useGame, useGameSession } from "@packages/ui-logic";
+import { usePlaySession, useGame, useGameSession, getImageUrl } from "@packages/ui-logic";
 import { GameInterface } from "@/components/play/GameInterface";
 import { Loader2 } from "lucide-react";
 
@@ -26,12 +26,6 @@ function PlayGame() {
     const { id: gameId } = Route.useParams();
     const gameQuery = useGame(gameId);
     const playSession = usePlaySession(gameId, buildWebSocketUrl);
-
-    console.log("[PlayGame] Render", {
-        gameId,
-        playSessionState: playSession.state,
-        gameQueryLoading: gameQuery.isLoading,
-    });
 
     // Route based on state machine
     switch (playSession.state.status) {
@@ -196,13 +190,15 @@ function CharacterCard({
 }) {
     return (
         <button
-            onClick={onSelect}
+            onClick={() => {
+                onSelect();
+            }}
             className="hud-panel p-4 text-left hover:border-primary/50 transition-colors group"
         >
             <div className="flex gap-4">
                 {character.portrait ? (
                     <img
-                        src={`https://pub-2d2c730403754714b2d93aa5408544d9.r2.dev/${character.portrait}`}
+                        src={getImageUrl(character.portrait)}
                         alt={character.name}
                         className="w-20 h-20 object-cover border border-primary/20"
                     />

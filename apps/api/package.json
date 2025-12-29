@@ -10,7 +10,7 @@
 		"db:migrate:remote": "wrangler d1 migrations apply loreland --remote"
 	},
 	"dependencies": {
-		"@ai-sdk/google": "^3.0.1",
+		"@ai-sdk/vercel": "^2.0.1",
 		"@hono/zod-validator": "^0.4.3",
 		"@packages/db": "workspace:*",
 		"agents": "^0.3.1",

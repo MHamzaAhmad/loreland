@@ -3,8 +3,8 @@ import { drizzle } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import { eq, gt, desc, sql } from "drizzle-orm";
 import { streamText, tool } from "ai";
-import { google } from "@ai-sdk/google";
 import { z } from "zod";
+import { getLanguageModel } from "../lib/ai-config";
 
 // Import schemas and migrations from db package
 import * as schema from "@packages/db/schema/agent";
@@ -136,7 +136,7 @@ Your role is to:
 Respond in a narrative style, immersing the player in the world.`;
 
         const result = await streamText({
-            model: google(model),
+            model: getLanguageModel(model),
             system: systemPrompt,
             prompt: "Begin the adventure. Present the opening scenario and the player's current situation.",
             tools: {
@@ -245,7 +245,7 @@ Respond in a narrative style, immersing the player in the world.`;
         ]);
 
         const result = await streamText({
-            model: google(model),
+            model: getLanguageModel(model),
             system: systemPrompt,
             messages: [...messages, { role: "user" as const, content: userMessage }],
             tools: {
@@ -408,7 +408,7 @@ Use the suggestActions tool to provide 3 possible next actions.`;
         const existingSummary = await this.db.select().from(schema.summary).limit(1);
 
         const result = await streamText({
-            model: google(model),
+            model: getLanguageModel(model),
             system: "You are a story summarizer. Create a concise summary of the events that maintains important plot points, character developments, and key decisions.",
             prompt: `${existingSummary.length ? `Previous summary:\n${existingSummary[0].content}\n\nNew events:\n` : ""}${allTurns.slice(-5).map(t => `Player: ${t.userMessage}\nGame Master: ${t.assistantResponse}`).join("\n\n")}
 

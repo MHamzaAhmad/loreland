@@ -113,73 +113,42 @@ export function usePlaySession(
 
     // Derive state machine
     const deriveState = (): PlaySessionState => {
-        console.log("[usePlaySession] deriveState called", {
-            sessionsQuery: {
-                isLoading: sessionsQuery.isLoading,
-                isFetching: sessionsQuery.isFetching,
-                error: sessionsQuery.error,
-                data: sessionsQuery.data,
-            },
-            existingSessionId,
-            resumeQuery: {
-                isLoading: resumeQuery.isLoading,
-                error: resumeQuery.error,
-                data: resumeQuery.data,
-            },
-            startMutation: {
-                isPending: startMutation.isPending,
-                error: startMutation.error,
-                data: startMutation.data,
-            },
-            selectedCharacterId,
-        });
-
         // Check for errors first
         if (sessionsQuery.error) {
-            console.log("[usePlaySession] Returning error state (sessions)", sessionsQuery.error);
             return { status: "error", error: sessionsQuery.error as Error };
         }
         if (resumeQuery.error && existingSessionId) {
-            console.log("[usePlaySession] Returning error state (resume)", resumeQuery.error);
             return { status: "error", error: resumeQuery.error as Error };
         }
         if (startMutation.error) {
-            console.log("[usePlaySession] Returning error state (start)", startMutation.error);
             return { status: "error", error: startMutation.error as Error };
         }
 
         // Check for ready state (session config available)
         if (startMutation.data) {
-            console.log("[usePlaySession] Returning ready state (from mutation)");
             return { status: "ready", config: startMutation.data };
         }
         if (resumeQuery.data) {
-            console.log("[usePlaySession] Returning ready state (from resume)");
             return { status: "ready", config: resumeQuery.data };
         }
 
         // Check for loading states
         if (sessionsQuery.isLoading) {
-            console.log("[usePlaySession] Returning loading state (sessions)");
             return { status: "loading" };
         }
         if (existingSessionId && resumeQuery.isLoading) {
-            console.log("[usePlaySession] Returning loading state (resume)");
             return { status: "loading" };
         }
         if (startMutation.isPending) {
-            console.log("[usePlaySession] Returning loading state (start)");
             return { status: "loading" };
         }
 
         // No existing session, need character selection
         if (!existingSessionId && !selectedCharacterId) {
-            console.log("[usePlaySession] Returning select_character state");
             return { status: "select_character" };
         }
 
         // Fallback to loading (shouldn't happen)
-        console.log("[usePlaySession] Returning fallback loading state");
         return { status: "loading" };
     };
 
