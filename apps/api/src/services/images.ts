@@ -48,6 +48,19 @@ export class ImagesService {
             return result.buffer;
         }
 
+        // Handle base64 response (common for newer models)
+        if (typeof response === "object" && response !== null && "image" in response) {
+            const base64String = (response as { image: string }).image;
+            const binaryString = atob(base64String);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        console.error("Unexpected AI response format:", response);
         throw new Error("Unexpected AI response format");
     }
 

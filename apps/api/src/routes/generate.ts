@@ -82,6 +82,17 @@ generateRouter.get("/:instanceId/status", async (c) => {
                 stepsCompleted = output.progress.stepsCompleted;
                 message = output.progress.message;
             }
+        } else if ((status as any).__LOCAL_DEV_STEP_OUTPUTS && Array.isArray((status as any).__LOCAL_DEV_STEP_OUTPUTS)) {
+            // Handle local dev step outputs where intermediate progress is available
+            const steps = (status as any).__LOCAL_DEV_STEP_OUTPUTS;
+            if (steps.length > 0) {
+                const lastStep = steps[steps.length - 1];
+                if (lastStep) {
+                    currentStep = lastStep.currentStep || currentStep;
+                    stepsCompleted = lastStep.stepsCompleted || stepsCompleted;
+                    message = lastStep.message || message;
+                }
+            }
         }
 
         return c.json({

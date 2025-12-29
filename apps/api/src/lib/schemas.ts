@@ -138,3 +138,55 @@ export interface GenerationProgress {
     message: string;
     error?: string;
 }
+
+// ============================================================================
+// AI-Generated Content Schemas
+// ============================================================================
+
+/**
+ * Schema for AI-generated game metadata
+ */
+export const aiGameMetadataSchema = z.object({
+    title: z.string().max(100).describe("Creative game title"),
+    description: z.string().min(10).max(1000).describe("Engaging game description"),
+    background: z.string().min(10).max(2000).describe("World lore and setting"),
+    instructions: z.string().min(10).max(1000).describe("How to play the game"),
+    objective: z.string().min(10).max(500).describe("Main goal of the game"),
+});
+
+export type AIGameMetadata = z.infer<typeof aiGameMetadataSchema>;
+
+/**
+ * Schema for AI-generated character
+ */
+export const aiCharacterSchema = z.object({
+    name: z.string().describe("Character name"),
+    description: z.string().min(10).max(1000).describe("Personality, abilities, and backstory"),
+    appearance: z.string().min(10).max(500).describe("Physical description for image generation"),
+});
+
+export type AICharacter = z.infer<typeof aiCharacterSchema>;
+
+/**
+ * Schema for AI-generated characters array
+ */
+export const aiCharactersSchema = z.array(aiCharacterSchema);
+
+/**
+ * Schema for AI-generated NPC
+ */
+export const aiNpcSchema = z.object({
+    name: z.string().describe("NPC name"),
+    detail: z.string().min(10).max(500).optional().describe("Role and personality"),
+    oneLiner: z.string().min(5).max(300).optional().describe("Memorable quote"),
+    appearance: z.string().min(5).max(500).optional().describe("Physical description"),
+    location: z.string().min(5).max(300).optional().describe("Where the NPC can be found"),
+});
+
+export type AINPC = z.infer<typeof aiNpcSchema>;
+
+/**
+ * Schema for AI-generated NPCs array
+ */
+export const aiNpcsSchema = z.array(aiNpcSchema);
+

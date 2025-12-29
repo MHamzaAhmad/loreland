@@ -6,11 +6,19 @@ import {
 import { drizzle } from "drizzle-orm/d1";
 import { GamesService } from "../services/games";
 import { ImagesService } from "../services/images";
-import { characters, npcs } from "@packages/db/schema/d1";
+import { AIService } from "../services/ai";
+import { eq } from "drizzle-orm";
+import { characters, npcs, userSettings } from "@packages/db/schema/d1";
 import type { GameGenerationParams } from "../lib/schemas";
+import {
+    aiGameMetadataSchema,
+    aiCharacterSchema,
+    aiNpcSchema,
+} from "../lib/schemas";
+import { createAIConfig, getLanguageModel, type AIEnv } from "../lib/ai-config";
 
 // Workflow bindings type
-type Env = {
+type Env = AIEnv & {
     DB: D1Database;
     IMAGES: R2Bucket;
     AI: Ai;
@@ -38,6 +46,17 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
         const gamesService = new GamesService(db);
         const imagesService = new ImagesService(this.env.AI, this.env.IMAGES);
 
+        // Fetch user model preference
+        const userSettingsRecord = await db.select()
+            .from(userSettings)
+            .where(eq(userSettings.userId, userId))
+            .get();
+
+        // Initialize AI service with configured provider and user preference
+        const aiConfig = createAIConfig(this.env, userSettingsRecord?.modelPreference);
+        const model = getLanguageModel(aiConfig);
+        const aiService = new AIService(model);
+
         // Step 1: Validate and create initial game record
         const gameRecord = await step.do("validate-and-init", async () => {
             const game = await gamesService.createPending(userId, prompt);
@@ -53,103 +72,34 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
 
         // Step 2: Generate game metadata using AI
         const metadata = await step.do("generate-metadata", async () => {
-            const aiResponse = await this.env.AI.run(
-                "@cf/meta/llama-3.1-8b-instruct-fp8",
-                {
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a creative game designer. Generate game metadata in JSON format based on the user's prompt. 
-                            
-Return ONLY valid JSON with these fields:
-{
-  "title": "string (creative game title, max 50 chars)",
-  "description": "string (engaging game description, 100-300 chars)",
-  "background": "string (world lore and setting, 200-500 chars)",
-  "instructions": "string (how to play, 100-300 chars)",
-  "objective": "string (main goal, 50-150 chars)"
-}`,
-                        },
-                        {
-                            role: "user",
-                            content: `Create a game based on this prompt: ${prompt}`,
-                        },
-                    ],
-                }
-            );
-
-            const responseText = (aiResponse as { response?: string }).response ?? "";
-
-            // Extract JSON from response
-            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) {
-                throw new Error("Failed to parse AI response as JSON");
-            }
-
-            const parsed = JSON.parse(jsonMatch[0]) as {
-                title: string;
-                description: string;
-                background: string;
-                instructions: string;
-                objective: string;
-            };
+            const gameMetadata = await aiService.generateObject({
+                schema: aiGameMetadataSchema,
+                systemPrompt: "You are a creative game designer. Generate engaging and detailed game metadata.",
+                prompt: `Create a game based on this prompt: ${prompt}`,
+            });
 
             return {
-                title: parsed.title,
-                description: parsed.description,
-                background: parsed.background,
-                instructions: parsed.instructions,
-                objective: parsed.objective,
+                ...gameMetadata,
                 currentStep: "generate-metadata",
                 stepsCompleted: 2,
-                message: `Game "${parsed.title}" concept created`,
+                message: `Game "${gameMetadata.title}" concept created`,
             };
         });
 
         // Step 3: Generate characters
         const generatedCharacters = await step.do("generate-characters", async () => {
-            const aiResponse = await this.env.AI.run(
-                "@cf/meta/llama-3.1-8b-instruct-fp8",
-                {
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a creative character designer. Generate ${options.characterCount} playable characters in JSON format.
-
-Return ONLY valid JSON array:
-[
-  {
-    "name": "string (character name)",
-    "description": "string (personality, abilities, backstory - 100-200 chars)",
-    "appearance": "string (physical description for image generation - 50-100 chars)"
-  }
-]`,
-                        },
-                        {
-                            role: "user",
-                            content: `Create characters for a game titled "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
-                        },
-                    ],
-                }
-            );
-
-            const responseText = (aiResponse as { response?: string }).response ?? "";
-            const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                throw new Error("Failed to parse characters JSON");
-            }
-
-            const parsed = JSON.parse(jsonMatch[0]) as Array<{
-                name: string;
-                description: string;
-                appearance: string;
-            }>;
+            const characters = await aiService.generateArray({
+                itemSchema: aiCharacterSchema,
+                count: options.characterCount,
+                systemPrompt: "You are a creative character designer. Generate diverse and interesting playable characters.",
+                prompt: `Create characters for a game titled "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
+            });
 
             return {
-                characters: parsed,
+                characters,
                 currentStep: "generate-characters",
                 stepsCompleted: 3,
-                message: `Generated ${parsed.length} characters`,
+                message: `Generated ${characters.length} characters`,
             };
         });
 
@@ -157,65 +107,25 @@ Return ONLY valid JSON array:
         const generatedNpcs = await step.do("generate-npcs", async () => {
             if (options.npcCount === 0) {
                 return {
-                    npcs: [] as Array<{
-                        name: string;
-                        detail?: string;
-                        oneLiner?: string;
-                        appearance?: string;
-                        location?: string;
-                    }>,
+                    npcs: [],
                     currentStep: "generate-npcs",
                     stepsCompleted: 4,
                     message: "Skipped NPC generation",
                 };
             }
 
-            const aiResponse = await this.env.AI.run(
-                "@cf/meta/llama-3.1-8b-instruct-fp8",
-                {
-                    messages: [
-                        {
-                            role: "system",
-                            content: `You are a creative NPC designer. Generate ${options.npcCount} NPCs in JSON format.
-
-Return ONLY valid JSON array:
-[
-  {
-    "name": "string (NPC name)",
-    "detail": "string (role, personality - 50-150 chars)",
-    "oneLiner": "string (memorable quote - 20-50 chars)",
-    "appearance": "string (physical description - 30-80 chars)",
-    "location": "string (where found - 20-50 chars)"
-  }
-]`,
-                        },
-                        {
-                            role: "user",
-                            content: `Create NPCs for "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
-                        },
-                    ],
-                }
-            );
-
-            const responseText = (aiResponse as { response?: string }).response ?? "";
-            const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                throw new Error("Failed to parse NPCs JSON");
-            }
-
-            const parsed = JSON.parse(jsonMatch[0]) as Array<{
-                name: string;
-                detail?: string;
-                oneLiner?: string;
-                appearance?: string;
-                location?: string;
-            }>;
+            const npcs = await aiService.generateArray({
+                itemSchema: aiNpcSchema,
+                count: options.npcCount,
+                systemPrompt: "You are a creative NPC designer. Generate memorable and diverse NPCs with distinct personalities.",
+                prompt: `Create NPCs for "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
+            });
 
             return {
-                npcs: parsed,
+                npcs,
                 currentStep: "generate-npcs",
                 stepsCompleted: 4,
-                message: `Generated ${parsed.length} NPCs`,
+                message: `Generated ${npcs.length} NPCs`,
             };
         });
 
@@ -374,7 +284,7 @@ Return ONLY valid JSON array:
             ].join(" ").slice(0, 2000);
 
             const embeddingResponse = await this.env.AI.run(
-                "@cf/baai/bge-base-en-v1.5",
+                "@cf/baai/bge-large-en-v1.5",
                 { text: [searchText] }
             );
 

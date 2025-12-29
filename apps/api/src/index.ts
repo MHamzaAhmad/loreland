@@ -5,6 +5,7 @@ import { gamesRouter } from "./routes/games";
 import { generateRouter } from "./routes/generate";
 import { searchRouter } from "./routes/search";
 import { userRouter } from "./routes/user";
+import { settingsRouter } from "./routes/settings";
 
 // Re-export workflow for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
@@ -50,7 +51,11 @@ app.route("/api/games/search", searchRouter);
 app.route("/api/games/generate", generateRouter);
 
 // Game CRUD routes
+// Game CRUD routes
 app.route("/api/games", gamesRouter);
+
+// Settings routes
+app.route("/api/settings", settingsRouter);
 
 export default app;
 

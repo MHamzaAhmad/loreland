@@ -6,3 +6,4 @@ export * from "./assets";
 
 // Auth schema for Better Auth
 export * from "./auth";
+export * from "./user-settings";

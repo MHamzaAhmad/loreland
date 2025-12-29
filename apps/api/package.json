@@ -10,11 +10,13 @@
 		"db:migrate:remote": "wrangler d1 migrations apply loreland --remote"
 	},
 	"dependencies": {
-		"@packages/db": "workspace:*",
+		"@ai-sdk/google": "^3.0.1",
 		"@hono/zod-validator": "^0.4.3",
-		"hono": "^4.11.3",
+		"@packages/db": "workspace:*",
+		"ai": "^6.0.3",
 		"better-auth": "catalog:auth",
 		"drizzle-orm": "catalog:database",
+		"hono": "^4.11.3",
 		"zod": "catalog:validation"
 	},
 	"devDependencies": {
