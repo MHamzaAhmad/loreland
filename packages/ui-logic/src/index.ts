@@ -20,6 +20,7 @@ export {
     gameKeys,
     generationKeys,
     userKeys,
+    useGameSession,
 } from "./hooks";
 
 // Types
@@ -38,3 +39,7 @@ export type {
     User,
     AuthState,
 } from "./types";
+
+export * from "./game/types";
+export * from "./game/GameClient";
+

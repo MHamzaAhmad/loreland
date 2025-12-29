@@ -30,6 +30,7 @@
 		"lucide-react": "^0.562.0",
 		"react": "catalog:core",
 		"react-dom": "catalog:core",
+		"react-markdown": "^10.1.0",
 		"tailwind-merge": "^3.4.0",
 		"tailwindcss": "^4.0.6",
 		"tailwindcss-animate": "^1.0.7",

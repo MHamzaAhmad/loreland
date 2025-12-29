@@ -11,6 +11,7 @@
         "./hooks": "./src/hooks/index.ts"
     },
     "dependencies": {
+        "@packages/db": "workspace:*",
         "@tanstack/react-query": "^5.80.2"
     },
     "devDependencies": {

@@ -18,4 +18,5 @@ export {
     useAuth,
     userKeys,
 } from "./use-auth";
+export { useGameSession } from "./useGameSession";
 

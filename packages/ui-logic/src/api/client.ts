@@ -140,6 +140,27 @@ export function createApiClient(options: ApiClientOptions) {
                 return request<GenerationStatus>(`/api/games/generate/${instanceId}/status`);
             },
         },
+
+        play: {
+            /**
+             * List active sessions for a game
+             */
+            listSessions: (gameId: string) => {
+                return request<{ sessions: { id: string; createdAt: number }[] }>(`/api/games/${gameId}/play/sessions`);
+            },
+
+            /**
+             * Start or resume a game session
+             */
+            start: (gameId: string, sessionId?: string, characterId?: string, model?: string) => {
+                return request<{ wsUrl: string; sessionId: string }>(`/api/games/${gameId}/play/start`, {
+                    method: "POST",
+                    body: JSON.stringify({ sessionId, characterId, model }),
+                });
+            },
+        },
+
+
     };
 }
 
