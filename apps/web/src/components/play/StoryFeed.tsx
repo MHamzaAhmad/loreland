@@ -19,10 +19,11 @@ interface TurnDisplayProps {
 export function TurnDisplay({ turnData, isTyping, characterState }: TurnDisplayProps) {
     const [showDebug, setShowDebug] = useState(false);
 
-    if (!turnData) {
+    if (!turnData || !turnData.narrative) {
         return (
-            <div className="flex-1 flex items-center justify-center text-primary/40 font-mono animate-pulse">
-                INITIALIZING_VISUAL_INTERFACE...
+            <div className="flex-1 flex flex-col items-center justify-center text-primary/40 font-mono gap-4 animate-pulse">
+                <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                <div className="text-xs tracking-widest">INITIALIZING_VISUAL_INTERFACE...</div>
             </div>
         );
     }
