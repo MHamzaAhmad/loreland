@@ -24,6 +24,7 @@ export {
     playKeys,
     type PlaySessionConfig,
     type PlaySessionState,
-    type UsePlaySessionReturn
+    type UsePlaySessionReturn,
+    type SessionSummary
 } from "./usePlaySession";
 

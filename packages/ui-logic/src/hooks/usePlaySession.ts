@@ -13,11 +13,27 @@ export interface PlaySessionConfig {
 }
 
 /**
+ * Session summary for listing
+ */
+export interface SessionSummary {
+    id: string;
+    gameId: string;
+    userId: string;
+    characterId: string;
+    characterName: string | null;
+    currentTurn: number;
+    lastPlayedAt: string | Date | number | null;
+    model: string;
+    createdAt: string | Date | number;
+}
+
+/**
  * Play session initialization state
  */
 export type PlaySessionState =
     | { status: "loading" }
     | { status: "error"; error: Error }
+    | { status: "session_list"; sessions: SessionSummary[] }
     | { status: "select_character" }
     | { status: "ready"; config: PlaySessionConfig };
 
@@ -27,6 +43,9 @@ export type PlaySessionState =
 export interface UsePlaySessionReturn {
     state: PlaySessionState;
     selectCharacter: (characterId: string) => void;
+    resumeSession: (sessionId: string) => void;
+    createNewSession: () => void;
+    backToSessions: () => void;
     reset: () => void;
 }
 
@@ -51,24 +70,25 @@ export function usePlaySession(
 ): UsePlaySessionReturn {
     const api = useApiClient();
     const queryClient = useQueryClient();
-    const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
+
+    // UI Local State
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
+    const [resumingSessionId, setResumingSessionId] = useState<string | null>(null);
 
     // Step 1: Query existing sessions
     const sessionsQuery = useQuery({
         queryKey: playKeys.sessions(gameId),
         queryFn: () => api.play.listSessions(gameId),
-        staleTime: 30000, // 30 seconds
+        staleTime: 30000,
         retry: 2,
     });
 
-    const existingSessionId = sessionsQuery.data?.sessions?.[0]?.id;
-
-    // Step 2: Auto-resume if we have an existing session
+    // Step 2: Resume session logic
     const resumeQuery = useQuery({
-        queryKey: playKeys.session(gameId, existingSessionId || "none"),
+        queryKey: playKeys.session(gameId, resumingSessionId || "none"),
         queryFn: async (): Promise<PlaySessionConfig> => {
-            if (!existingSessionId) throw new Error("No session to resume");
-            const res = await api.play.start(gameId, existingSessionId);
+            if (!resumingSessionId) throw new Error("No session to resume");
+            const res = await api.play.start(gameId, resumingSessionId);
             return {
                 wsUrl: buildWsUrl(res.wsUrl),
                 sessionId: res.sessionId,
@@ -76,7 +96,7 @@ export function usePlaySession(
                 characterName: res.characterName,
             };
         },
-        enabled: !!existingSessionId,
+        enabled: !!resumingSessionId,
         staleTime: Infinity,
         retry: 1,
     });
@@ -95,36 +115,51 @@ export function usePlaySession(
         onSuccess: (data) => {
             // Cache the session config
             queryClient.setQueryData(playKeys.session(gameId, data.sessionId), data);
+            // Invalidate session list to show the new one later
+            queryClient.invalidateQueries({ queryKey: playKeys.sessions(gameId) });
         },
     });
 
-    // Character selection handler
+    // Handlers
     const selectCharacter = useCallback((characterId: string) => {
-        setSelectedCharacterId(characterId);
         startMutation.mutate(characterId);
     }, [startMutation]);
 
-    // Reset handler (for retrying)
+    const resumeSession = useCallback((sessionId: string) => {
+        setResumingSessionId(sessionId);
+    }, []);
+
+    const createNewSession = useCallback(() => {
+        setIsCreatingNew(true);
+    }, []);
+
+    const backToSessions = useCallback(() => {
+        setIsCreatingNew(false);
+        setResumingSessionId(null);
+        startMutation.reset();
+    }, [startMutation]);
+
     const reset = useCallback(() => {
-        setSelectedCharacterId(null);
+        setIsCreatingNew(false);
+        setResumingSessionId(null);
         startMutation.reset();
         queryClient.invalidateQueries({ queryKey: playKeys.sessions(gameId) });
     }, [gameId, queryClient, startMutation]);
 
     // Derive state machine
     const deriveState = (): PlaySessionState => {
-        // Check for errors first
+        // Errors
         if (sessionsQuery.error) {
             return { status: "error", error: sessionsQuery.error as Error };
         }
-        if (resumeQuery.error && existingSessionId) {
+        if (resumeQuery.error && resumingSessionId) {
             return { status: "error", error: resumeQuery.error as Error };
         }
         if (startMutation.error) {
             return { status: "error", error: startMutation.error as Error };
         }
 
-        // Check for ready state (session config available)
+        // Ready (Active Session)
         if (startMutation.data) {
             return { status: "ready", config: startMutation.data };
         }
@@ -132,29 +167,35 @@ export function usePlaySession(
             return { status: "ready", config: resumeQuery.data };
         }
 
-        // Check for loading states
+        // Loading
         if (sessionsQuery.isLoading) {
             return { status: "loading" };
         }
-        if (existingSessionId && resumeQuery.isLoading) {
+        if (resumingSessionId && resumeQuery.isLoading) {
             return { status: "loading" };
         }
         if (startMutation.isPending) {
             return { status: "loading" };
         }
 
-        // No existing session, need character selection
-        if (!existingSessionId && !selectedCharacterId) {
+        // States
+        if (isCreatingNew) {
             return { status: "select_character" };
         }
 
-        // Fallback to loading (shouldn't happen)
-        return { status: "loading" };
+        // Default: Session List (even if empty)
+        return {
+            status: "session_list",
+            sessions: (sessionsQuery.data?.sessions as unknown as SessionSummary[]) || []
+        };
     };
 
     return {
         state: deriveState(),
         selectCharacter,
+        resumeSession,
+        createNewSession,
+        backToSessions,
         reset,
     };
 }

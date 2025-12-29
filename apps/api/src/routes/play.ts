@@ -287,5 +287,15 @@ playRouter.get("/:gameId/play/:sessionId/ws", async (c) => {
     const agentId = c.env.PLAY_AGENT.idFromName(sessionId);
     const agent = c.env.PLAY_AGENT.get(agentId);
 
-    return agent.fetch(c.req.raw);
+    const headers = new Headers(c.req.raw.headers);
+    headers.set("x-partykit-room", sessionId);
+    headers.set("x-partykit-namespace", "play-agent");
+
+    return agent.fetch(c.req.url, {
+        method: c.req.method,
+        headers,
+        body: c.req.raw.body,
+        // @ts-ignore - Duplex property is needed for Bun/Cloudflare
+        duplex: "half",
+    });
 });

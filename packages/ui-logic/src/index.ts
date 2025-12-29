@@ -25,7 +25,7 @@ export {
     playKeys,
 } from "./hooks";
 
-export type { PlaySessionConfig, PlaySessionState, UsePlaySessionReturn } from "./hooks";
+export type { PlaySessionConfig, PlaySessionState, UsePlaySessionReturn, SessionSummary } from "./hooks";
 
 // Types
 export type {

@@ -14,7 +14,7 @@ import { getModel, getDefaultModel, resolveModelToActual } from './models';
  */
 export interface AIEnv {
     /** Vercel AI Gateway API key (set as secret) */
-    VERCEL_AI_GATEWAY_API_KEY?: string;
+    AI_GATEWAY_API_KEY?: string;
     /** Default model ID (gamified name) */
     DEFAULT_MODEL?: string;
 }

@@ -2,6 +2,7 @@ import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { ImageIcon } from "lucide-react";
+import { getImageUrl } from "@packages/ui-logic";
 
 interface StoryFeedProps {
     isTyping: boolean;
@@ -11,10 +12,8 @@ interface StoryFeedProps {
 export function StoryFeed({ messages, isTyping }: StoryFeedProps) {
     const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
-    // Get R2 public URL (assuming it's configured or proxied)
-    const getImageUrl = (key: string) => {
-        return `https://pub-2d2c730403754714b2d93aa5408544d9.r2.dev/${key}`; // TODO: Replace with env var
-    };
+    // Hardcoded getImageUrl removed in favor of imported utility
+
 
     return (
         <div className="flex-1 overflow-y-auto space-y-6 p-4 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
@@ -44,7 +43,10 @@ export function StoryFeed({ messages, isTyping }: StoryFeedProps) {
                             <div className="mt-4 group relative">
                                 <div
                                     className="cursor-pointer overflow-hidden rounded-md border border-primary/30 w-full h-32 md:h-48 relative"
-                                    onClick={() => setExpandedImage(getImageUrl(msg.sceneImageKey!))}
+                                    onClick={() => {
+                                        const url = getImageUrl(msg.sceneImageKey!);
+                                        if (url) setExpandedImage(url);
+                                    }}
                                 >
                                     <img
                                         src={getImageUrl(msg.sceneImageKey)}

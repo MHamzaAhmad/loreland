@@ -1,7 +1,8 @@
+import { useCallback } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { usePlaySession, useGame, useGameSession, getImageUrl } from "@packages/ui-logic";
+import { usePlaySession, useGame, useGameSession, getImageUrl, SessionSummary } from "@packages/ui-logic";
 import { GameInterface } from "@/components/play/GameInterface";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play, Plus, Clock, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/games/$id/play")({
     component: PlayGame,
@@ -41,6 +42,16 @@ function PlayGame() {
                 />
             );
 
+        case "session_list":
+            return (
+                <SessionSelectionScreen
+                    sessions={playSession.state.sessions}
+                    onResume={playSession.resumeSession}
+                    onNew={playSession.createNewSession}
+                    gameId={gameId}
+                />
+            );
+
         case "select_character":
             if (gameQuery.isLoading) {
                 return <LoadingScreen />;
@@ -58,7 +69,7 @@ function PlayGame() {
                 <CharacterSelectionScreen
                     characters={gameQuery.data.game.characters || []}
                     onSelect={playSession.selectCharacter}
-                    gameId={gameId}
+                    onBack={playSession.backToSessions}
                 />
             );
 
@@ -77,9 +88,13 @@ function PlayGame() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ActiveGameSession({ wsUrl, gameId }: { wsUrl: string; gameId: string }) {
+    const handleError = useCallback((e: unknown) => {
+        console.error("WebSocket error:", e);
+    }, []);
+
     const session = useGameSession({
         url: wsUrl,
-        onError: (e) => console.error("WebSocket error:", e),
+        onError: handleError,
     });
 
     return (
@@ -136,14 +151,120 @@ function ErrorScreen({
     );
 }
 
+function SessionSelectionScreen({
+    sessions,
+    onResume,
+    onNew,
+    gameId
+}: {
+    sessions: SessionSummary[];
+    onResume: (id: string) => void;
+    onNew: () => void;
+    gameId: string;
+}) {
+    return (
+        <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
+            <div className="max-w-4xl w-full space-y-8">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-primary/20 pb-6">
+                    <div>
+                        <h1 className="text-3xl font-orbitron text-primary tracking-widest mb-2">
+                            SESSION_LOG
+                        </h1>
+                        <p className="text-muted-foreground font-mono text-sm">
+                            Select a simulation to resume or initialize a new one.
+                        </p>
+                    </div>
+                    <Link
+                        to="/games/$id"
+                        params={{ id: gameId }}
+                        className="hud-button-secondary text-xs"
+                    >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        EXIT_SIMULATION
+                    </Link>
+                </div>
+
+                {/* Session List */}
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center text-xs font-mono text-primary/50 uppercase tracking-wider px-2">
+                        <span>Available Sessions</span>
+                        <span>{sessions.length} Records Found</span>
+                    </div>
+
+                    <div className="grid gap-3">
+                        <button
+                            onClick={onNew}
+                            className="group relative flex items-center gap-4 p-6 border border-dashed border-primary/30 hover:border-primary/80 hover:bg-primary/5 transition-all w-full text-left"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Plus className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="font-orbitron text-lg text-primary group-hover:translate-x-1 transition-transform">
+                                    INITIALIZE_NEW_SIMULATION
+                                </h3>
+                                <p className="text-sm text-muted-foreground font-mono mt-1">
+                                    Begin a new story timeline
+                                </p>
+                            </div>
+                        </button>
+
+                        {sessions.map((session) => (
+                            <div
+                                key={session.id}
+                                className="group flex items-center gap-4 p-4 border border-primary/10 bg-primary/5 hover:border-primary/50 transition-all"
+                            >
+                                <div className="hidden md:flex w-12 h-12 rounded-full bg-black border border-primary/20 items-center justify-center font-mono text-xs text-primary/50">
+                                    {session.currentTurn}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-orbitron text-lg text-primary truncate">
+                                        {session.characterName || "Unknown Operative"}
+                                    </h3>
+                                    <div className="flex items-center gap-4 mt-1 text-xs font-mono text-muted-foreground">
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {session.lastPlayedAt ? new Date(session.lastPlayedAt).toLocaleDateString() : 'New'}
+                                        </span>
+                                        <span className="text-primary/40">ID: {session.id.slice(0, 8)}</span>
+                                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/60 text-[10px]">
+                                            {session.model}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => onResume(session.id)}
+                                    className="hud-button-primary text-xs whitespace-nowrap"
+                                >
+                                    <Play className="w-3 h-3 mr-2" />
+                                    RESUME
+                                </button>
+                            </div>
+                        ))}
+
+                        {sessions.length === 0 && (
+                            <div className="text-center py-12 text-muted-foreground font-mono text-sm">
+                                [NO_ACTIVE_SESSIONS_DETECTED]
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function CharacterSelectionScreen({
     characters,
     onSelect,
-    gameId,
+    onBack,
 }: {
     characters: Array<{ characterId: string; name: string; description: string | null; portrait: string | null }>;
     onSelect: (id: string) => void;
-    gameId: string;
+    onBack: () => void;
 }) {
     return (
         <div className="h-screen flex flex-col items-center justify-center bg-background p-4">
@@ -168,13 +289,12 @@ function CharacterSelectionScreen({
                 </div>
 
                 <div className="text-center">
-                    <Link
-                        to="/games/$id"
-                        params={{ id: gameId }}
-                        className="text-primary/60 hover:text-primary font-mono text-xs uppercase"
+                    <button
+                        onClick={onBack}
+                        className="text-primary/60 hover:text-primary font-mono text-xs uppercase hover:underline"
                     >
-                        ← ABORT_MISSION
-                    </Link>
+                        ← RETURN_TO_SESSION_LIST
+                    </button>
                 </div>
             </div>
         </div>

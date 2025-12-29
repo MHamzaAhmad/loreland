@@ -18,6 +18,12 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     const [suggestedActions, setSuggestedActions] = useState<string[]>([]);
     const [currentTurn, setCurrentTurn] = useState(0);
 
+    // Use refs for callbacks to avoid re-connecting when they change
+    const callbacksRef = useRef({ onConnect, onDisconnect, onError });
+    useEffect(() => {
+        callbacksRef.current = { onConnect, onDisconnect, onError };
+    }, [onConnect, onDisconnect, onError]);
+
     const handleMessage = useCallback((response: WebSocketResponse) => {
         switch (response.type) {
             case "response":
@@ -45,10 +51,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                         { role: "assistant", content: turn.assistantResponse, id: `turn-${turn.turnNumber}-assistant`, sceneImageKey: turn.sceneImageKey }
                     ]);
                     setMessages(history);
-                    // If we have recent turns, set the suggestions from the last one if available? 
-                    // The API state doesn't return suggestions for past turns explicitly in the generic list, 
-                    // but we might want to grabbing them if we are resuming. 
-                    // For now, let's leave suggestions empty on resume until the user acts or we add it to the state API.
+
                     if (response.recentTurns.length > 0) {
                         const lastTurn = response.recentTurns[response.recentTurns.length - 1];
                         setSuggestedActions(lastTurn.suggestedActions || []);
@@ -63,10 +66,10 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
             case "error":
                 setIsTyping(false);
                 console.error("Game Session Error:", response.message);
-                onError?.(response.message);
+                callbacksRef.current.onError?.(response.message);
                 break;
         }
-    }, [onError]);
+    }, []); // Check: handleMessage depends on state setters which are stable. Callbacks are via ref.
 
     useEffect(() => {
         if (!url) return;
@@ -75,17 +78,16 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
             url,
             onOpen: () => {
                 setIsConnected(true);
-                onConnect?.();
+                callbacksRef.current.onConnect?.();
                 // Request initial state
                 client.send("get_state");
             },
             onClose: () => {
                 setIsConnected(false);
-                onDisconnect?.();
+                callbacksRef.current.onDisconnect?.();
             },
             onError: (e) => {
-                // WebSocket errors are often generic events, not much detail
-                onError?.(e);
+                callbacksRef.current.onError?.(e);
             },
             onMessage: handleMessage
         });
@@ -97,7 +99,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
             client.cleanup();
             clientRef.current = null;
         };
-    }, [url, handleMessage, onConnect, onDisconnect, onError]);
+    }, [url, handleMessage]);
 
     const sendTurn = useCallback((message: string) => {
         if (!clientRef.current || !isConnected) return;
