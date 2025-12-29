@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { anonymous } from "better-auth/plugins"
 import { eq } from "drizzle-orm";
 import { games } from "@packages/db/schema/d1";
+import * as schema from "@packages/db/schema/d1";
 
 /**
  * Configuration for creating auth options
@@ -30,9 +31,10 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
         : undefined;
 
     return {
-        database: drizzleAdapter(config.db as any, {
+        database: drizzleAdapter(config.db, {
             provider: "sqlite",
-            usePlural: false,
+            usePlural: true,
+            schema
         }),
 
         // Origins

@@ -1,64 +1,65 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useUser, useAuth } from '@packages/ui-logic'
-import { signInAnonymously, signOut, getSession } from '../lib/auth-client'
+import { signInAnonymously, signOut } from '../lib/auth-client'
 import { Button } from './ui/8bit/button'
-import { User, LogOut, UserPlus } from 'lucide-react'
+import { LogOut, UserPlus } from 'lucide-react'
+import { useMutation } from '@tanstack/react-query'
 
 /**
  * Auth button component
  * 
  * Shows different states:
  * - Loading: "..."
- * - Not logged in: "START" (auto-signs in anonymously)
  * - Anonymous: "GUEST" + "LINK ACCOUNT"
  * - Linked: Username + "SIGN OUT"
  */
 export function AuthButton() {
     const { data, isLoading, refetch } = useUser()
     const { invalidateUser } = useAuth()
-    const [isSigningIn, setIsSigningIn] = useState(false)
+    const didAttemptRef = useRef(false)
 
-    // Auto sign-in as anonymous if not authenticated
-    useEffect(() => {
-        const autoSignIn = async () => {
-            if (isLoading || data?.authenticated || isSigningIn) return
-
-            // Check if session exists first
-            const session = await getSession()
-            if (session.data?.session) {
-                refetch()
-                return
-            }
-
-            // No session - sign in anonymously
-            setIsSigningIn(true)
-            try {
-                await signInAnonymously()
-                invalidateUser()
-                refetch()
-            } catch (err) {
-                console.error('Auto sign-in failed:', err)
-            } finally {
-                setIsSigningIn(false)
-            }
-        }
-
-        autoSignIn()
-    }, [isLoading, data?.authenticated, isSigningIn, refetch, invalidateUser])
-
-    const handleSignOut = async () => {
-        try {
-            await signOut()
+    // Use mutation for anonymous sign-in to handle state cleanly
+    const signInMutation = useMutation({
+        mutationFn: signInAnonymously,
+        onSuccess: () => {
             invalidateUser()
             refetch()
-        } catch (err) {
+        },
+        onError: (err) => {
+            console.error('Auto sign-in failed:', err)
+        },
+    })
+
+    // Sign out mutation
+    const signOutMutation = useMutation({
+        mutationFn: signOut,
+        onSuccess: () => {
+            invalidateUser()
+            refetch()
+        },
+        onError: (err) => {
             console.error('Sign out failed:', err)
-        }
-    }
+        },
+    })
+
+    // Auto sign-in effect - runs only when user query settles
+    useEffect(() => {
+        // Already attempted or still loading
+        if (didAttemptRef.current || isLoading) return
+
+        // Already authenticated
+        if (data?.authenticated) return
+
+        // Mark as attempted and sign in
+        didAttemptRef.current = true
+        signInMutation.mutate()
+    }, [isLoading, data?.authenticated]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    const isPending = isLoading || signInMutation.isPending
 
     // Loading state
-    if (isLoading || isSigningIn) {
+    if (isPending) {
         return (
             <Button variant="ghost" size="sm" disabled>
                 <span className="text-[10px] animate-pulse">...</span>
@@ -66,11 +67,11 @@ export function AuthButton() {
         )
     }
 
-    // Not authenticated (should auto-sign in)
+    // Not authenticated (should have auto-signed in, show fallback)
     if (!data?.authenticated || !data.user) {
         return (
             <Button variant="ghost" size="sm" disabled>
-                <span className="text-[10px]">START</span>
+                <span className="text-[10px]">...</span>
             </Button>
         )
     }
@@ -100,7 +101,12 @@ export function AuthButton() {
             <span className="text-[10px] truncate max-w-[100px]">
                 {user.name || user.email}
             </span>
-            <Button size="sm" variant="ghost" onClick={handleSignOut}>
+            <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => signOutMutation.mutate()}
+                disabled={signOutMutation.isPending}
+            >
                 <LogOut className="h-3 w-3" />
             </Button>
         </div>
