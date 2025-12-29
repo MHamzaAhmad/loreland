@@ -20,11 +20,6 @@ export function useGenerateGame() {
     return useMutation({
         mutationFn: (data: GenerateGameInput) => api.generation.start(data),
     });
-    onSuccess: () => {
-        // Will invalidate games list when generation completes
-        // For now, we just track the instance
-    },
-    });
 }
 
 /**
@@ -62,7 +57,7 @@ export function useGenerationStatus(
             }
 
             // Continue polling
-            return options?.refetchInterval ?? 1000; // Default 1 second
+            return options?.refetchInterval ?? 1000;
         },
     });
 }

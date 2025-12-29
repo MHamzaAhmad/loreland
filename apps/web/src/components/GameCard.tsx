@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import type { Game } from '@packages/ui-logic'
 import {
     Card,
-    CardContent,
     CardDescription,
     CardHeader,
     CardTitle,

@@ -39,15 +39,6 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Example protected route
-app.get("/api/me", (c) => {
-  const user = c.get("user");
-  if (!user) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
-  return c.json({ user });
-});
-
 // Search route (must be before games to avoid conflict with :id param)
 app.route("/api/games/search", searchRouter);
 

@@ -4,6 +4,13 @@
   "type": "module",
   "private": true,
   "packageManager": "bun@1.2.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
