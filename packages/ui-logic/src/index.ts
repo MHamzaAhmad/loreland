@@ -21,11 +21,7 @@ export {
     generationKeys,
     userKeys,
     useGameSession,
-    usePlaySession,
-    playKeys,
 } from "./hooks";
-
-export type { PlaySessionConfig, PlaySessionState, UsePlaySessionReturn, SessionSummary } from "./hooks";
 
 // Types
 export type {
@@ -42,6 +38,7 @@ export type {
     SearchResponse,
     User,
     AuthState,
+    SessionSummary,
 } from "./types";
 
 export * from "./game/types";

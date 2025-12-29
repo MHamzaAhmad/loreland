@@ -20,6 +20,8 @@ export const turns = sqliteTable("turns", {
     suggestedActions: text("suggested_actions", { mode: "json" }).$type<string[]>().default([]),
     characterState: text("character_state", { mode: "json" }).$type<CharacterStateSnapshot>().notNull(),
     sceneImageKey: text("scene_image_key"), // R2 key for AI-generated scene image
+    agentThought: text("agent_thought"), // The AI's internal analysis of the turn
+    turnOutcome: text("turn_outcome", { mode: "json" }), // Structured outcome data (success/fail, etc.)
     createdAt: integer("created_at").notNull().default(sql`(unixepoch())`),
 });
 

@@ -13,10 +13,20 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     const clientRef = useRef<GameClient | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
-    const [messages, setMessages] = useState<{ role: "user" | "assistant"; content: string; id: string; sceneImageKey?: string }[]>([]);
+
+    // Core State: structured turn data instead of chat list
+    const [currentTurnData, setCurrentTurnData] = useState<{
+        turnNumber: number;
+        narrative: string;
+        sceneImageKey?: string;
+        agentThought?: string;
+    } | null>(null);
+
     const [characterState, setCharacterState] = useState<CharacterStateSnapshot | null>(null);
     const [suggestedActions, setSuggestedActions] = useState<string[]>([]);
-    const [currentTurn, setCurrentTurn] = useState(0);
+
+    // History handling
+    const [history, setHistory] = useState<{ turnNumber: number; summary: string }[]>([]);
 
     // Use refs for callbacks to avoid re-connecting when they change
     const callbacksRef = useRef({ onConnect, onDisconnect, onError });
@@ -24,43 +34,52 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
         callbacksRef.current = { onConnect, onDisconnect, onError };
     }, [onConnect, onDisconnect, onError]);
 
+    // Store state in ref for reliable access in unstable callbacks without triggering reconnections
+    const stateRef = useRef({ currentTurnData });
+    useEffect(() => {
+        stateRef.current = { currentTurnData };
+    }, [currentTurnData]);
+
     const handleMessage = useCallback((response: WebSocketResponse) => {
         switch (response.type) {
             case "response":
                 setIsTyping(false);
-                setMessages(prev => [
-                    ...prev,
-                    {
-                        role: "assistant",
-                        content: response.text,
-                        id: `turn-${response.turnNumber}-assistant`,
-                        sceneImageKey: response.sceneImageKey
-                    }
-                ]);
+                setCurrentTurnData({
+                    turnNumber: response.turnNumber,
+                    narrative: response.text,
+                    sceneImageKey: response.sceneImageKey,
+                    // @ts-ignore
+                    agentThought: response.agentThought
+                });
                 setSuggestedActions(response.suggestedActions);
                 setCharacterState(response.characterState);
-                setCurrentTurn(response.turnNumber);
+
+                // Add *previous* turn to history if we just advanced
+                const prevTurn = stateRef.current.currentTurnData;
+                if (prevTurn && prevTurn.turnNumber < response.turnNumber) {
+                    setHistory(prev => [...prev, { turnNumber: prevTurn.turnNumber, summary: "Turn completed" }]);
+                }
                 break;
 
             case "state":
-                setCurrentTurn(response.currentTurn);
+                setCurrentTurnData({
+                    turnNumber: response.currentTurn,
+                    narrative: response.recentTurns?.[response.recentTurns.length - 1]?.assistantResponse || "",
+                    sceneImageKey: response.recentTurns?.[response.recentTurns.length - 1]?.sceneImageKey,
+                });
                 setCharacterState(response.characterState || null);
-                if (response.recentTurns) {
-                    const history = response.recentTurns.flatMap((turn): { role: "user" | "assistant"; content: string; id: string; sceneImageKey?: string }[] => [
-                        { role: "user", content: turn.userMessage, id: `turn-${turn.turnNumber}-user` },
-                        { role: "assistant", content: turn.assistantResponse, id: `turn-${turn.turnNumber}-assistant`, sceneImageKey: turn.sceneImageKey }
-                    ]);
-                    setMessages(history);
+                if (response.recentTurns && response.recentTurns.length > 0) {
+                    const lastTurn = response.recentTurns[response.recentTurns.length - 1];
+                    setSuggestedActions(lastTurn.suggestedActions || []);
 
-                    if (response.recentTurns.length > 0) {
-                        const lastTurn = response.recentTurns[response.recentTurns.length - 1];
-                        setSuggestedActions(lastTurn.suggestedActions || []);
-                    }
+                    setHistory(response.recentTurns.slice(0, -1).map(t => ({ turnNumber: t.turnNumber, summary: "Turn completed" })));
+                } else {
+                    setSuggestedActions([]);
                 }
                 break;
 
             case "turns":
-                // Handle full history if needed
+                // Full history load if needed
                 break;
 
             case "error":
@@ -69,7 +88,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 callbacksRef.current.onError?.(response.message);
                 break;
         }
-    }, []); // Check: handleMessage depends on state setters which are stable. Callbacks are via ref.
+    }, []);
 
     useEffect(() => {
         if (!url) return;
@@ -79,7 +98,6 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
             onOpen: () => {
                 setIsConnected(true);
                 callbacksRef.current.onConnect?.();
-                // Request initial state
                 client.send("get_state");
             },
             onClose: () => {
@@ -104,21 +122,42 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     const sendTurn = useCallback((message: string) => {
         if (!clientRef.current || !isConnected) return;
 
-        // Optimistic update
-        setMessages(prev => [...prev, { role: "user", content: message, id: `temp-${Date.now()}` }]);
         setIsTyping(true);
-        setSuggestedActions([]); // Clear suggestions while waiting
+        // We don't optimistically update the immersive view, we wait for the result
+        // But we could show the user's action in a "Pending" UI state if we wanted
 
+        setSuggestedActions([]);
         clientRef.current.sendTurn(message);
     }, [isConnected]);
+
+    const rewindToTurn = useCallback((turnNumber: number) => {
+        // Logic to call API endpoint for rewind (since WS might not have it yet or we prefer REST for this atomic op)
+        // For now, we assume using client.api or similar if available, or just fetch:
+        const gameId = url.split("/games/")[1]?.split("/")[0];
+        const sessionId = url.split("/play/")[1]?.split("/")[0];
+
+        if (gameId && sessionId) {
+            fetch(`/api/games/${gameId}/play/${sessionId}/rewind`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ turnNumber })
+            }).then(res => res.json()).then(data => {
+                if (data.success && clientRef.current) {
+                    // Refresh state
+                    clientRef.current.send("get_state");
+                }
+            });
+        }
+    }, [url]);
 
     return {
         isConnected,
         isTyping,
-        messages,
+        currentTurnData, // Replaces 'messages' list
         characterState,
         suggestedActions,
-        currentTurn,
-        sendTurn
+        history,
+        sendTurn,
+        rewindToTurn
     };
 }

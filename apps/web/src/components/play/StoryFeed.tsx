@@ -1,102 +1,106 @@
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Terminal, Heart, Brain, Zap } from "lucide-react";
 import { getImageUrl } from "@packages/ui-logic";
+import type { CharacterStateSnapshot } from "@packages/ui-logic";
 
-interface StoryFeedProps {
+interface TurnDisplayProps {
     isTyping: boolean;
-    messages: { role: "user" | "assistant"; content: string; id: string; sceneImageKey?: string }[];
+    turnData: {
+        turnNumber: number;
+        narrative: string;
+        sceneImageKey?: string;
+        agentThought?: string;
+    } | null;
+    characterState: CharacterStateSnapshot | null;
 }
 
-export function StoryFeed({ messages, isTyping }: StoryFeedProps) {
-    const [expandedImage, setExpandedImage] = useState<string | null>(null);
+export function TurnDisplay({ turnData, isTyping, characterState }: TurnDisplayProps) {
+    const [showDebug, setShowDebug] = useState(false);
 
-    // Hardcoded getImageUrl removed in favor of imported utility
-
+    if (!turnData) {
+        return (
+            <div className="flex-1 flex items-center justify-center text-primary/40 font-mono animate-pulse">
+                INITIALIZING_VISUAL_INTERFACE...
+            </div>
+        );
+    }
 
     return (
-        <div className="flex-1 overflow-y-auto space-y-6 p-4 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-            {messages.map((msg, _idx) => (
-                <div
-                    key={msg.id}
-                    className={cn(
-                        "flex flex-col gap-2 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500",
-                        msg.role === "assistant" ? "items-start" : "items-end"
-                    )}
-                >
-                    <div
-                        className={cn(
-                            "rounded-lg p-4 max-w-[90%] backdrop-blur-sm relative border",
-                            msg.role === "assistant"
-                                ? "bg-card/40 border-primary/20 text-foreground"
-                                : "bg-primary/10 border-primary/40 text-primary-foreground"
-                        )}
-                    >
-                        {/* Message Content */}
-                        <div className="prose prose-invert prose-sm max-w-none">
-                            <Markdown>{msg.content}</Markdown>
-                        </div>
-
-                        {/* Scene Image Thumbnail (Assistant only) */}
-                        {msg.role === "assistant" && msg.sceneImageKey && (
-                            <div className="mt-4 group relative">
-                                <div
-                                    className="cursor-pointer overflow-hidden rounded-md border border-primary/30 w-full h-32 md:h-48 relative"
-                                    onClick={() => {
-                                        const url = getImageUrl(msg.sceneImageKey!);
-                                        if (url) setExpandedImage(url);
-                                    }}
-                                >
-                                    <img
-                                        src={getImageUrl(msg.sceneImageKey)}
-                                        alt="Scene visualization"
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                                        <div className="flex items-center gap-1 text-xs text-primary font-mono">
-                                            <ImageIcon className="w-3 h-3" />
-                                            <span>VIEW_SCENE_DATA</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Decorative Corner Brackets */}
-                        <div className="absolute -top-px -left-px w-2 h-2 border-t border-l border-current opacity-50" />
-                        <div className="absolute -bottom-px -right-px w-2 h-2 border-b border-r border-current opacity-50" />
-                    </div>
-                </div>
-            ))}
-
-            {isTyping && (
-                <div className="flex items-center gap-2 max-w-3xl mx-auto text-primary/60 font-mono text-xs animate-pulse">
-                    <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-2 h-2 bg-current rounded-full animate-bounce" />
-                    <span>NEURAL_PROCESSING...</span>
-                </div>
-            )}
-
-            {/* Expanded Image Modal */}
-            {expandedImage && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-in fade-in duration-300"
-                    onClick={() => setExpandedImage(null)}
-                >
-                    <div className="relative max-w-7xl max-h-[90vh] w-full rounded-lg border border-primary/30 overflow-hidden shadow-[0_0_50px_rgba(0,243,255,0.2)]">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+            {/* Background / Scene Image Layer */}
+            <div className="absolute inset-0 z-0 bg-black">
+                {turnData.sceneImageKey ? (
+                    <div className="w-full h-full relative">
                         <img
-                            src={expandedImage}
-                            alt="Scene Full"
-                            className="w-full h-full object-contain"
+                            src={getImageUrl(turnData.sceneImageKey)}
+                            alt="Scene"
+                            className="w-full h-full object-cover opacity-60"
                         />
-                        <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1 border border-primary/20 text-xs font-mono text-primary/80">
-                            CLICK_TO_CLOSE
+                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                    </div>
+                ) : (
+                    <div className="w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-background to-background" />
+                )}
+            </div>
+
+            {/* Content Layer */}
+            <div className="relative z-10 flex-1 flex flex-col p-4 md:p-8 pb-32 md:pb-40 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20">
+
+                {/* Header Info */}
+                <div className="flex items-center justify-between mb-8 opacity-70 hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 text-xs font-mono text-primary/60">
+                        <span className="w-2 h-2 bg-primary/50 rounded-full animate-pulse" />
+                        TURN_SEQUENCE: {turnData.turnNumber.toString().padStart(3, '0')}
+                    </div>
+                    <button
+                        onClick={() => setShowDebug(!showDebug)}
+                        className="flex items-center gap-2 text-xs font-mono text-primary/40 hover:text-primary transition-colors"
+                    >
+                        <Terminal className="w-3 h-3" />
+                        LOGIC_KERNEL
+                    </button>
+                </div>
+
+                {/* Vitals Panel (Mobile/Integrated) */}
+                {characterState && (
+                    <div className="flex gap-4 mb-6 md:hidden">
+                        <div className="flex items-center gap-2 text-red-400 font-mono text-xs border border-red-500/20 bg-red-500/10 px-2 py-1 rounded">
+                            <Heart className="w-3 h-3" /> {characterState.health}%
                         </div>
                     </div>
+                )}
+
+                {/* Agent Thought / Debug View */}
+                {showDebug && turnData.agentThought && (
+                    <div className="mb-6 p-4 rounded bg-black/60 border-l-2 border-primary/50 font-mono text-xs text-primary/70 animate-in slide-in-from-top-2">
+                        <div className="flex items-center gap-2 mb-1 text-primary/40 uppercase tracking-widest">
+                            <Brain className="w-3 h-3" /> Analysis Buffer
+                        </div>
+                        {turnData.agentThought}
+                    </div>
+                )}
+
+                {/* Main Narrative */}
+                <div className="mt-auto max-w-3xl mx-auto w-full">
+                    <div className="prose prose-invert prose-lg md:prose-xl max-w-none text-shadow-sm">
+                        <Markdown>{turnData.narrative}</Markdown>
+                    </div>
+
+                    {isTyping && (
+                        <div className="mt-4 flex items-center gap-2 text-primary/60 font-mono text-xs animate-pulse">
+                            <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
+                            <span className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
+                            <span className="w-2 h-2 bg-current rounded-full animate-bounce" />
+                            <span>CALCULATING_OUTCOME...</span>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 }
+
+// Re-export as StoryFeed to keep imports working without changing parent file yet
+export { TurnDisplay as StoryFeed };
