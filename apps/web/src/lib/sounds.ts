@@ -1,9 +1,10 @@
 export const sounds = {
-    open: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', // Sci-fi opening
-    close: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3', // Sci-fi closing
+    open: 'https://res.cloudinary.com/dzvygdpmu/video/upload/v1767097304/loreland/audio/mixkit-technology-transition-slide-3120_faslfe.wav', // Sci-fi opening
+    close: 'https://res.cloudinary.com/dzvygdpmu/video/upload/v1767097304/loreland/audio/mixkit-pot-lid-close-1802_sxuqry.wav', // Sci-fi closing
     hover: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3', // UI beep
-    click: 'https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3', // Tech click
+    click: 'https://res.cloudinary.com/dzvygdpmu/video/upload/v1767096968/loreland/audio/mixkit-sci-fi-click-900_no63l2.wav', // Tech click
     glitch: 'https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3', // Glitch effect
+    initializing: "https://res.cloudinary.com/dzvygdpmu/video/upload/v1767097322/loreland/audio/mixkit-cinematic-mystery-heartbeat-transition-492_qequtm.wav"
 };
 
 class SoundService {
@@ -16,10 +17,10 @@ class SoundService {
         }
     }
 
-    async play(soundName: keyof typeof sounds) {
+    async play(soundName: keyof typeof sounds, options?: { loop?: boolean }) {
         try {
             await this.init();
-            if (!this.audioContext) return;
+            if (!this.audioContext) return { stop: () => { } };
 
             if (this.audioContext.state === 'suspended') {
                 await this.audioContext.resume();
@@ -35,10 +36,22 @@ class SoundService {
 
             const source = this.audioContext.createBufferSource();
             source.buffer = buffer;
+            source.loop = options?.loop || false;
             source.connect(this.audioContext.destination);
             source.start(0);
+
+            return {
+                stop: () => {
+                    try {
+                        source.stop();
+                    } catch (e) {
+                        // Ignore if already stopped
+                    }
+                }
+            };
         } catch (error) {
             console.warn('Failed to play sound:', error);
+            return { stop: () => { } };
         }
     }
 }

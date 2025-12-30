@@ -2,6 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiClient, useGame, getImageUrl } from "@packages/ui-logic";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { soundService } from "../../../../lib/sounds";
 
 export const Route = createFileRoute("/games/$id/play/new")({
     component: NewSessionScreen,
@@ -12,6 +14,7 @@ function NewSessionScreen() {
     const navigate = useNavigate();
     const api = useApiClient();
     const queryClient = useQueryClient();
+    const stopSoundRef = useRef<(() => void) | null>(null);
 
     // Fetch Game Data for Characters
     const gameQuery = useGame(gameId);
@@ -35,6 +38,29 @@ function NewSessionScreen() {
             alert("Failed to initialize session: " + error.message);
         }
     });
+
+    useEffect(() => {
+        if (createSessionMutation.isPending) {
+            // Start playing sound
+            soundService.play('initializing', { loop: true }).then(controller => {
+                if (stopSoundRef.current) stopSoundRef.current(); // Stop any existing
+                stopSoundRef.current = controller?.stop || null;
+            });
+        } else {
+            // Stop sound if not pending
+            if (stopSoundRef.current) {
+                stopSoundRef.current();
+                stopSoundRef.current = null;
+            }
+        }
+
+        // Cleanup on unmount
+        return () => {
+            if (stopSoundRef.current) {
+                stopSoundRef.current();
+            }
+        };
+    }, [createSessionMutation.isPending]);
 
     if (gameQuery.isLoading) {
         return (
@@ -84,7 +110,10 @@ function NewSessionScreen() {
                     {characters.map((char) => (
                         <button
                             key={char.characterId}
-                            onClick={() => createSessionMutation.mutate(char.characterId)}
+                            onClick={() => {
+                                soundService.play('click');
+                                createSessionMutation.mutate(char.characterId);
+                            }}
                             className="hud-panel p-4 text-left border border-primary/20 bg-background hover:bg-primary/5 hover:border-primary/50 transition-all group relative overflow-hidden rounded-lg flex gap-4"
                             disabled={createSessionMutation.isPending}
                         >

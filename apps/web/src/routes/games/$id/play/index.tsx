@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useApiClient } from "@packages/ui-logic";
 import { Loader2, Plus, Clock, Play, LogOut } from "lucide-react";
 import type { SessionSummary } from "@packages/ui-logic";
+import { soundService } from "../../../../lib/sounds";
 
 export const Route = createFileRoute("/games/$id/play/")({
     component: SessionListScreen,
@@ -77,6 +78,7 @@ function SessionListScreen() {
                         <Link
                             to="/games/$id/play/new"
                             params={{ id: gameId }}
+                            onClick={() => soundService.play('click')}
                             className="group relative flex items-center gap-4 p-6 border border-dashed border-primary/30 hover:border-primary/80 hover:bg-primary/5 transition-all w-full text-left rounded-lg"
                         >
                             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">

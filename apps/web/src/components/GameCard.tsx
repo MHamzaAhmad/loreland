@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { Game } from '@packages/ui-logic'
 import { getImageUrl } from '@packages/ui-logic'
 import { Zap } from 'lucide-react'
+import { soundService } from '../lib/sounds'
 
 interface GameCardProps {
     game: Game
@@ -11,7 +12,12 @@ export function GameCard({ game }: GameCardProps) {
     const imageUrl = getImageUrl(game.previewImage);
 
     return (
-        <Link to="/games/$id" params={{ id: game.id }} className="block h-full group">
+        <Link
+            to="/games/$id"
+            params={{ id: game.id }}
+            className="block h-full group"
+            onClick={() => soundService.play('click')}
+        >
             <div className="h-full hud-panel group-hover:border-[var(--primary)]/50 transition-all duration-500 flex flex-col overflow-hidden relative group">
                 <div className="hud-bracket absolute inset-0 pointer-events-none" />
 

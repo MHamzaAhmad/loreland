@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useGame, useDeleteGame, getImageUrl } from '@packages/ui-logic'
-import { ArrowLeft, Trash2, Users, UserCircle, Play, Globe, MapPin, Target } from 'lucide-react'
+import { ArrowLeft, Trash2, UserCircle, Play, Globe, MapPin, Target } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
+import { soundService } from '../../../lib/sounds'
 
 export const Route = createFileRoute('/games/$id/')({
     component: GameDetail,
@@ -98,7 +99,7 @@ function GameDetail() {
                         </div>
 
                         <div className="space-y-3">
-                            <Link to="/games/$id/play" params={{ id: game.id }} className="block">
+                            <Link to="/games/$id/play" params={{ id: game.id }} className="block" onClick={() => soundService.play('click')}>
                                 <button className="w-full group relative px-6 py-4 bg-primary/10 hover:bg-primary/20 border border-primary/50 hover:border-primary transition-all overflow-hidden">
                                     <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-primary/20 to-transparent transition-transform duration-1000" />
                                     <div className="flex items-center justify-center gap-3 text-primary font-orbitron tracking-widest">
@@ -109,7 +110,10 @@ function GameDetail() {
                             </Link>
 
                             <button
-                                onClick={handleDelete}
+                                onClick={() => {
+                                    soundService.play('click');
+                                    handleDelete();
+                                }}
                                 disabled={deleteMutation.isPending}
                                 className="w-full px-4 py-3 bg-red-950/20 hover:bg-red-950/40 border border-red-500/30 hover:border-red-500/60 text-red-500/80 hover:text-red-400 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
                             >
