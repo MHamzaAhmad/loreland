@@ -148,7 +148,7 @@ playRouter.get("/:gameId/play/:sessionId", async (c) => {
 
     return c.json({
         session,
-        ...state,
+        ...(state as Record<string, unknown>),
     });
 });
 

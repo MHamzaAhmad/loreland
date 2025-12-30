@@ -2,58 +2,61 @@ import { Agent } from "agents";
 import { drizzle } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
 import { eq, gt, desc, sql } from "drizzle-orm";
-import { streamText, tool } from "ai";
-import { z } from "zod";
-import { getLanguageModel } from "../lib/ai-config";
+import { ToolLoopAgent, stepCountIs } from "ai";
 
 // Import schemas and migrations from db package
 import * as schema from "@packages/db/schema/agent";
 import migrations from "@packages/db/migrations/agent";
-
-// Types for character state snapshot
 import type { CharacterStateSnapshot } from "@packages/db/schema/agent";
 
-interface GameSessionState {
-    sessionId: string;
-    gameId: string;
-    characterId: string;
-    currentTurn: number;
+// Local imports
+import { loadPrompt } from "./prompt-loader";
+import type { GameSessionState, FullGameConfig, AgentDB } from "./types";
+import {
+    analyzeOpeningTool,
+    analyzeTurnTool,
+    suggestActionsTool,
+    describeSceneTool,
+} from "./tools";
+
+// ============================================================================
+// AGENT FACTORIES
+// ============================================================================
+
+/**
+ * Create the Game Logic Agent for analyzing turns
+ */
+function createGameLogicAgent(model: string, instructions: string) {
+    return new ToolLoopAgent({
+        model: model,
+        instructions,
+        tools: {
+            analyzeTurn: analyzeTurnTool,
+            analyzeOpening: analyzeOpeningTool,
+        },
+        toolChoice: "required",
+        stopWhen: stepCountIs(5),
+    });
 }
 
-interface FullGameConfig {
-    id: string;
-    title: string;
-    description: string;
-    background: string;
-    instructions: string;
-    objective: string;
-    characters: Array<{
-        id: string;
-        name: string;
-        description: string | null;
-    }>;
-    npcs: Array<{
-        id: string;
-        name: string;
-        detail?: string | null;
-    }>;
-    skills: Array<{
-        id: string;
-        name: string;
-    }>;
-    lorebookEntries: Array<{
-        id: string;
-        name: string;
-        content: string;
-    }>;
-    trackedItems: Array<{
-        id: string;
-        name: string;
-        description?: string | null;
-    }>;
+/**
+ * Create the Narrator Agent for generating narratives
+ */
+function createNarratorAgent(model: string, instructions: string) {
+    return new ToolLoopAgent({
+        model: model,
+        instructions,
+        tools: {
+            suggestActions: suggestActionsTool,
+            describeScene: describeSceneTool,
+        },
+        stopWhen: stepCountIs(5),
+    });
 }
 
-type AgentDB = ReturnType<typeof drizzle<typeof schema>>;
+// ============================================================================
+// PLAY AGENT (Durable Object)
+// ============================================================================
 
 export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     private db!: AgentDB;
@@ -77,7 +80,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         sessionId: string,
         gameConfig: FullGameConfig,
         characterId: string,
-        model: string = "gemini-2.0-flash"
+        model: string = "google/gemini-2.5-flash"
     ) {
         // Store game config in SQLite
         await this.db.insert(schema.gameSession).values({
@@ -113,109 +116,72 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     private async generateOpeningTurn(gameConfig: FullGameConfig, model: string) {
         const character = gameConfig.characters.find(c => c.id === this.state.characterId);
 
-        // 1. Analyze the game config to determine initial state context
-        const analysisSystemPrompt = `You are the Game Logic Engine for "${gameConfig.title}".
-Analyze the game configuration and determine the starting state.
+        // STEP 1: Analyze the opening with Game Logic Agent
+        const analysisPrompt = loadPrompt("opening-analysis", {
+            gameTitle: gameConfig.title,
+            background: gameConfig.background,
+            objective: gameConfig.objective,
+            characterName: character?.name || "Unknown",
+            characterDescription: character?.description || "No description",
+        });
 
-SETTING:
-${gameConfig.background}
-
-OBJECTIVE:
-${gameConfig.objective}
-
-PLAYER: ${character?.name || "Unknown"} (${character?.description || "No description"})`;
-
-        const analysisResult = await streamText({
-            model: getLanguageModel(model),
-            system: analysisSystemPrompt,
+        const logicAgent = createGameLogicAgent(model, analysisPrompt);
+        const analysisResult = await logicAgent.generate({
             prompt: "Analyze the opening situation. What is the immediate goal? What are the starting conditions?",
-            tools: {
-                analyzeOpening: tool({
-                    description: "Define the opening state analysis",
-                    inputSchema: z.object({
-                        immediateGoal: z.string().describe("The immediate short-term goal for the player based on the objective"),
-                        startingSituation: z.string().describe("Concise technical description of the starting position/state"),
-                        keyFacts: z.array(z.string()).describe("List of critical facts about the current scene (e.g., 'Door is locked', 'Guard is sleeping')"),
-                    }),
-                    execute: async (args) => args,
-                }),
-            },
         });
 
-        const analysisTool = (await analysisResult.toolResults).find(t => t.toolName === "analyzeOpening");
-        const analysis = analysisTool?.output as { immediateGoal: string; startingSituation: string; keyFacts: string[] } | undefined;
+        // Extract analysis from tool calls
+        const analysisToolCall = analysisResult.steps
+            .flatMap(s => s.toolResults)
+            .find(t => t.toolName === "analyzeOpening");
 
-        const agentThought = analysis ? `Goal: ${analysis.immediateGoal}. Situation: ${analysis.startingSituation}. Facts: ${analysis.keyFacts.join(", ")}` : "Opening sequence initialization.";
+        const analysis = analysisToolCall?.output as {
+            immediateGoal: string;
+            startingSituation: string;
+            keyFacts: string[];
+        } | undefined;
 
-        // 2. Generate Narrative based on analysis
-        const narratorSystemPrompt = `You are the Game Master for "${gameConfig.title}".
-Your goal is to immerse the player in the world.
-Use the Game Engine's analysis to guide your description.
+        const agentThought = analysis
+            ? `Goal: ${analysis.immediateGoal}. Situation: ${analysis.startingSituation}. Facts: ${analysis.keyFacts.join(", ")}`
+            : "Opening sequence initialization.";
 
-SETTING: ${gameConfig.background}
-PLAYER: ${character?.name}
+        // STEP 2: Generate Narrative with Narrator Agent
+        const narrativePrompt = loadPrompt("opening-narrative", {
+            gameTitle: gameConfig.title,
+            background: gameConfig.background,
+            characterName: character?.name || "Unknown",
+            analysis: agentThought,
+        });
 
-Opening Analysis:
-${agentThought}
-
-Output Requirements:
-1. FIRST, generate a VIVID NARRATIVE describing the opening scene, atmosphere, and immediate situation. (Min 2 sentences).
-2. SECOND, call the 'describeScene' tool to generate a visual prompt.
-3. THIRD, call the 'suggestActions' tool to offer options.
-
-CRITICAL: YOU MUST GENERATE TEXT CONTENT FOR THE NARRATIVE. DO NOT ONLY CALL TOOLS.`;
-
-        console.log(`[PlayAgent] Generating opening narrative with model ${model}...`);
-
-        const result = await streamText({
-            model: getLanguageModel(model),
-            system: narratorSystemPrompt,
+        const narratorAgent = createNarratorAgent(model, narrativePrompt);
+        const narrativeResult = await narratorAgent.generate({
             prompt: "Begin the adventure. WRITE THE NARRATIVE FIRST.",
-            tools: {
-                suggestActions: tool({
-                    description: "Suggest 3 possible actions for the player",
-                    inputSchema: z.object({
-                        actions: z.array(z.string()).length(3).describe("Three possible actions"),
-                    }),
-                    execute: async (args) => args,
-                }),
-                describeScene: tool({
-                    description: "Generate a visual description of the current scene for image generation.",
-                    inputSchema: z.object({
-                        scenePrompt: z.string().describe("Detailed visual description: environment, lighting, mood, key elements. Max 100 words."),
-                    }),
-                    execute: async (args) => args,
-                }),
-            },
         });
 
-        const text = await result.text;
-        const toolResults = await result.toolResults;
+        const text = narrativeResult.text || "The simulation is online. Systems nominal.";
 
-        const finalNarrative = text || "The simulation is online. Systems nominal. (AI Generation produced no text)";
+        // Extract tool results
+        const allToolResults = narrativeResult.steps.flatMap(s => s.toolResults);
 
-        const suggestActionsResult = toolResults?.find(tc => tc.toolName === "suggestActions");
-        let suggestedActions = (suggestActionsResult?.output as { actions: string[] } | undefined)?.actions || [];
+        const suggestActionsResult = allToolResults.find(t => t.toolName === "suggestActions");
+        let suggestedActions = (suggestActionsResult?.output as { actions: string[] } | undefined)?.actions || [
+            "Look around",
+            "Check inventory",
+            "Move forward",
+        ];
 
-        if (suggestedActions.length === 0) {
-            console.log("[PlayAgent] No actions generated by AI, using fallbacks.");
-            suggestedActions = ["Look around", "Inspect surroundings", "Check inventory"];
-        } else {
-            console.log(`[PlayAgent] Turn 0 Actions generated: ${suggestedActions.length}`);
-        }
-
-        const scenePromptResult = toolResults?.find(tc => tc.toolName === "describeScene");
+        const scenePromptResult = allToolResults.find(t => t.toolName === "describeScene");
         const scenePrompt = (scenePromptResult?.output as { scenePrompt: string } | undefined)?.scenePrompt;
 
         // Save turn 0 (opening)
         const [insertedTurn] = await this.db.insert(schema.turns).values({
             turnNumber: 0,
             userMessage: "[GAME START]",
-            assistantResponse: finalNarrative,
+            assistantResponse: text,
             agentThought: agentThought,
             suggestedActions,
             characterState: { health: 100, skillModifiers: {} },
-            turnOutcome: { analysis }, // Store structured analysis in outcome
+            turnOutcome: { analysis },
         }).returning();
 
         this.setState({ ...this.state, currentTurn: 0 });
@@ -269,7 +235,6 @@ CRITICAL: YOU MUST GENERATE TEXT CONTENT FOR THE NARRATIVE. DO NOT ONLY CALL TOO
                     break;
 
                 case "rewind":
-                    // Handle rewind request from WebSocket if needed, currently done via REST
                     break;
 
                 default:
@@ -299,67 +264,41 @@ CRITICAL: YOU MUST GENERATE TEXT CONTENT FOR THE NARRATIVE. DO NOT ONLY CALL TOO
         const recentTurns = await this.db.select()
             .from(schema.turns)
             .orderBy(desc(schema.turns.turnNumber))
-            .limit(5); // Get last 5 turns for context
+            .limit(5);
 
-        // ------------------------------------------------------------------
-        // STEP 1: ANALYSIS & OUTCOME DETERMINATION
-        // ------------------------------------------------------------------
-        const lastTurn = recentTurns[0]; // Most recent turn
-        const previousContext = recentTurns.reverse().map(t =>
-            `Turn ${t.turnNumber}: User: "${t.userMessage}" | Agent Thought: "${t.agentThought || 'N/A'}"`
-        ).join("\n");
+        const lastTurn = recentTurns[0];
 
-        const analysisSystemPrompt = `You are the Game Logic Engine for "${gameConfig.title}".
-Your job is to VALIDATE the user's action against the current state and determine the OUTCOME.
-
-CURRENT STATE:
-Health: ${charState.health}/100
-Skills: ${JSON.stringify(charState.skillModifiers)}
-Location/Context: ${lastTurn?.agentThought || "Unknown"}
-
-USER ACTION: "${userMessage}"
-
-Analyze steps:
-1. Is the action possible given the context?
-2. Does it require a skill check?
-3. What is the immediate physical/logical result? (Success, Failure, Partial)
-4. Update facts about the world (e.g., "Door is now open").
-
-Return the analysis using the 'analyzeTurn' tool.`;
-
-        const analysisResult = await streamText({
-            model: getLanguageModel(model),
-            system: analysisSystemPrompt,
-            prompt: `Analyze the user's action: "${userMessage}"`,
-            tools: {
-                analyzeTurn: tool({
-                    description: "Report the analysis of the turn",
-                    inputSchema: z.object({
-                        feasibility: z.enum(["possible", "impossible", "difficult"]).describe("Can the user do this?"),
-                        outcome: z.enum(["success", "failure", "partial_success", "critical_failure"]).describe("Result of the attempt"),
-                        reasoning: z.string().describe("Internal logic for why this happened (physics, luck, skill)"),
-                        worldUpdates: z.array(z.string()).describe("New facts about the world state"),
-                        healthChange: z.number().describe("Health change (+/-)"),
-                        skillUpdates: z.record(z.number()).describe("Changes to skill modifiers"),
-                    }),
-                    execute: async (args) => args,
-                }),
-            },
+        // STEP 1: Analyze Turn with Game Logic Agent
+        const analysisPrompt = loadPrompt("turn-analysis", {
+            gameTitle: gameConfig.title,
+            health: String(charState.health),
+            skills: JSON.stringify(charState.skillModifiers),
+            context: lastTurn?.agentThought || "Unknown",
+            userAction: userMessage,
         });
 
-        const analysisTool = (await analysisResult.toolResults).find(t => t.toolName === "analyzeTurn");
-        const analysis = analysisTool?.output as {
+        const logicAgent = createGameLogicAgent(model, analysisPrompt);
+        const analysisResult = await logicAgent.generate({
+            prompt: `Analyze the user's action: "${userMessage}"`,
+        });
+
+        // Extract analysis from tool results
+        const analysisToolCall = analysisResult.steps
+            .flatMap(s => s.toolResults)
+            .find(t => t.toolName === "analyzeTurn");
+
+        const analysis = analysisToolCall?.output as {
             feasibility: string;
             outcome: string;
             reasoning: string;
             worldUpdates: string[];
             healthChange: number;
-            skillUpdates: Record<string, number>
+            skillUpdates: Record<string, number>;
         } | undefined;
 
-        const agentThought = analysis ?
-            `[${analysis.outcome.toUpperCase()}] ${analysis.reasoning}. Facts: ${analysis.worldUpdates.join(", ")}` :
-            "Processing user action...";
+        const agentThought = analysis
+            ? `[${analysis.outcome.toUpperCase()}] ${analysis.reasoning}. Facts: ${analysis.worldUpdates.join(", ")}`
+            : "Processing user action...";
 
         // Update State based on Analysis
         let newHealth = charState.health;
@@ -378,64 +317,33 @@ Return the analysis using the 'analyzeTurn' tool.`;
                 .where(eq(schema.characterState.id, 1));
         }
 
-        // ------------------------------------------------------------------
-        // STEP 2: NARRATIVE GENERATION
-        // ------------------------------------------------------------------
-        const narrativeSystemPrompt = `You are the Game Master for "${gameConfig.title}".
-Your goal is to narrate the outcome determined by the Logic Engine.
-
-USER ACTION: "${userMessage}"
-
-LOGIC ENGINE RESULT:
-${agentThought}
-Outcome Type: ${analysis?.outcome || "Standard"}
-
-INSTRUCTIONS:
-1. Narrate the outcome vividly. If it was a failure, explain why specifically.
-2. Incorporate the world updates (${analysis?.worldUpdates.join(", ") || "None"}).
-3. Describe the scene or changes in the environment.
-4. Suggest 3 follow-up actions that make sense given the new state.
-
-DO NOT contradict the Logic Engine's result.`;
-
-        const result = await streamText({
-            model: getLanguageModel(model),
-            system: narrativeSystemPrompt,
-            messages: [
-                // We don't need full history here, just the immediate context + action
-                // But providing a bit of recent dialogue helps style
-                { role: "assistant", content: `(Previous Turn) ${lastTurn?.assistantResponse || "..."}` },
-                { role: "user", content: userMessage }
-            ],
-            tools: {
-                suggestActions: tool({
-                    description: "Suggest 3 possible actions for the player",
-                    inputSchema: z.object({
-                        actions: z.array(z.string()).length(3),
-                    }),
-                    execute: async (args) => args,
-                }),
-                describeScene: tool({
-                    description: "Generate a visual description of the current scene for image generation.",
-                    inputSchema: z.object({
-                        scenePrompt: z.string().describe("Detailed visual description: environment, lighting, mood, key elements. Max 100 words."),
-                    }),
-                    execute: async (args) => args,
-                }),
-            },
+        // STEP 2: Generate Narrative with Narrator Agent
+        const narrativePrompt = loadPrompt("turn-narrative", {
+            gameTitle: gameConfig.title,
+            userAction: userMessage,
+            analysis: agentThought,
+            outcome: analysis?.outcome || "standard",
+            worldUpdates: analysis?.worldUpdates.join(", ") || "None",
         });
 
-        const text = await result.text;
-        const toolResults = await result.toolResults;
+        const narratorAgent = createNarratorAgent(model, narrativePrompt);
+        const narrativeResult = await narratorAgent.generate({
+            prompt: `Narrate the outcome of: "${userMessage}"`,
+        });
 
-        const suggestActionsResult = toolResults?.find(tc => tc.toolName === "suggestActions");
-        let suggestedActions = (suggestActionsResult?.output as { actions: string[] } | undefined)?.actions || [];
+        const text = narrativeResult.text || "The action was processed.";
 
-        if (suggestedActions.length === 0) {
-            suggestedActions = ["Continue", "Look closer", "Assess situation"];
-        }
+        // Extract tool results
+        const allToolResults = narrativeResult.steps.flatMap(s => s.toolResults);
 
-        const scenePromptResult = toolResults?.find(tc => tc.toolName === "describeScene");
+        const suggestActionsResult = allToolResults.find(t => t.toolName === "suggestActions");
+        let suggestedActions = (suggestActionsResult?.output as { actions: string[] } | undefined)?.actions || [
+            "Continue",
+            "Look closer",
+            "Assess situation",
+        ];
+
+        const scenePromptResult = allToolResults.find(t => t.toolName === "describeScene");
         const scenePrompt = (scenePromptResult?.output as { scenePrompt: string } | undefined)?.scenePrompt;
 
         // Save turn
@@ -456,7 +364,6 @@ DO NOT contradict the Logic Engine's result.`;
         let sceneImageKey: string | undefined;
         if (scenePrompt) {
             try {
-                // Find character description for consistency
                 const character = gameConfig.characters.find(c => c.id === this.state.characterId);
                 sceneImageKey = await this.generateSceneImage(this.state.sessionId, newTurnNumber, scenePrompt, character?.description);
                 await this.db.update(schema.turns)
@@ -483,19 +390,6 @@ DO NOT contradict the Logic Engine's result.`;
     }
 
     /**
-     * Build system prompt with context (Unused in new flow but kept as helper if needed)
-     */
-    private buildSystemPrompt(
-        gameConfig: FullGameConfig,
-        charState: typeof schema.characterState.$inferSelect,
-        summary: string | undefined,
-        character: FullGameConfig["characters"][0] | undefined
-    ) {
-        // ... helper logic ...
-        return "";
-    }
-
-    /**
      * Generate a rolling summary of the story
      */
     private async generateSummary(model: string) {
@@ -505,15 +399,26 @@ DO NOT contradict the Logic Engine's result.`;
 
         const existingSummary = await this.db.select().from(schema.summary).limit(1);
 
-        const result = await streamText({
-            model: getLanguageModel(model),
-            system: "You are a story summarizer. Create a concise summary of the events that maintains important plot points, character developments, and key decisions.",
-            prompt: `${existingSummary.length ? `Previous summary:\n${existingSummary[0].content}\n\nNew events:\n` : ""}${allTurns.slice(-5).map(t => `Player: ${t.userMessage}\nGame Master: ${t.assistantResponse}`).join("\n\n")}
+        const recentEvents = allTurns.slice(-5).map(t =>
+            `Player: ${t.userMessage}\nGame Master: ${t.assistantResponse}`
+        ).join("\n\n");
 
-Provide an updated summary of the entire story so far (max 500 words).`,
+        const summaryPrompt = loadPrompt("summary", {
+            previousSummary: existingSummary.length ? existingSummary[0].content : undefined,
+            recentEvents,
         });
 
-        const summaryText = await result.text;
+        const summaryAgent = new ToolLoopAgent({
+            model,
+            instructions: summaryPrompt,
+            stopWhen: stepCountIs(1), // Summary is a single-shot
+        });
+
+        const result = await summaryAgent.generate({
+            prompt: "Provide an updated summary of the entire story so far (max 500 words).",
+        });
+
+        const summaryText = result.text;
 
         if (existingSummary.length) {
             await this.db.update(schema.summary)
@@ -531,10 +436,8 @@ Provide an updated summary of the entire story so far (max 500 words).`,
      * Rewind to a previous turn
      */
     async rewindToTurn(turnNumber: number) {
-        // Delete all turns after the specified turn
         await this.db.delete(schema.turns).where(gt(schema.turns.turnNumber, turnNumber));
 
-        // Restore character state from that turn's snapshot
         const turnRows = await this.db.select()
             .from(schema.turns)
             .where(eq(schema.turns.turnNumber, turnNumber))
@@ -614,18 +517,16 @@ Provide an updated summary of the entire story so far (max 500 words).`,
             prompt += `, Character appearance: ${characterDescription}`;
         }
 
-        // Use Workers AI Flux model for image generation
         const response = await this.env.AI.run(
             "@cf/black-forest-labs/flux-1-schnell",
             {
                 prompt,
                 width: 1024,
-                height: 576, // 16:9 cinematic aspect ratio
+                height: 576,
                 steps: 4,
             }
         );
 
-        // Convert response to ArrayBuffer
         let imageData: ArrayBuffer;
         if (response instanceof ReadableStream) {
             const reader = response.getReader();
@@ -656,7 +557,6 @@ Provide an updated summary of the entire story so far (max 500 words).`,
             throw new Error("Unexpected AI response format");
         }
 
-        // Upload to R2
         const key = `sessions/${sessionId}/turns/${turnNumber}/scene.png`;
         await this.env.IMAGES.put(key, imageData, {
             httpMetadata: { contentType: "image/png" },
@@ -665,4 +565,3 @@ Provide an updated summary of the entire story so far (max 500 words).`,
         return key;
     }
 }
-

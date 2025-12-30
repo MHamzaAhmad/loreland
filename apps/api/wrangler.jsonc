@@ -84,7 +84,8 @@
 		{
 			"type": "Text",
 			"globs": [
-				"**/*.sql"
+				"**/*.sql",
+				"**/*.md"
 			],
 			"fallthrough": true
 		}
