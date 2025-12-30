@@ -27,7 +27,7 @@
 		{
 			"binding": "DB",
 			"database_name": "loreland",
-			"database_id": "TODO_CREATE_WITH_WRANGLER_D1_CREATE",
+			"database_id": "784c37bf-a823-4dcf-8560-0ff5283e8a0b",
 			"migrations_dir": "../../packages/db/migrations/d1"
 		}
 	],
@@ -74,7 +74,7 @@
 	"kv_namespaces": [
 		{
 			"binding": "CACHE",
-			"id": "loreland-cache"
+			"id": "d2d68b3ef9e04482aa0963a234b3ef8f"
 		}
 	],
 	/**

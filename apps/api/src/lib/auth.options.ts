@@ -12,6 +12,7 @@ export type AuthDatabaseConfig = {
     db: any; // drizzle instance
     googleClientId?: string;
     googleClientSecret?: string;
+    secret: string;
 };
 
 /**
@@ -36,11 +37,12 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
             usePlural: true,
             schema
         }),
+        secret: config.secret,
 
         // Origins
         trustedOrigins: [
             "http://localhost:3000",
-            "https://loreland.vercel.app",
+            "https://web.hamzabuzz88.workers.dev",
         ],
 
         // Email + Password authentication

@@ -1,4 +1,4 @@
-export function getImageUrl(key: string | null | undefined, baseUrl: string = "http://localhost:8787"): string | undefined {
+export function getImageUrl(key: string | null | undefined, baseUrl: string = import.meta.env.VITE_API_URL || "http://localhost:8787"): string | undefined {
     if (!key) return undefined;
     if (key.startsWith("http")) return key;
 

@@ -12,6 +12,9 @@
 	"main": "@tanstack/react-start/server-entry",
 	"observability": {
 		"enabled": true
+	},
+	"vars": {
+		"VITE_API_URL": "https://api.hamzabuzz88.workers.dev"
 	}
 	/**
 	 * Smart Placement

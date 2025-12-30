@@ -9,6 +9,7 @@ type AuthEnv = {
     DB: D1Database;
     GOOGLE_CLIENT_ID?: string;
     GOOGLE_CLIENT_SECRET?: string;
+    BETTER_AUTH_SECRET: string;
 };
 
 /**
@@ -23,6 +24,7 @@ export function createAuth(env: AuthEnv) {
         db,
         googleClientId: env.GOOGLE_CLIENT_ID,
         googleClientSecret: env.GOOGLE_CLIENT_SECRET,
+        secret: env.BETTER_AUTH_SECRET,
     }));
 }
 

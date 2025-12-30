@@ -18,6 +18,7 @@ export type AppEnv = {
         PLAY_AGENT: DurableObjectNamespace<PlayAgent>;
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
+        BETTER_AUTH_SECRET: string;
     };
     Variables: {
         auth: Auth;

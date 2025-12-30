@@ -18,9 +18,9 @@ const queryClient = new QueryClient({
   },
 })
 
-// Create API client - uses relative URL for same-origin API
+// Create API client
 const apiClient = createApiClient({
-  baseUrl: import.meta.env.DEV ? 'http://localhost:8787' : '',
+  baseUrl: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8787' : ''),
 })
 
 export const Route = createRootRoute({

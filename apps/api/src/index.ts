@@ -22,7 +22,7 @@ app.use("*", injectDeps);
 app.use(
   "/api/*",
   cors({
-    origin: ["http://localhost:3000", "https://loreland.pages.dev"],
+    origin: ["http://localhost:3000", "https://web.hamzabuzz88.workers.dev"],
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],

@@ -7,7 +7,7 @@ import { anonymousClient } from "better-auth/client/plugins";
  * Includes anonymous plugin for guest login
  */
 export const authClient = createAuthClient({
-    baseURL: import.meta.env.DEV ? "http://localhost:8787" : undefined,
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:8787",
     plugins: [
         anonymousClient(),
     ],

@@ -16,7 +16,7 @@ function buildWebSocketUrl(relativePath: string): string {
         return `${protocol}//localhost:8787${relativePath}`;
     }
 
-    const apiHost = import.meta.env.VITE_API_HOST || window.location.host;
+    const apiHost = import.meta.env.VITE_API_URL || window.location.host;
     return `${protocol}//${apiHost}${relativePath}`;
 }
 
