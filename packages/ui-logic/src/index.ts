@@ -12,6 +12,7 @@ export {
     useCreateGame,
     useUpdateGame,
     useDeleteGame,
+    useForkGame,
     useSearchGames,
     useGenerateGame,
     useGenerationStatus,

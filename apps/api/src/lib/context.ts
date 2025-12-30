@@ -2,6 +2,7 @@ import { createMiddleware } from "hono/factory";
 import { createAuth, type Auth } from "../auth";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import type { PlayAgent } from "../agents/play-agent";
+import * as schema from "@packages/db/schema/d1";
 
 /**
  * Application environment types for Hono
@@ -20,7 +21,7 @@ export type AppEnv = {
     };
     Variables: {
         auth: Auth;
-        db: DrizzleD1Database;
+        db: DrizzleD1Database<typeof schema>;
         user: Auth["$Infer"]["Session"]["user"] | null;
         session: Auth["$Infer"]["Session"]["session"] | null;
     };
@@ -34,7 +35,7 @@ export type AppEnv = {
  *   // Then access via c.get("auth") and c.get("db")
  */
 export const injectDeps = createMiddleware<AppEnv>(async (c, next) => {
-    const db = drizzle(c.env.DB);
+    const db = drizzle(c.env.DB, { schema });
     const auth = createAuth(c.env);
 
     c.set("db", db);

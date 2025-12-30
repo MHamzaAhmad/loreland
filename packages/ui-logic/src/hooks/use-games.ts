@@ -15,12 +15,15 @@ export const gameKeys = {
 };
 
 /**
- * Hook to list games for current user
+ * Hook to list games with advanced filtering
  */
 export function useGames(options?: {
     limit?: number;
     offset?: number;
     favorite?: boolean;
+    search?: string;
+    public?: boolean;
+    ids?: string[];
     enabled?: boolean;
 }) {
     const api = useApiClient();
@@ -63,6 +66,22 @@ export function useCreateGame() {
 }
 
 /**
+ * Hook to fork an existing game
+ */
+export function useForkGame() {
+    const api = useApiClient();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: string) => api.games.fork(id),
+        onSuccess: () => {
+            // Invalidate games lists to show new forked game
+            queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+        }
+    });
+}
+
+/**
  * Hook to update a game
  */
 export function useUpdateGame() {
@@ -99,6 +118,7 @@ export function useDeleteGame() {
 
 /**
  * Hook to search games semantically
+ * @deprecated Use useGames with search param instead
  */
 export function useSearchGames(query: string, options?: {
     limit?: number;

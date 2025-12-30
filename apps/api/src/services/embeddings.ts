@@ -54,6 +54,7 @@ export class EmbeddingsService {
         userId: string;
         title: string;
         description: string;
+        isPublic: boolean;
         background?: string;
         objective?: string;
     }): Promise<void> {
@@ -67,6 +68,7 @@ export class EmbeddingsService {
                 metadata: {
                     userId: game.userId,
                     title: game.title,
+                    isPublic: game.isPublic ? "true" : "false", // Vectorize metadata strings
                 },
             },
         ]);
@@ -88,17 +90,40 @@ export class EmbeddingsService {
         query: string,
         options?: {
             userId?: string;
+            isPublic?: boolean;
             limit?: number;
         }
     ): Promise<Array<{ id: string; score: number; title?: string }>> {
         const embedding = await this.generateEmbedding(query);
+        const limit = options?.limit ?? 20;
 
-        const filter: VectorizeVectorMetadataFilter | undefined = options?.userId
-            ? { userId: { $eq: options.userId } }
-            : undefined;
+        // Build filter based on options
+        // Note: cloudflare vectorize filters are strict.
+        // We want (userId == current) OR (isPublic == true)
+        // Unfortunately OR isn't always simple in vector DBs, but Cloudflare supports it.
+
+        let filter: VectorizeVectorMetadataFilter | undefined;
+
+        if (options?.userId && options?.isPublic) {
+            // Search own OR public
+            // Not natively supported in single query easily if we want "mine OR public" without complex boolean logic
+            // Cloudflare Vectorize supports $or
+            filter = {
+                $or: [
+                    { userId: { $eq: options.userId } },
+                    { isPublic: { $eq: "true" } }
+                ] as any // Cast to satisfy strict union type of VectorizeVectorMetadataFilter
+            };
+        } else if (options?.userId) {
+            // Only mine
+            filter = { userId: { $eq: options.userId } };
+        } else if (options?.isPublic) {
+            // Only public
+            filter = { isPublic: { $eq: "true" } };
+        }
 
         const results = await this.vectorize.query(embedding, {
-            topK: options?.limit ?? 10,
+            topK: limit,
             filter,
             returnMetadata: "all",
         });

@@ -1,0 +1,53 @@
+PRAGMA foreign_keys=OFF;--> statement-breakpoint
+CREATE TABLE `__new_games` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`title` text NOT NULL,
+	`description` text NOT NULL,
+	`background` text NOT NULL,
+	`instructions` text NOT NULL,
+	`objective` text NOT NULL,
+	`author_style` text,
+	`recommended_ai_model` text,
+	`first_input` text,
+	`version` text DEFAULT '1.0',
+	`favorite` integer DEFAULT false,
+	`design_notes` text,
+	`image_model` text,
+	`image_style` text,
+	`illustration_style_non_char_low` text,
+	`illustration_style_non_char_high` text,
+	`illustration_style_char_low` text,
+	`illustration_style_char_high` text,
+	`image_style_char_pre` text,
+	`image_style_char_post` text,
+	`image_style_non_char_pre` text,
+	`image_style_non_char_post` text,
+	`preview_image` text,
+	`full_size_preview_image` text,
+	`preview_image_options` text DEFAULT '[]',
+	`current_preview_image_index` integer DEFAULT 0,
+	`image_prompt_details` text,
+	`nsfw` integer DEFAULT false,
+	`content_warnings` text,
+	`description_request` text,
+	`summary_request` text,
+	`enable_ai_specific_instruction_blocks` integer DEFAULT false,
+	`auto_advance_version` integer DEFAULT true,
+	`allow_change_character_name` integer DEFAULT true,
+	`allow_change_character_description` integer DEFAULT true,
+	`allow_change_character_skills` integer DEFAULT true,
+	`allow_change_character_item_values` integer DEFAULT false,
+	`allow_change_character_portrait` integer DEFAULT false,
+	`allow_change_character_new_portrait` integer DEFAULT true,
+	`public` integer DEFAULT false,
+	`editable` integer DEFAULT true,
+	`source_game_id` text,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+INSERT INTO `__new_games`("id", "user_id", "title", "description", "background", "instructions", "objective", "author_style", "recommended_ai_model", "first_input", "version", "favorite", "design_notes", "image_model", "image_style", "illustration_style_non_char_low", "illustration_style_non_char_high", "illustration_style_char_low", "illustration_style_char_high", "image_style_char_pre", "image_style_char_post", "image_style_non_char_pre", "image_style_non_char_post", "preview_image", "full_size_preview_image", "preview_image_options", "current_preview_image_index", "image_prompt_details", "nsfw", "content_warnings", "description_request", "summary_request", "enable_ai_specific_instruction_blocks", "auto_advance_version", "allow_change_character_name", "allow_change_character_description", "allow_change_character_skills", "allow_change_character_item_values", "allow_change_character_portrait", "allow_change_character_new_portrait", "public", "editable", "source_game_id", "created_at", "updated_at") SELECT "id", "user_id", "title", "description", "background", "instructions", "objective", "author_style", "recommended_ai_model", "first_input", "version", "favorite", "design_notes", "image_model", "image_style", "illustration_style_non_char_low", "illustration_style_non_char_high", "illustration_style_char_low", "illustration_style_char_high", "image_style_char_pre", "image_style_char_post", "image_style_non_char_pre", "image_style_non_char_post", "preview_image", "full_size_preview_image", "preview_image_options", "current_preview_image_index", "image_prompt_details", "nsfw", "content_warnings", "description_request", "summary_request", "enable_ai_specific_instruction_blocks", "auto_advance_version", "allow_change_character_name", "allow_change_character_description", "allow_change_character_skills", "allow_change_character_item_values", "allow_change_character_portrait", "allow_change_character_new_portrait", "public", "editable", "source_game_id", "created_at", "updated_at" FROM `games`;--> statement-breakpoint
+DROP TABLE `games`;--> statement-breakpoint
+ALTER TABLE `__new_games` RENAME TO `games`;--> statement-breakpoint
+PRAGMA foreign_keys=ON;

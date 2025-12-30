@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useGames, useSearchGames } from '@packages/ui-logic'
+import { useGames } from '@packages/ui-logic'
 import { Plus } from 'lucide-react'
 import { Button } from '../components/ui/8bit/button'
 import { GameCard } from '../components/GameCard'
 import { SearchBar } from '../components/SearchBar'
+import { Pagination } from '../components/common/Pagination'
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -12,17 +13,28 @@ export const Route = createFileRoute('/')({
 
 function Home() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const LIMIT = 12
 
-  // Use search if query exists, otherwise list all
-  const gamesQuery = useGames({ enabled: !searchQuery })
-  const searchResults = useSearchGames(searchQuery, { enabled: !!searchQuery })
+  const gamesQuery = useGames({
+    search: searchQuery,
+    public: true, // Show public games on home
+    limit: LIMIT,
+    offset: (page - 1) * LIMIT
+  })
 
-  const games = searchQuery
-    ? searchResults.data?.results ?? []
-    : gamesQuery.data?.games ?? []
+  // Reset page when search changes
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    setPage(1)
+  }
 
-  const isLoading = searchQuery ? searchResults.isLoading : gamesQuery.isLoading
-  const error = searchQuery ? searchResults.error : gamesQuery.error
+  const games = gamesQuery.data?.games ?? []
+  const totalCount = gamesQuery.data?.pagination?.count ?? 0
+  const totalPages = Math.ceil(totalCount / LIMIT)
+
+  const isLoading = gamesQuery.isLoading
+  const error = gamesQuery.error
 
   return (
     <div className="min-h-screen p-4 md:p-8 relative">
@@ -31,7 +43,7 @@ function Home() {
       {/* Actions */}
       <div className="max-w-4xl mx-auto mb-16 flex flex-col md:flex-row gap-8 items-stretch md:items-center relative z-10">
         <div className="flex-1">
-          <SearchBar onSearch={setSearchQuery} />
+          <SearchBar onSearch={handleSearch} />
         </div>
         <Link to="/games/new">
           <Button variant="default" className="w-full md:w-auto shadow-[var(--hud-glow)] group/init">
@@ -81,11 +93,20 @@ function Home() {
         )}
 
         {games.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            {games.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+              {games.map((game) => (
+                <GameCard key={game.id} game={game} />
+              ))}
+            </div>
+
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              className="mt-8"
+            />
+          </>
         )}
       </main>
     </div>

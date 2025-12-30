@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useGame, useDeleteGame, getImageUrl } from '@packages/ui-logic'
-import { ArrowLeft, Trash2, UserCircle, Play, Globe, MapPin, Target } from 'lucide-react'
+import { useGame, useDeleteGame, getImageUrl, useUser, useForkGame } from '@packages/ui-logic'
+import { ArrowLeft, Trash2, UserCircle, Play, Globe, MapPin, Target, Edit, GitFork } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
 import { soundService } from '../../../lib/sounds'
 
@@ -15,13 +15,27 @@ function GameDetail() {
     const deleteMutation = useDeleteGame()
 
     const game = gameQuery.data?.game
-    const previewUrl = game ? getImageUrl(game.previewImage) : undefined;
+    const previewUrl = game ? getImageUrl(game.previewImage) : undefined;;
+    const { data: userData } = useUser();
+    const user = userData?.user;
+    const isOwner = user?.id === game?.userId;
+    const forkGame = useForkGame();
 
     const handleDelete = async () => {
         if (!confirm('WARNING: PERMANENT DATA PURGE. Are you sure you want to delete this simulation?')) return
 
         await deleteMutation.mutateAsync(id)
         navigate({ to: '/' })
+    }
+
+    const handleFork = () => {
+        if (!game) return;
+        soundService.play('click');
+        forkGame.mutate(game.id, {
+            onSuccess: (response) => {
+                navigate({ to: '/games/$id', params: { id: response.game.id } });
+            }
+        });
     }
 
     if (gameQuery.isLoading) {
@@ -109,17 +123,45 @@ function GameDetail() {
                                 </button>
                             </Link>
 
-                            <button
-                                onClick={() => {
-                                    soundService.play('click');
-                                    handleDelete();
-                                }}
-                                disabled={deleteMutation.isPending}
-                                className="w-full px-4 py-3 bg-red-950/20 hover:bg-red-950/40 border border-red-500/30 hover:border-red-500/60 text-red-500/80 hover:text-red-400 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                <span>Purge_Archives</span>
-                            </button>
+                            {/* Owner Actions */}
+                            {isOwner && (
+                                <>
+                                    <Link to="/games/$id/edit" params={{ id: game.id }} className="block" onClick={() => soundService.play('click')}>
+                                        <button className="w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/30 hover:border-primary/60 text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all">
+                                            <Edit className="w-4 h-4" />
+                                            <span>MODIFY_PARAMETERS</span>
+                                        </button>
+                                    </Link>
+
+                                    <button
+                                        onClick={() => {
+                                            soundService.play('click');
+                                            handleDelete();
+                                        }}
+                                        disabled={deleteMutation.isPending}
+                                        className="w-full px-4 py-3 bg-red-950/20 hover:bg-red-950/40 border border-red-500/30 hover:border-red-500/60 text-red-500/80 hover:text-red-400 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        <span>Purge_Archives</span>
+                                    </button>
+                                </>
+                            )}
+
+                            {/* Fork Action for Public Games (Non-Owners) */}
+                            {!isOwner && game.public && (
+                                <button
+                                    onClick={handleFork}
+                                    disabled={forkGame.isPending}
+                                    className="w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/30 hover:border-primary/60 text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                                >
+                                    {forkGame.isPending ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <GitFork className="w-4 h-4" />
+                                    )}
+                                    <span>FORK_SIMULATION</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 

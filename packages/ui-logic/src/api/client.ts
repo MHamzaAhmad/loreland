@@ -77,14 +77,36 @@ export function createApiClient(options: ApiClientOptions) {
             /**
              * List games for current user
              */
-            list: (params?: { limit?: number; offset?: number; favorite?: boolean }) => {
+            /**
+             * List games
+             */
+            list: (params?: {
+                limit?: number;
+                offset?: number;
+                favorite?: boolean;
+                search?: string;
+                public?: boolean;
+                ids?: string[];
+            }) => {
                 const searchParams = new URLSearchParams();
                 if (params?.limit) searchParams.set("limit", String(params.limit));
                 if (params?.offset) searchParams.set("offset", String(params.offset));
                 if (params?.favorite !== undefined) searchParams.set("favorite", String(params.favorite));
+                if (params?.search) searchParams.set("search", params.search);
+                if (params?.public !== undefined) searchParams.set("public", String(params.public));
+                if (params?.ids) searchParams.set("ids", params.ids.join(","));
 
                 const query = searchParams.toString();
                 return request<GamesListResponse>(`/api/games${query ? `?${query}` : ""}`);
+            },
+
+            /**
+             * Fork a game
+             */
+            fork: (id: string) => {
+                return request<{ game: Game }>(`/api/games/${id}/fork`, {
+                    method: "POST"
+                });
             },
 
             /**
@@ -156,8 +178,13 @@ export function createApiClient(options: ApiClientOptions) {
             /**
              * List active sessions for a game
              */
-            listSessions: (gameId: string) => {
-                return request<{ sessions: { id: string; createdAt: number }[] }>(`/api/games/${gameId}/sessions`);
+            listSessions: (gameId: string, params?: { limit?: number; offset?: number }) => {
+                const searchParams = new URLSearchParams();
+                if (params?.limit) searchParams.set("limit", String(params.limit));
+                if (params?.offset) searchParams.set("offset", String(params.offset));
+
+                const query = searchParams.toString();
+                return request<{ sessions: { id: string; createdAt: number }[]; pagination?: { limit: number; offset: number; count: number } }>(`/api/games/${gameId}/sessions${query ? `?${query}` : ""}`);
             },
 
             /**

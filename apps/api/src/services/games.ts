@@ -1,34 +1,163 @@
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and, inArray, or, sql } from "drizzle-orm";
 import { games, gameSkills, gameConditions, characters, npcs, lorebookEntries, trackedItems, triggerEvents } from "@packages/db/schema/d1";
+import * as schema from "@packages/db/schema/d1";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import type { CreateGameInput, UpdateGameInput, ListGamesQuery } from "../lib/schemas";
+import type { SQLWrapper } from "drizzle-orm";
 
 export class GamesService {
-    constructor(private db: DrizzleD1Database) { }
+    constructor(private db: DrizzleD1Database<typeof schema>) { }
 
     /**
      * List games for a user with pagination
      */
-    async list(userId: string, query: ListGamesQuery) {
-        const conditions = [eq(games.userId, userId)];
+    async list(options: {
+        userId?: string;
+        isPublic?: boolean;
+        ids?: string[];
+        limit?: number;
+        offset?: number;
+        favorite?: boolean;
+    }) {
+        const conditions: any[] = []; // Using any to avoid complex SQL type issues with array spread
 
-        if (query.favorite !== undefined) {
-            conditions.push(eq(games.favorite, query.favorite));
+        if (options.ids) {
+            if (options.ids.length === 0) return [];
+            conditions.push(inArray(games.id, options.ids));
         }
 
-        const results = await this.db
+        if (options.userId && options.isPublic) {
+            // Show my games OR public games
+            conditions.push(sql`(${games.userId} = ${options.userId} OR ${games.public} = 1)`);
+        } else if (options.userId) {
+            conditions.push(eq(games.userId, options.userId));
+        } else if (options.isPublic) {
+            conditions.push(eq(games.public, true));
+        }
+
+        if (options.favorite !== undefined) {
+            conditions.push(eq(games.favorite, options.favorite));
+        }
+
+        return await this.db
             .select()
             .from(games)
             .where(and(...conditions))
             .orderBy(desc(games.createdAt))
-            .limit(query.limit)
-            .offset(query.offset);
-
-        return results;
+            .limit(options.limit ?? 20)
+            .offset(options.offset ?? 0);
     }
 
     /**
-     * Get a single game by ID with authorization check
+     * Fork a game
+     */
+    async fork(originalGameId: string, newUserId: string) {
+        // 1. Get original game
+        const [original] = await this.db
+            .select()
+            .from(games)
+            .where(eq(games.id, originalGameId))
+            .limit(1);
+
+        if (!original) return null;
+
+        // Check if forkable (public or owned by user)
+        if (!original.public && original.userId !== newUserId) {
+            return null; // Cannot fork private game of another user
+        }
+
+        // Fetch children
+        const [chars, npcList, lore, items, triggers] = await Promise.all([
+            this.db.select().from(characters).where(eq(characters.gameId, originalGameId)),
+            this.db.select().from(npcs).where(eq(npcs.gameId, originalGameId)),
+            this.db.select().from(lorebookEntries).where(eq(lorebookEntries.gameId, originalGameId)),
+            this.db.select().from(trackedItems).where(eq(trackedItems.gameId, originalGameId)),
+            this.db.select().from(triggerEvents).where(eq(triggerEvents.gameId, originalGameId)),
+        ]);
+
+        // 2. Create new game
+        const [newGame] = await this.db.insert(games).values({
+            userId: newUserId,
+            title: `${original.title} (Fork)`,
+            description: original.description,
+            background: original.background,
+            instructions: original.instructions,
+            objective: original.objective,
+            authorStyle: original.authorStyle,
+            designNotes: original.designNotes,
+            nsfw: original.nsfw,
+            contentWarnings: original.contentWarnings,
+            sourceGameId: original.id,
+            // Copy visual settings
+            imageModel: original.imageModel,
+            imageStyle: original.imageStyle,
+            previewImage: original.previewImage,
+            fullSizePreviewImage: original.fullSizePreviewImage,
+        }).returning();
+
+        // 3. Copy children
+        // Characters
+        if (chars.length > 0) {
+            await this.db.insert(characters).values(
+                chars.map((c: typeof characters.$inferSelect) => ({
+                    ...c,
+                    id: crypto.randomUUID(),
+                    gameId: newGame.id,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                }))
+            );
+        }
+
+        // NPCs
+        if (npcList.length > 0) {
+            await this.db.insert(npcs).values(
+                npcList.map((n: typeof npcs.$inferSelect) => ({
+                    ...n,
+                    id: crypto.randomUUID(),
+                    gameId: newGame.id,
+                }))
+            );
+        }
+
+        // Lore
+        if (lore.length > 0) {
+            await this.db.insert(lorebookEntries).values(
+                lore.map((l: typeof lorebookEntries.$inferSelect) => ({
+                    ...l,
+                    id: crypto.randomUUID(),
+                    gameId: newGame.id,
+                }))
+            );
+        }
+
+        // Items
+        if (items.length > 0) {
+            await this.db.insert(trackedItems).values(
+                items.map((i: typeof trackedItems.$inferSelect) => ({
+                    ...i,
+                    id: crypto.randomUUID(),
+                    gameId: newGame.id,
+                }))
+            );
+        }
+
+        // Triggers
+        if (triggers.length > 0) {
+            await this.db.insert(triggerEvents).values(
+                triggers.map((t: typeof triggerEvents.$inferSelect) => ({
+                    ...t,
+                    id: crypto.randomUUID(),
+                    gameId: newGame.id,
+                }))
+            );
+        }
+
+        return newGame;
+    }
+
+    /**
+     * Get a single game by ID with strict ownership check
      */
     async get(id: string, userId: string) {
         const [game] = await this.db
@@ -41,10 +170,29 @@ export class GamesService {
     }
 
     /**
+     * Get a single game by ID if owned OR public
+     */
+    async getPublicOrOwned(id: string, userId: string) {
+        const [game] = await this.db
+            .select()
+            .from(games)
+            .where(and(
+                eq(games.id, id),
+                or(eq(games.userId, userId), eq(games.public, true))
+            ))
+            .limit(1);
+
+        return game ?? null;
+    }
+
+    /**
      * Get full game with related data (skills, conditions)
      */
-    async getFull(id: string, userId: string) {
-        const game = await this.get(id, userId);
+    async getFull(id: string, userId: string, includePublic: boolean = false) {
+        const game = includePublic
+            ? await this.getPublicOrOwned(id, userId)
+            : await this.get(id, userId);
+
         if (!game) return null;
 
         const [skills, conditions, chars, npcList, lore, items, triggers] = await Promise.all([

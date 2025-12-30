@@ -4,6 +4,8 @@ import { useApiClient } from "@packages/ui-logic";
 import { Loader2, Plus, Clock, Play, LogOut } from "lucide-react";
 import type { SessionSummary } from "@packages/ui-logic";
 import { soundService } from "../../../../lib/sounds";
+import { useState } from "react";
+import { Pagination } from "../../../../components/common/Pagination";
 
 export const Route = createFileRoute("/games/$id/play/")({
     component: SessionListScreen,
@@ -12,12 +14,14 @@ export const Route = createFileRoute("/games/$id/play/")({
 function SessionListScreen() {
     const { id: gameId } = Route.useParams();
     const api = useApiClient();
+    const [page, setPage] = useState(1);
+    const LIMIT = 10;
 
     const sessionsQuery = useQuery({
-        queryKey: ["play", "sessions", gameId],
+        queryKey: ["play", "sessions", gameId, page],
         queryFn: async () => {
-            const res = await api.play.listSessions(gameId);
-            return (res.sessions as unknown as SessionSummary[]) || [];
+            const res = await api.play.listSessions(gameId, { limit: LIMIT, offset: (page - 1) * LIMIT });
+            return res;
         },
     });
 
@@ -42,7 +46,9 @@ function SessionListScreen() {
         );
     }
 
-    const sessions = sessionsQuery.data || [];
+    const sessions = (sessionsQuery.data?.sessions as unknown as SessionSummary[]) || [];
+    const totalCount = sessionsQuery.data?.pagination?.count ?? 0;
+    const totalPages = Math.ceil(totalCount / LIMIT);
 
     return (
         <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
@@ -71,7 +77,7 @@ function SessionListScreen() {
                 <div className="space-y-4">
                     <div className="flex justify-between items-center text-xs font-mono text-primary/50 uppercase tracking-wider px-2">
                         <span>Available Sessions</span>
-                        <span>{sessions.length} Records Found</span>
+                        <span>{Math.max(sessions.length, totalCount)} Records Found</span>
                     </div>
 
                     <div className="grid gap-3">
@@ -135,6 +141,12 @@ function SessionListScreen() {
                                 [NO_ACTIVE_SESSIONS_DETECTED]
                             </div>
                         )}
+
+                        <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={setPage}
+                        />
                     </div>
                 </div>
             </div>

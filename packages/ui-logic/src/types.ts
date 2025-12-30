@@ -15,6 +15,7 @@ export interface Game {
     fullSizePreviewImage: string | null;
     imageStyle: string | null;
     nsfw: boolean;
+    public: boolean;
     createdAt: string;
     updatedAt: string;
 }

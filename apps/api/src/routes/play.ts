@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { listSessionsQuerySchema } from "../lib/schemas";
 import { eq, and, desc } from "drizzle-orm";
 import { playSessions } from "@packages/db/schema/d1";
 import type { AppEnv } from "../lib/context";
@@ -10,9 +12,10 @@ export const playRouter = new Hono<AppEnv>();
  * GET /api/games/:gameId/sessions
  * List all play sessions for a game
  */
-playRouter.get("/:gameId/sessions", async (c) => {
+playRouter.get("/:gameId/sessions", zValidator("query", listSessionsQuerySchema), async (c) => {
     const { gameId } = c.req.param();
     const user = c.get("user");
+    const query = c.req.valid("query");
 
     if (!user) {
         return c.json({ error: "Unauthorized" }, 401);
@@ -23,9 +26,18 @@ playRouter.get("/:gameId/sessions", async (c) => {
         .select()
         .from(playSessions)
         .where(and(eq(playSessions.gameId, gameId), eq(playSessions.userId, user.id)))
-        .orderBy(desc(playSessions.lastPlayedAt));
+        .orderBy(desc(playSessions.lastPlayedAt))
+        .limit(query.limit)
+        .offset(query.offset);
 
-    return c.json({ sessions });
+    return c.json({
+        sessions,
+        pagination: {
+            limit: query.limit,
+            offset: query.offset,
+            count: sessions.length
+        }
+    });
 });
 
 /**

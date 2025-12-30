@@ -141,15 +141,31 @@ export type GenerateGameInput = z.infer<typeof generateGameSchema>;
 // ============================================================================
 
 /**
- * Schema for list games query params
+ * Common pagination queries
  */
-export const listGamesQuerySchema = z.object({
+export const paginationQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).optional().default(20),
     offset: z.coerce.number().int().min(0).optional().default(0),
+});
+
+/**
+ * Schema for list games query params
+ */
+export const listGamesQuerySchema = paginationQuerySchema.extend({
     favorite: z.enum(["true", "false"]).optional().transform(v => v === "true"),
+    search: z.string().optional(),
+    public: z.enum(["true", "false"]).optional().transform(v => v === "true"),
+    private: z.enum(["true", "false"]).optional().transform(v => v === "true"),
 });
 
 export type ListGamesQuery = z.infer<typeof listGamesQuerySchema>;
+
+/**
+ * Schema for list sessions query params
+ */
+export const listSessionsQuerySchema = paginationQuerySchema.extend({});
+
+export type ListSessionsQuery = z.infer<typeof listSessionsQuerySchema>;
 
 // ============================================================================
 // Workflow Types

@@ -53,8 +53,9 @@ export const games = sqliteTable("games", {
     allowChangeCharacterItemValues: integer("allow_change_character_item_values", { mode: "boolean" }).default(false),
     allowChangeCharacterPortrait: integer("allow_change_character_portrait", { mode: "boolean" }).default(false),
     allowChangeCharacterNewPortrait: integer("allow_change_character_new_portrait", { mode: "boolean" }).default(true),
-    sharingPermission: integer("sharing_permission", { mode: "boolean" }).default(true),
-    editingPermission: integer("editing_permission", { mode: "boolean" }).default(true),
+    public: integer("public", { mode: "boolean" }).default(false),
+    editable: integer("editable", { mode: "boolean" }).default(true),
+    sourceGameId: text("source_game_id"),
 
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
