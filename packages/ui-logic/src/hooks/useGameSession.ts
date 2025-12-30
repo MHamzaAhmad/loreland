@@ -28,6 +28,9 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     // History handling
     const [history, setHistory] = useState<{ turnNumber: number; summary: string }[]>([]);
 
+    // Track which turns have images loading
+    const [imageLoadingTurns, setImageLoadingTurns] = useState<Set<number>>(new Set());
+
     // Use refs for callbacks to avoid re-connecting when they change
     const callbacksRef = useRef({ onConnect, onDisconnect, onError });
     useEffect(() => {
@@ -86,6 +89,37 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 setIsTyping(false);
                 console.error("Game Session Error:", response.message);
                 callbacksRef.current.onError?.(response.message);
+                break;
+
+            case "turn_image_generating":
+                // Mark this turn as loading an image
+                setImageLoadingTurns(prev => new Set(prev).add(response.turnNumber));
+                break;
+
+            case "turn_image_ready":
+                // Update the scene image and remove from loading set
+                setImageLoadingTurns(prev => {
+                    const next = new Set(prev);
+                    next.delete(response.turnNumber);
+                    return next;
+                });
+                // Update current turn data if this is the current turn
+                setCurrentTurnData(prev => {
+                    if (prev && prev.turnNumber === response.turnNumber) {
+                        return { ...prev, sceneImageKey: response.sceneImageKey };
+                    }
+                    return prev;
+                });
+                break;
+
+            case "turn_image_error":
+                // Remove from loading set on error
+                setImageLoadingTurns(prev => {
+                    const next = new Set(prev);
+                    next.delete(response.turnNumber);
+                    return next;
+                });
+                console.warn("Image generation failed for turn", response.turnNumber, response.error);
                 break;
         }
     }, []);
@@ -158,6 +192,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
         suggestedActions,
         history,
         sendTurn,
-        rewindToTurn
+        rewindToTurn,
+        isImageLoading: currentTurnData ? imageLoadingTurns.has(currentTurnData.turnNumber) : false,
     };
 }

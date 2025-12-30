@@ -24,10 +24,13 @@ export type WebSocketMessage =
     | { type: "get_turns" };
 
 export type WebSocketResponse =
-    | { type: "response"; text: string; suggestedActions: string[]; characterState: CharacterStateSnapshot; turnNumber: number; sceneImageKey?: string }
+    | { type: "response"; text: string; suggestedActions: string[]; characterState: CharacterStateSnapshot; turnNumber: number; sceneImageKey?: string; gameStatus?: "continue" | "victory" | "defeat"; outcome?: string }
     | { type: "state"; currentTurn: number; characterState: CharacterStateSnapshot | null; recentTurns: Turn[]; model?: string }
     | { type: "turns"; turns: Turn[] }
-    | { type: "error"; message: string };
+    | { type: "error"; message: string }
+    | { type: "turn_image_generating"; turnNumber: number }
+    | { type: "turn_image_ready"; turnNumber: number; sceneImageKey: string }
+    | { type: "turn_image_error"; turnNumber: number; error: string };
 
 export type GameClientConfig = {
     url: string;

@@ -9,30 +9,24 @@
  */
 
 // Import prompts as raw text (bundled at build time)
-import openingAnalysisPrompt from "./prompts/opening-analysis.md";
-import openingNarrativePrompt from "./prompts/opening-narrative.md";
-import turnAnalysisPrompt from "./prompts/turn-analysis.md";
-import turnNarrativePrompt from "./prompts/turn-narrative.md";
+import openingPrompt from "./prompts/opening.md";
+import gameMasterPrompt from "./prompts/game-master.md";
 import summaryPrompt from "./prompts/summary.md";
 
 /**
  * Available prompt names
  */
 export type PromptName =
-    | "opening-analysis"
-    | "opening-narrative"
-    | "turn-analysis"
-    | "turn-narrative"
+    | "opening"
+    | "game-master"
     | "summary";
 
 /**
  * Prompt templates map
  */
 const PROMPTS: Record<PromptName, string> = {
-    "opening-analysis": openingAnalysisPrompt,
-    "opening-narrative": openingNarrativePrompt,
-    "turn-analysis": turnAnalysisPrompt,
-    "turn-narrative": turnNarrativePrompt,
+    "opening": openingPrompt,
+    "game-master": gameMasterPrompt,
     "summary": summaryPrompt,
 };
 
@@ -73,7 +67,7 @@ function interpolate(template: string, context: Record<string, unknown>): string
  * @returns The rendered prompt string
  * 
  * @example
- * const prompt = loadPrompt("opening-analysis", {
+ * const prompt = loadPrompt("game-master", {
  *     gameTitle: "My Game",
  *     background: "A dark forest...",
  *     objective: "Find the treasure",
@@ -91,4 +85,3 @@ export function loadPrompt(
     }
     return interpolate(template, context);
 }
-
