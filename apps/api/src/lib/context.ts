@@ -3,6 +3,7 @@ import { createAuth, type Auth } from "../auth";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 import type { PlayAgent } from "../agents/play-agent";
 import * as schema from "@packages/db/schema/d1";
+import type { GenerationStatusAgent } from "../agents/generation-status-agent";
 
 /**
  * Application environment types for Hono
@@ -16,6 +17,7 @@ export type AppEnv = {
         VECTORIZE: VectorizeIndex;
         CACHE: KVNamespace;
         PLAY_AGENT: DurableObjectNamespace<PlayAgent>;
+        GENERATION_STATUS: DurableObjectNamespace<GenerationStatusAgent>;
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
         BETTER_AUTH_SECRET: string;

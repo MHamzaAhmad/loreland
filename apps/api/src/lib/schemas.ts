@@ -184,6 +184,7 @@ export interface GameGenerationParams {
         generateCharacterPortraits: boolean;
         imageStyle: string;
     };
+    instanceId: string;
 }
 
 /**

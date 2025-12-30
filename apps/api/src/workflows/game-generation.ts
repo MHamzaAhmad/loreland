@@ -16,6 +16,7 @@ import {
     aiNpcSchema,
 } from "../lib/schemas";
 import { getLanguageModel, type AIEnv } from "../lib/ai-config";
+import type { GenerationStatusAgent } from "../agents/generation-status-agent";
 
 // Workflow bindings type
 type Env = AIEnv & {
@@ -23,6 +24,7 @@ type Env = AIEnv & {
     IMAGES: R2Bucket;
     AI: Ai;
     VECTORIZE: VectorizeIndex;
+    GENERATION_STATUS: DurableObjectNamespace<GenerationStatusAgent>;
 };
 
 /**
@@ -41,7 +43,7 @@ type Env = AIEnv & {
  */
 export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerationParams> {
     async run(event: WorkflowEvent<GameGenerationParams>, step: WorkflowStep) {
-        const { userId, prompt, options } = event.payload;
+        const { userId, prompt, options, instanceId } = event.payload;
         const db = drizzle(this.env.DB);
         const gamesService = new GamesService(db);
         const imagesService = new ImagesService(this.env.AI, this.env.IMAGES);
@@ -57,8 +59,17 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
         const aiService = new AIService(model);
 
         // Step 1: Validate and create initial game record
+        // Step 1: Validate and create initial game record
         const gameRecord = await step.do("validate-and-init", async () => {
             const game = await gamesService.createPending(userId, prompt);
+
+            await this.updateStatus(instanceId, {
+                currentStep: "validate-and-init",
+                stepsCompleted: 1,
+                message: "Game record created, generating content...",
+                gameId: game.id,
+            });
+
             return {
                 gameId: game.id,
                 currentStep: "validate-and-init",
@@ -77,12 +88,15 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 prompt: `Create a game based on this prompt: ${prompt}`,
             });
 
-            return {
-                ...gameMetadata,
-                currentStep: "generate-metadata",
-                stepsCompleted: 2,
-                message: `Game "${gameMetadata.title}" concept created`,
-            };
+            const metadata = { ...gameMetadata, currentStep: "generate-metadata", stepsCompleted: 2, message: `Game "${gameMetadata.title}" concept created` };
+
+            await this.updateStatus(instanceId, {
+                currentStep: metadata.currentStep,
+                stepsCompleted: metadata.stepsCompleted,
+                message: metadata.message,
+            });
+
+            return metadata;
         });
 
         // Step 3: Generate characters
@@ -92,6 +106,12 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 count: options.characterCount,
                 systemPrompt: "You are a creative character designer. Generate diverse and interesting playable characters. Ensure all descriptions are family-friendly and safe for work.",
                 prompt: `Create characters for a game titled "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
+            });
+
+            await this.updateStatus(instanceId, {
+                currentStep: "generate-characters",
+                stepsCompleted: 3,
+                message: `Generated ${characters.length} characters`,
             });
 
             return {
@@ -120,6 +140,12 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 prompt: `Create NPCs for "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
             });
 
+            await this.updateStatus(instanceId, {
+                currentStep: "generate-npcs",
+                stepsCompleted: 4,
+                message: `Generated ${npcs.length} NPCs`,
+            });
+
             return {
                 npcs,
                 currentStep: "generate-npcs",
@@ -146,6 +172,12 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 metadata.description,
                 options.imageStyle
             );
+
+            await this.updateStatus(instanceId, {
+                currentStep: "generate-preview-image",
+                stepsCompleted: 5,
+                message: "Generated game preview image",
+            });
 
             return {
                 previewKey: key,
@@ -191,6 +223,12 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
 
                 portraits.push({ characterIndex: i, key, fullSizeKey });
             }
+
+            await this.updateStatus(instanceId, {
+                currentStep: "generate-character-portraits",
+                stepsCompleted: 6,
+                message: `Generated ${portraits.length} character portraits`,
+            });
 
             return {
                 portraits,
@@ -243,6 +281,12 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 npcCount++;
             }
 
+            await this.updateStatus(instanceId, {
+                currentStep: "save-entities",
+                stepsCompleted: 7,
+                message: `Saved ${characterCount} characters and ${npcCount} NPCs`,
+            });
+
             return {
                 characterCount,
                 npcCount,
@@ -263,6 +307,12 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 previewImage: previewImages.previewKey ?? undefined,
                 fullSizePreviewImage: previewImages.fullSizeKey ?? undefined,
                 imageStyle: options.imageStyle,
+            });
+
+            await this.updateStatus(instanceId, {
+                currentStep: "finalize-game",
+                stepsCompleted: 8,
+                message: "Game finalized, indexing for search...",
             });
 
             return {
@@ -304,6 +354,14 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 },
             ]);
 
+            await this.updateStatus(instanceId, {
+                currentStep: "complete",
+                stepsCompleted: 9,
+                message: "Game generation complete!",
+                status: "complete",
+                gameId,
+            });
+
             return {
                 currentStep: "vectorize-game",
                 stepsCompleted: 9,
@@ -325,5 +383,22 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 message: "Game generation complete!",
             },
         };
+    }
+
+    private async updateStatus(instanceId: string, statusUpdate: {
+        currentStep: string;
+        stepsCompleted: number;
+        message: string;
+        gameId?: string;
+        status?: "running" | "complete" | "errored";
+    }) {
+        try {
+            const statusStub = this.env.GENERATION_STATUS.get(
+                this.env.GENERATION_STATUS.idFromName(instanceId)
+            );
+            await statusStub.updateStatus(statusUpdate);
+        } catch (error) {
+            console.error("Failed to update status via DO:", error);
+        }
     }
 }

@@ -98,6 +98,10 @@
 			{
 				"name": "PLAY_AGENT",
 				"class_name": "PlayAgent"
+			},
+			{
+				"name": "GENERATION_STATUS",
+				"class_name": "GenerationStatusAgent"
 			}
 		]
 	},
@@ -109,6 +113,12 @@
 			"tag": "v1",
 			"new_sqlite_classes": [
 				"PlayAgent"
+			]
+		},
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"GenerationStatusAgent"
 			]
 		}
 	]

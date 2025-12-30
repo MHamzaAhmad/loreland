@@ -12,6 +12,7 @@ import { playRouter } from "./routes/play";
 // Re-export workflow and agent for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
 export { PlayAgent } from "./agents/play-agent";
+export { GenerationStatusAgent } from "./agents/generation-status-agent";
 
 const app = new Hono<AppEnv>();
 

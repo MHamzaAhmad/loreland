@@ -57,7 +57,7 @@ export function useGenerationStatus(
             }
 
             // Continue polling
-            return options?.refetchInterval ?? 1000;
+            return options?.refetchInterval ?? 1500;
         },
     });
 }

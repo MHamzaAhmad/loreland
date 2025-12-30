@@ -10,14 +10,13 @@ export const Route = createFileRoute("/games/$id/play/$sessionId")({
 
 function buildWebSocketUrl(relativePath: string): string {
     const isDev = import.meta.env.DEV;
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
     if (isDev) {
-        return `${protocol}//localhost:8787${relativePath}`;
+        return `ws://localhost:8787${relativePath}`;
     }
 
     const apiHost = import.meta.env.VITE_API_URL || window.location.host;
-    return `${protocol}//${apiHost}${relativePath}`;
+    return `${apiHost.replace("http://", "ws://").replace("https://", "wss://")}${relativePath}`;
 }
 
 function ActiveGameRoute() {
