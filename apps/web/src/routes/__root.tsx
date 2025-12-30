@@ -1,4 +1,4 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import { HeadContent, Scripts, createRootRoute, useLocation } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -76,6 +76,12 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  // Check if we are in an active game session (immersive mode)
+  // Path format: /games/$id/play/$sessionId
+  // We want to exclude /games/$id/play (the list)
+  const isImmersiveMode = /\/games\/[^/]+\/play\/.+/.test(location.pathname)
+
   return (
     <html lang="en" className="dark">
       <head>
@@ -87,7 +93,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <ApiClientProvider client={apiClient}>
             <div className="flex-1 flex flex-col relative z-0">
-              <Header />
+              {!isImmersiveMode && <Header />}
               <main className="flex-1 relative">
                 {children}
               </main>

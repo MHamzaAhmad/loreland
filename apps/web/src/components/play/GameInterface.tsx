@@ -35,7 +35,7 @@ export function GameInterface({
 }: GameInterfaceProps) {
 
     return (
-        <div className="h-screen w-full flex flex-col bg-background overflow-hidden relative selection:bg-primary/30">
+        <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden relative selection:bg-primary/30">
             {/* Scanline Overlay */}
             <div className="scanline-overlay pointer-events-none" />
 
