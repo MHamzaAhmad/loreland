@@ -1,8 +1,16 @@
 // Agent Schema - Per-session SQLite database
-export * from "./messages";
-export * from "./images";
-export * from "./runs";
+
+// Core session data
 export * from "./game-session";
 export * from "./turns";
-export * from "./character-state";
 
+// Live state tracking
+export * from "./session-states";
+export * from "./session-triggers";
+
+// Conversation
+export * from "./messages";
+export * from "./images";
+
+// Debug/tracking
+export * from "./runs";

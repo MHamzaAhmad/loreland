@@ -42,9 +42,10 @@ loreland/
 - Triggers (conditional behavior modifiers)
 
 **Agent SQLite (per session)**:
-- Messages and conversation history
-- Rolling summary for context management
-- Image references and run tracking
+- Session states (live values copied from D1, updated during play)
+- Session triggers (track fired triggers for one-shot events)
+- Turns with state snapshots and triggered actions
+- Messages, rolling summary, and image references
 
 ## Setup
 

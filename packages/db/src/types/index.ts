@@ -20,6 +20,10 @@ import { gamePermissions } from "../schema/d1/permissions";
 import { messages, summary } from "../schema/agent/messages";
 import { imageRefs } from "../schema/agent/images";
 import { agentRuns } from "../schema/agent/runs";
+import { turns } from "../schema/agent/turns";
+import { gameSession } from "../schema/agent/game-session";
+import { sessionStates } from "../schema/agent/session-states";
+import { sessionTriggers } from "../schema/agent/session-triggers";
 
 // ============================================
 // D1 Types (Central Database)
@@ -65,25 +69,39 @@ export type NewGamePermission = InferInsertModel<typeof gamePermissions>;
 // Agent Types (Per-Session Database)
 // ============================================
 
+// Session
+export type GameSession = InferSelectModel<typeof gameSession>;
+export type NewGameSession = InferInsertModel<typeof gameSession>;
+export type Turn = InferSelectModel<typeof turns>;
+export type NewTurn = InferInsertModel<typeof turns>;
+
+// Live State
+export type SessionState = InferSelectModel<typeof sessionStates>;
+export type NewSessionState = InferInsertModel<typeof sessionStates>;
+export type SessionTrigger = InferSelectModel<typeof sessionTriggers>;
+export type NewSessionTrigger = InferInsertModel<typeof sessionTriggers>;
+
+// Conversation
 export type Message = InferSelectModel<typeof messages>;
 export type NewMessage = InferInsertModel<typeof messages>;
 export type Summary = InferSelectModel<typeof summary>;
 export type NewSummary = InferInsertModel<typeof summary>;
 export type ImageRef = InferSelectModel<typeof imageRefs>;
 export type NewImageRef = InferInsertModel<typeof imageRefs>;
+
+// Debug
 export type AgentRun = InferSelectModel<typeof agentRuns>;
 export type NewAgentRun = InferInsertModel<typeof agentRuns>;
 
 // ============================================
-// Agent State Type
+// Game Session State Interface
 // ============================================
 
-export interface GameSessionState {
+export interface GameSessionLiveState {
     gameId: string;
     userId: string;
     characterId: string;
     currentTurn: number;
     status: "active" | "victory" | "defeat";
-    /** Dynamic states (e.g., health, gold) */
     states: Record<string, string | number | boolean>;
 }
