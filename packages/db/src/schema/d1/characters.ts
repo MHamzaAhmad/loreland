@@ -32,13 +32,3 @@ export const characterSkills = sqliteTable("character_skills", {
     skillName: text("skill_name").notNull(),
     value: integer("value").notNull().default(0),
 });
-
-/**
- * Character Initial Items - Per-character starting tracked item values
- */
-export const characterInitialItems = sqliteTable("character_initial_items", {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    characterId: text("character_id").notNull().references(() => characters.id, { onDelete: "cascade" }),
-    trackedItemId: text("tracked_item_id").notNull(),
-    value: text("value").notNull(),
-});

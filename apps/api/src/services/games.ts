@@ -1,5 +1,5 @@
 import { eq, desc, and, inArray, or, sql } from "drizzle-orm";
-import { games, gameSkills, gameConditions, characters, npcs, lorebookEntries, trackedItems, triggerEvents } from "@packages/db/schema/d1";
+import { games, gameSkills, characters, npcs, lorebookEntries, states, triggers } from "@packages/db/schema/d1";
 import * as schema from "@packages/db/schema/d1";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import type { CreateGameInput, UpdateGameInput, ListGamesQuery } from "../lib/schemas";
@@ -19,7 +19,7 @@ export class GamesService {
         offset?: number;
         favorite?: boolean;
     }) {
-        const conditions: any[] = []; // Using any to avoid complex SQL type issues with array spread
+        const conditions: any[] = [];
 
         if (options.ids) {
             if (options.ids.length === 0) return [];
@@ -27,7 +27,6 @@ export class GamesService {
         }
 
         if (options.userId && options.isPublic) {
-            // Show my games OR public games
             conditions.push(sql`(${games.userId} = ${options.userId} OR ${games.public} = 1)`);
         } else if (options.userId) {
             conditions.push(eq(games.userId, options.userId));
@@ -52,7 +51,6 @@ export class GamesService {
      * Fork a game
      */
     async fork(originalGameId: string, newUserId: string) {
-        // 1. Get original game
         const [original] = await this.db
             .select()
             .from(games)
@@ -61,58 +59,51 @@ export class GamesService {
 
         if (!original) return null;
 
-        // Check if forkable (public or owned by user)
         if (!original.public && original.userId !== newUserId) {
-            return null; // Cannot fork private game of another user
+            return null;
         }
 
-        // Fetch children
-        const [chars, npcList, lore, items, triggers] = await Promise.all([
+        const [chars, npcList, lore, stateList, triggerList] = await Promise.all([
             this.db.select().from(characters).where(eq(characters.gameId, originalGameId)),
             this.db.select().from(npcs).where(eq(npcs.gameId, originalGameId)),
             this.db.select().from(lorebookEntries).where(eq(lorebookEntries.gameId, originalGameId)),
-            this.db.select().from(trackedItems).where(eq(trackedItems.gameId, originalGameId)),
-            this.db.select().from(triggerEvents).where(eq(triggerEvents.gameId, originalGameId)),
+            this.db.select().from(states).where(eq(states.gameId, originalGameId)),
+            this.db.select().from(triggers).where(eq(triggers.gameId, originalGameId)),
         ]);
 
-        // 2. Create new game
         const [newGame] = await this.db.insert(games).values({
             userId: newUserId,
             title: `${original.title} (Fork)`,
             description: original.description,
-            background: original.background,
-            instructions: original.instructions,
+            worldDescription: original.worldDescription,
             objective: original.objective,
             authorStyle: original.authorStyle,
             designNotes: original.designNotes,
-            nsfw: original.nsfw,
-            contentWarnings: original.contentWarnings,
+            firstPrompt: original.firstPrompt,
+            turnInstructions: original.turnInstructions,
+            summarizationInstructions: original.summarizationInstructions,
             sourceGameId: original.id,
-            // Copy visual settings
             imageModel: original.imageModel,
             imageStyle: original.imageStyle,
+            imageInstructions: original.imageInstructions,
             previewImage: original.previewImage,
             fullSizePreviewImage: original.fullSizePreviewImage,
         }).returning();
 
-        // 3. Copy children
-        // Characters
+        // Copy children
         if (chars.length > 0) {
             await this.db.insert(characters).values(
-                chars.map((c: typeof characters.$inferSelect) => ({
+                chars.map((c) => ({
                     ...c,
                     id: crypto.randomUUID(),
                     gameId: newGame.id,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
                 }))
             );
         }
 
-        // NPCs
         if (npcList.length > 0) {
             await this.db.insert(npcs).values(
-                npcList.map((n: typeof npcs.$inferSelect) => ({
+                npcList.map((n) => ({
                     ...n,
                     id: crypto.randomUUID(),
                     gameId: newGame.id,
@@ -120,10 +111,9 @@ export class GamesService {
             );
         }
 
-        // Lore
         if (lore.length > 0) {
             await this.db.insert(lorebookEntries).values(
-                lore.map((l: typeof lorebookEntries.$inferSelect) => ({
+                lore.map((l) => ({
                     ...l,
                     id: crypto.randomUUID(),
                     gameId: newGame.id,
@@ -131,21 +121,19 @@ export class GamesService {
             );
         }
 
-        // Items
-        if (items.length > 0) {
-            await this.db.insert(trackedItems).values(
-                items.map((i: typeof trackedItems.$inferSelect) => ({
-                    ...i,
+        if (stateList.length > 0) {
+            await this.db.insert(states).values(
+                stateList.map((s) => ({
+                    ...s,
                     id: crypto.randomUUID(),
                     gameId: newGame.id,
                 }))
             );
         }
 
-        // Triggers
-        if (triggers.length > 0) {
-            await this.db.insert(triggerEvents).values(
-                triggers.map((t: typeof triggerEvents.$inferSelect) => ({
+        if (triggerList.length > 0) {
+            await this.db.insert(triggers).values(
+                triggerList.map((t) => ({
                     ...t,
                     id: crypto.randomUUID(),
                     gameId: newGame.id,
@@ -186,7 +174,7 @@ export class GamesService {
     }
 
     /**
-     * Get full game with related data (skills, conditions)
+     * Get full game with related data
      */
     async getFull(id: string, userId: string, includePublic: boolean = false) {
         const game = includePublic
@@ -195,25 +183,23 @@ export class GamesService {
 
         if (!game) return null;
 
-        const [skills, conditions, chars, npcList, lore, items, triggers] = await Promise.all([
+        const [skills, chars, npcList, lore, stateList, triggerList] = await Promise.all([
             this.db.select().from(gameSkills).where(eq(gameSkills.gameId, id)),
-            this.db.select().from(gameConditions).where(eq(gameConditions.gameId, id)),
             this.db.select().from(characters).where(eq(characters.gameId, id)),
             this.db.select().from(npcs).where(eq(npcs.gameId, id)),
             this.db.select().from(lorebookEntries).where(eq(lorebookEntries.gameId, id)),
-            this.db.select().from(trackedItems).where(eq(trackedItems.gameId, id)),
-            this.db.select().from(triggerEvents).where(eq(triggerEvents.gameId, id)),
+            this.db.select().from(states).where(eq(states.gameId, id)),
+            this.db.select().from(triggers).where(eq(triggers.gameId, id)),
         ]);
 
         return {
             ...game,
             skills,
-            conditions,
             characters: chars,
             npcs: npcList,
             lorebookEntries: lore,
-            trackedItems: items,
-            triggerEvents: triggers
+            states: stateList,
+            triggers: triggerList
         };
     }
 
@@ -227,13 +213,11 @@ export class GamesService {
                 userId,
                 title: data.title,
                 description: data.description,
-                background: data.background,
-                instructions: data.instructions,
+                worldDescription: data.worldDescription,
                 objective: data.objective,
+                firstPrompt: data.firstPrompt,
                 authorStyle: data.authorStyle,
                 designNotes: data.designNotes,
-                nsfw: data.nsfw,
-                contentWarnings: data.contentWarnings,
             })
             .returning();
 
@@ -244,11 +228,10 @@ export class GamesService {
      * Update an existing game with authorization check
      */
     async update(id: string, data: UpdateGameInput, userId: string) {
-        // First verify ownership
         const existing = await this.get(id, userId);
         if (!existing) return null;
 
-        const { characters: chars, npcs: npcList, lorebookEntries: lore, trackedItems: items, triggerEvents: triggers, ...gameData } = data;
+        const { characters: chars, npcs: npcList, lorebookEntries: lore, states: stateList, triggers: triggerList, ...gameData } = data;
 
         const [updated] = await this.db
             .update(games)
@@ -262,8 +245,8 @@ export class GamesService {
         // Handle nested updates
         // 1. Characters
         if (chars) {
-            const existing = await this.db.select({ id: characters.id }).from(characters).where(eq(characters.gameId, id));
-            const existingIds = new Set(existing.map(e => e.id));
+            const existingChars = await this.db.select({ id: characters.id }).from(characters).where(eq(characters.gameId, id));
+            const existingIds = new Set(existingChars.map(e => e.id));
             const keepIds = new Set<string>();
 
             for (const char of chars) {
@@ -271,10 +254,9 @@ export class GamesService {
                     keepIds.add(char.id);
                     await this.db.update(characters).set(char).where(eq(characters.id, char.id));
                 } else {
-                    const newId = crypto.randomUUID();
                     await this.db.insert(characters).values({
                         ...char,
-                        id: newId,
+                        id: crypto.randomUUID(),
                         gameId: id,
                         characterId: (char as any).characterId || crypto.randomUUID().substring(0, 8),
                         name: char.name || "Unknown",
@@ -292,8 +274,8 @@ export class GamesService {
 
         // 2. NPCs
         if (npcList) {
-            const existing = await this.db.select({ id: npcs.id }).from(npcs).where(eq(npcs.gameId, id));
-            const existingIds = new Set(existing.map(e => e.id));
+            const existingNpcs = await this.db.select({ id: npcs.id }).from(npcs).where(eq(npcs.gameId, id));
+            const existingIds = new Set(existingNpcs.map(e => e.id));
             const keepIds = new Set<string>();
 
             for (const npc of npcList) {
@@ -319,8 +301,8 @@ export class GamesService {
 
         // 3. Lorebook Entries
         if (lore) {
-            const existing = await this.db.select({ id: lorebookEntries.id }).from(lorebookEntries).where(eq(lorebookEntries.gameId, id));
-            const existingIds = new Set(existing.map(e => e.id));
+            const existingLore = await this.db.select({ id: lorebookEntries.id }).from(lorebookEntries).where(eq(lorebookEntries.gameId, id));
+            const existingIds = new Set(existingLore.map(e => e.id));
             const keepIds = new Set<string>();
 
             for (const entry of lore) {
@@ -345,45 +327,45 @@ export class GamesService {
             }
         }
 
-        // 4. Tracked Items
-        if (items) {
-            const existing = await this.db.select({ id: trackedItems.id }).from(trackedItems).where(eq(trackedItems.gameId, id));
-            const existingIds = new Set(existing.map(e => e.id));
+        // 4. States
+        if (stateList) {
+            const existingStates = await this.db.select({ id: states.id }).from(states).where(eq(states.gameId, id));
+            const existingIds = new Set(existingStates.map(e => e.id));
             const keepIds = new Set<string>();
 
-            for (const item of items) {
-                if (item.id && existingIds.has(item.id)) {
-                    keepIds.add(item.id);
-                    await this.db.update(trackedItems).set(item).where(eq(trackedItems.id, item.id));
+            for (const state of stateList) {
+                if (state.id && existingIds.has(state.id)) {
+                    keepIds.add(state.id);
+                    await this.db.update(states).set(state).where(eq(states.id, state.id));
                 } else {
-                    await this.db.insert(trackedItems).values({
-                        ...item,
+                    await this.db.insert(states).values({
+                        ...state,
                         id: crypto.randomUUID(),
                         gameId: id,
-                        name: item.name || "Unknown",
-                        position: item.position || 0,
+                        name: state.name || "Unknown",
+                        position: state.position || 0,
                     } as any);
                 }
             }
 
             const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
             if (toDelete.length > 0) {
-                await this.db.delete(trackedItems).where(inArray(trackedItems.id, toDelete));
+                await this.db.delete(states).where(inArray(states.id, toDelete));
             }
         }
 
-        // 5. Trigger Events
-        if (triggers) {
-            const existing = await this.db.select({ id: triggerEvents.id }).from(triggerEvents).where(eq(triggerEvents.gameId, id));
-            const existingIds = new Set(existing.map(e => e.id));
+        // 5. Triggers
+        if (triggerList) {
+            const existingTriggers = await this.db.select({ id: triggers.id }).from(triggers).where(eq(triggers.gameId, id));
+            const existingIds = new Set(existingTriggers.map(e => e.id));
             const keepIds = new Set<string>();
 
-            for (const trigger of triggers) {
+            for (const trigger of triggerList) {
                 if (trigger.id && existingIds.has(trigger.id)) {
                     keepIds.add(trigger.id);
-                    await this.db.update(triggerEvents).set(trigger).where(eq(triggerEvents.id, trigger.id));
+                    await this.db.update(triggers).set(trigger).where(eq(triggers.id, trigger.id));
                 } else {
-                    await this.db.insert(triggerEvents).values({
+                    await this.db.insert(triggers).values({
                         ...trigger,
                         id: crypto.randomUUID(),
                         gameId: id,
@@ -395,7 +377,7 @@ export class GamesService {
 
             const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
             if (toDelete.length > 0) {
-                await this.db.delete(triggerEvents).where(inArray(triggerEvents.id, toDelete));
+                await this.db.delete(triggers).where(inArray(triggers.id, toDelete));
             }
         }
 
@@ -403,10 +385,9 @@ export class GamesService {
     }
 
     /**
-     * Delete a game with authorization check (cascade handled by FK)
+     * Delete a game with authorization check
      */
     async delete(id: string, userId: string) {
-        // First verify ownership
         const existing = await this.get(id, userId);
         if (!existing) return false;
 
@@ -424,9 +405,9 @@ export class GamesService {
                 userId,
                 title: "Generating...",
                 description: prompt,
-                background: "",
-                instructions: "",
+                worldDescription: "",
                 objective: "",
+                firstPrompt: "",
                 designNotes: `Generation prompt: ${prompt}`,
             })
             .returning();
@@ -442,9 +423,9 @@ export class GamesService {
         data: {
             title: string;
             description: string;
-            background: string;
-            instructions: string;
+            worldDescription: string;
             objective: string;
+            firstPrompt: string;
             previewImage?: string;
             fullSizePreviewImage?: string;
             imageStyle?: string;

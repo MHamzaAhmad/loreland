@@ -4,19 +4,17 @@ import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 import {
     games,
     gameSkills,
-    gameConditions
+    keywordInstructions,
 } from "../schema/d1/games";
 import {
     characters,
     characterSkills,
-    characterInitialItems
 } from "../schema/d1/characters";
 import { npcs } from "../schema/d1/npcs";
-import {
-    lorebookEntries,
-    trackedItems,
-    triggerEvents
-} from "../schema/d1/assets";
+import { lorebookEntries } from "../schema/d1/assets";
+import { states, characterInitialStates } from "../schema/d1/states";
+import { triggers } from "../schema/d1/triggers";
+import { gamePermissions } from "../schema/d1/permissions";
 
 // Agent Schema Types
 import { messages, summary } from "../schema/agent/messages";
@@ -32,16 +30,14 @@ export type Game = InferSelectModel<typeof games>;
 export type NewGame = InferInsertModel<typeof games>;
 export type GameSkill = InferSelectModel<typeof gameSkills>;
 export type NewGameSkill = InferInsertModel<typeof gameSkills>;
-export type GameCondition = InferSelectModel<typeof gameConditions>;
-export type NewGameCondition = InferInsertModel<typeof gameConditions>;
+export type KeywordInstruction = InferSelectModel<typeof keywordInstructions>;
+export type NewKeywordInstruction = InferInsertModel<typeof keywordInstructions>;
 
 // Characters
 export type Character = InferSelectModel<typeof characters>;
 export type NewCharacter = InferInsertModel<typeof characters>;
 export type CharacterSkill = InferSelectModel<typeof characterSkills>;
 export type NewCharacterSkill = InferInsertModel<typeof characterSkills>;
-export type CharacterInitialItem = InferSelectModel<typeof characterInitialItems>;
-export type NewCharacterInitialItem = InferInsertModel<typeof characterInitialItems>;
 
 // NPCs
 export type NPC = InferSelectModel<typeof npcs>;
@@ -50,10 +46,20 @@ export type NewNPC = InferInsertModel<typeof npcs>;
 // Assets
 export type LorebookEntry = InferSelectModel<typeof lorebookEntries>;
 export type NewLorebookEntry = InferInsertModel<typeof lorebookEntries>;
-export type TrackedItem = InferSelectModel<typeof trackedItems>;
-export type NewTrackedItem = InferInsertModel<typeof trackedItems>;
-export type TriggerEvent = InferSelectModel<typeof triggerEvents>;
-export type NewTriggerEvent = InferInsertModel<typeof triggerEvents>;
+
+// States
+export type State = InferSelectModel<typeof states>;
+export type NewState = InferInsertModel<typeof states>;
+export type CharacterInitialState = InferSelectModel<typeof characterInitialStates>;
+export type NewCharacterInitialState = InferInsertModel<typeof characterInitialStates>;
+
+// Triggers
+export type Trigger = InferSelectModel<typeof triggers>;
+export type NewTrigger = InferInsertModel<typeof triggers>;
+
+// Permissions
+export type GamePermission = InferSelectModel<typeof gamePermissions>;
+export type NewGamePermission = InferInsertModel<typeof gamePermissions>;
 
 // ============================================
 // Agent Types (Per-Session Database)
@@ -78,6 +84,6 @@ export interface GameSessionState {
     characterId: string;
     currentTurn: number;
     status: "active" | "victory" | "defeat";
-    /** Dynamic traits from tracked items (e.g., health, gold) */
-    traits: Record<string, string | number | boolean>;
+    /** Dynamic states (e.g., health, gold) */
+    states: Record<string, string | number | boolean>;
 }

@@ -1,37 +1,50 @@
 # Loreland
 
-A game platform where users design interactive adventure games and play them through AI agent conversations.
+A turn-based interactive storytelling platform where creators design worlds and players explore them through AI-driven narratives.
+
+## What is Loreland?
+
+**For Creators**: Design immersive worlds with custom characters, NPCs, game states, and triggers. Define how the story unfolds—set victory conditions, craft narrative styles, and control what players can see or modify.
+
+**For Players**: Choose a character and take actions in a living world. Each turn, the AI generates consequences based on your choices, the world's rules, and hidden triggers—until you reach victory or defeat.
+
+### Key Concepts
+
+- **World Description**: The setting, rules, and context of your game
+- **States**: Tracked variables like health, mood, inventory, or world conditions (visible, hidden, or conditional)
+- **Triggers**: Dynamic events that change the narrative when conditions are met (e.g., "player eats apple → narrator becomes sarcastic")
+- **Characters & NPCs**: Playable characters with skills and non-player characters that inhabit the world
 
 ## Architecture
 
 ```
 loreland/
 ├── apps/
-│   ├── api/          # Hono API with Better Auth (Cloudflare Workers)
+│   ├── api/          # Hono API (Cloudflare Workers)
 │   └── web/          # TanStack Start frontend (Cloudflare Pages)
 └── packages/
-    └── db/           # Drizzle ORM schemas and auth config
+    └── db/           # Drizzle ORM schemas
 ```
 
 ### Tech Stack
 
-- **Auth**: Better Auth with Drizzle adapter (anonymous, email/password, Google OAuth)
-- **Database**: Cloudflare D1 (SQLite) for central data
-- **Agents**: Cloudflare Agents with embedded SQLite (per-session)
+- **Database**: Cloudflare D1 (SQLite) for game definitions
+- **Agents**: Cloudflare Agents with embedded SQLite (per-session gameplay)
 - **Storage**: Cloudflare R2 for generated images
+- **Auth**: Better Auth with Drizzle adapter
 - **ORM**: Drizzle ORM with type-safe schemas
 
-### Database Design
+### Data Model
 
 **D1 Central Database**:
-- Users, sessions, accounts (via Better Auth)
-- Games, characters, NPCs, lore, tracked items
-- Victory/defeat conditions, trigger events
+- Games, characters, NPCs, lorebook entries
+- States (tracked variables with visibility control)
+- Triggers (conditional behavior modifiers)
 
 **Agent SQLite (per session)**:
 - Messages and conversation history
 - Rolling summary for context management
-- Image references and agent run tracking
+- Image references and run tracking
 
 ## Setup
 

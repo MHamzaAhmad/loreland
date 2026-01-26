@@ -1,65 +1,57 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
+import { users } from "./auth";
 
 /**
- * Games - Core game configuration
+ * Games - Core game/world configuration
  */
 export const games = sqliteTable("games", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    userId: text("user_id").notNull(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    public: integer("public", { mode: "boolean" }).default(false),
+    favorite: integer("favorite", { mode: "boolean" }).default(false),
 
-    // Core
+    // Core Identity
     title: text("title").notNull(),
     description: text("description").notNull(),
-    background: text("background").notNull(),
-    instructions: text("instructions").notNull(),
-    objective: text("objective").notNull(),
-    authorStyle: text("author_style"),
-    recommendedAIModel: text("recommended_ai_model"),
-    firstInput: text("first_input"),
-    version: text("version").default("1.0"),
-    favorite: integer("favorite", { mode: "boolean" }).default(false),
-    designNotes: text("design_notes"),
 
-    // Image Settings
+    // World & Narrative
+    worldDescription: text("world_description").notNull(),
+    authorStyle: text("author_style"),
+    turnInstructions: text("turn_instructions"),
+    summarizationInstructions: text("summarization_instructions"),
+    firstPrompt: text("first_prompt").notNull(),
+
+    // End Conditions
+    objective: text("objective").notNull(),
+    victoryCondition: text("victory_condition"),
+    defeatCondition: text("defeat_condition"),
+
+    // Image Generation
     imageModel: text("image_model"),
     imageStyle: text("image_style"),
-    illustrationStyleNonCharLow: text("illustration_style_non_char_low"),
-    illustrationStyleNonCharHigh: text("illustration_style_non_char_high"),
-    illustrationStyleCharLow: text("illustration_style_char_low"),
-    illustrationStyleCharHigh: text("illustration_style_char_high"),
-    imageStyleCharPre: text("image_style_char_pre"),
-    imageStyleCharPost: text("image_style_char_post"),
-    imageStyleNonCharPre: text("image_style_non_char_pre"),
-    imageStyleNonCharPost: text("image_style_non_char_post"),
+    imageInstructions: text("image_instructions"),
     previewImage: text("preview_image"),
     fullSizePreviewImage: text("full_size_preview_image"),
-    previewImageOptions: text("preview_image_options", { mode: "json" }).$type<string[]>().default([]),
-    currentPreviewImageIndex: integer("current_preview_image_index").default(0),
-    imagePromptDetails: text("image_prompt_details", { mode: "json" }).$type<Record<string, unknown>>(),
 
-    // Content Settings
-    nsfw: integer("nsfw", { mode: "boolean" }).default(false),
-    contentWarnings: text("content_warnings"),
-    descriptionRequest: text("description_request"),
-    summaryRequest: text("summary_request"),
-    enableAISpecificInstructionBlocks: integer("enable_ai_specific_instruction_blocks", { mode: "boolean" }).default(false),
-    autoAdvanceVersion: integer("auto_advance_version", { mode: "boolean" }).default(true),
-
-    // Permissions
-    allowChangeCharacterName: integer("allow_change_character_name", { mode: "boolean" }).default(true),
-    allowChangeCharacterDescription: integer("allow_change_character_description", { mode: "boolean" }).default(true),
-    allowChangeCharacterSkills: integer("allow_change_character_skills", { mode: "boolean" }).default(true),
-    allowChangeCharacterItemValues: integer("allow_change_character_item_values", { mode: "boolean" }).default(false),
-    allowChangeCharacterPortrait: integer("allow_change_character_portrait", { mode: "boolean" }).default(false),
-    allowChangeCharacterNewPortrait: integer("allow_change_character_new_portrait", { mode: "boolean" }).default(true),
-    public: integer("public", { mode: "boolean" }).default(false),
-    editable: integer("editable", { mode: "boolean" }).default(true),
+    // Metadata
+    version: text("version").default("1.0"),
+    designNotes: text("design_notes"),
     sourceGameId: text("source_game_id"),
 
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
     updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+});
+
+/**
+ * Keyword Instructions - Context provided when keywords detected in user actions
+ */
+export const keywordInstructions = sqliteTable("keyword_instructions", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    gameId: text("game_id").notNull().references(() => games.id, { onDelete: "cascade" }),
+    keyword: text("keyword").notNull(),
+    instruction: text("instruction").notNull(),
 });
 
 /**
@@ -70,16 +62,4 @@ export const gameSkills = sqliteTable("game_skills", {
     gameId: text("game_id").notNull().references(() => games.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     position: integer("position").notNull(),
-});
-
-/**
- * Game Conditions - Victory and defeat conditions
- */
-export const gameConditions = sqliteTable("game_conditions", {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-    gameId: text("game_id").notNull().references(() => games.id, { onDelete: "cascade" }),
-    type: text("type", { enum: ["victory", "defeat"] }).notNull(),
-    condition: text("condition").notNull(),
-    text: text("text").notNull(),
-    alreadyFired: integer("already_fired", { mode: "boolean" }).default(false),
 });
