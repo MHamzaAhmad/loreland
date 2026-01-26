@@ -2,8 +2,7 @@ import { eq, desc, and, inArray, or, sql } from "drizzle-orm";
 import { games, gameSkills, characters, npcs, lorebookEntries, states, triggers } from "@packages/db/schema/d1";
 import * as schema from "@packages/db/schema/d1";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
-import type { CreateGameInput, UpdateGameInput, ListGamesQuery } from "../lib/schemas";
-import type { SQLWrapper } from "drizzle-orm";
+import type { CreateGameInput, UpdateGameInput } from "../lib/schemas";
 
 export class GamesService {
     constructor(private db: DrizzleD1Database<typeof schema>) { }
@@ -77,11 +76,13 @@ export class GamesService {
             description: original.description,
             worldDescription: original.worldDescription,
             objective: original.objective,
-            authorStyle: original.authorStyle,
-            designNotes: original.designNotes,
             firstPrompt: original.firstPrompt,
+            authorStyle: original.authorStyle,
             turnInstructions: original.turnInstructions,
             summarizationInstructions: original.summarizationInstructions,
+            victoryCondition: original.victoryCondition,
+            defeatCondition: original.defeatCondition,
+            designNotes: original.designNotes,
             sourceGameId: original.id,
             imageModel: original.imageModel,
             imageStyle: original.imageStyle,
@@ -217,6 +218,12 @@ export class GamesService {
                 objective: data.objective,
                 firstPrompt: data.firstPrompt,
                 authorStyle: data.authorStyle,
+                turnInstructions: data.turnInstructions,
+                summarizationInstructions: data.summarizationInstructions,
+                victoryCondition: data.victoryCondition,
+                defeatCondition: data.defeatCondition,
+                imageInstructions: data.imageInstructions,
+                imageStyle: data.imageStyle,
                 designNotes: data.designNotes,
             })
             .returning();
@@ -243,145 +250,48 @@ export class GamesService {
             .returning();
 
         // Handle nested updates
-        // 1. Characters
-        if (chars) {
-            const existingChars = await this.db.select({ id: characters.id }).from(characters).where(eq(characters.gameId, id));
-            const existingIds = new Set(existingChars.map(e => e.id));
-            const keepIds = new Set<string>();
-
-            for (const char of chars) {
-                if (char.id && existingIds.has(char.id)) {
-                    keepIds.add(char.id);
-                    await this.db.update(characters).set(char).where(eq(characters.id, char.id));
-                } else {
-                    await this.db.insert(characters).values({
-                        ...char,
-                        id: crypto.randomUUID(),
-                        gameId: id,
-                        characterId: (char as any).characterId || crypto.randomUUID().substring(0, 8),
-                        name: char.name || "Unknown",
-                        description: char.description || "",
-                        position: char.position || 0,
-                    } as any);
-                }
-            }
-
-            const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
-            if (toDelete.length > 0) {
-                await this.db.delete(characters).where(inArray(characters.id, toDelete));
-            }
-        }
-
-        // 2. NPCs
-        if (npcList) {
-            const existingNpcs = await this.db.select({ id: npcs.id }).from(npcs).where(eq(npcs.gameId, id));
-            const existingIds = new Set(existingNpcs.map(e => e.id));
-            const keepIds = new Set<string>();
-
-            for (const npc of npcList) {
-                if (npc.id && existingIds.has(npc.id)) {
-                    keepIds.add(npc.id);
-                    await this.db.update(npcs).set(npc).where(eq(npcs.id, npc.id));
-                } else {
-                    await this.db.insert(npcs).values({
-                        ...npc,
-                        id: crypto.randomUUID(),
-                        gameId: id,
-                        name: npc.name || "Unknown",
-                        position: npc.position || 0,
-                    } as any);
-                }
-            }
-
-            const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
-            if (toDelete.length > 0) {
-                await this.db.delete(npcs).where(inArray(npcs.id, toDelete));
-            }
-        }
-
-        // 3. Lorebook Entries
-        if (lore) {
-            const existingLore = await this.db.select({ id: lorebookEntries.id }).from(lorebookEntries).where(eq(lorebookEntries.gameId, id));
-            const existingIds = new Set(existingLore.map(e => e.id));
-            const keepIds = new Set<string>();
-
-            for (const entry of lore) {
-                if (entry.id && existingIds.has(entry.id)) {
-                    keepIds.add(entry.id);
-                    await this.db.update(lorebookEntries).set(entry).where(eq(lorebookEntries.id, entry.id));
-                } else {
-                    await this.db.insert(lorebookEntries).values({
-                        ...entry,
-                        id: crypto.randomUUID(),
-                        gameId: id,
-                        name: entry.name || "Unknown",
-                        content: entry.content || "",
-                        position: entry.position || 0,
-                    } as any);
-                }
-            }
-
-            const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
-            if (toDelete.length > 0) {
-                await this.db.delete(lorebookEntries).where(inArray(lorebookEntries.id, toDelete));
-            }
-        }
-
-        // 4. States
-        if (stateList) {
-            const existingStates = await this.db.select({ id: states.id }).from(states).where(eq(states.gameId, id));
-            const existingIds = new Set(existingStates.map(e => e.id));
-            const keepIds = new Set<string>();
-
-            for (const state of stateList) {
-                if (state.id && existingIds.has(state.id)) {
-                    keepIds.add(state.id);
-                    await this.db.update(states).set(state).where(eq(states.id, state.id));
-                } else {
-                    await this.db.insert(states).values({
-                        ...state,
-                        id: crypto.randomUUID(),
-                        gameId: id,
-                        name: state.name || "Unknown",
-                        position: state.position || 0,
-                    } as any);
-                }
-            }
-
-            const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
-            if (toDelete.length > 0) {
-                await this.db.delete(states).where(inArray(states.id, toDelete));
-            }
-        }
-
-        // 5. Triggers
-        if (triggerList) {
-            const existingTriggers = await this.db.select({ id: triggers.id }).from(triggers).where(eq(triggers.gameId, id));
-            const existingIds = new Set(existingTriggers.map(e => e.id));
-            const keepIds = new Set<string>();
-
-            for (const trigger of triggerList) {
-                if (trigger.id && existingIds.has(trigger.id)) {
-                    keepIds.add(trigger.id);
-                    await this.db.update(triggers).set(trigger).where(eq(triggers.id, trigger.id));
-                } else {
-                    await this.db.insert(triggers).values({
-                        ...trigger,
-                        id: crypto.randomUUID(),
-                        gameId: id,
-                        name: trigger.name || "Unknown",
-                        position: trigger.position || 0,
-                    } as any);
-                }
-            }
-
-            const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
-            if (toDelete.length > 0) {
-                await this.db.delete(triggers).where(inArray(triggers.id, toDelete));
-            }
-        }
+        if (chars) await this.syncChildren(id, characters, chars, "characters");
+        if (npcList) await this.syncChildren(id, npcs, npcList, "npcs");
+        if (lore) await this.syncChildren(id, lorebookEntries, lore, "lorebookEntries");
+        if (stateList) await this.syncChildren(id, states, stateList, "states");
+        if (triggerList) await this.syncChildren(id, triggers, triggerList, "triggers");
 
         return updated;
+    }
+
+    /**
+     * Sync child records (upsert/delete pattern)
+     */
+    private async syncChildren(
+        gameId: string,
+        table: any,
+        items: any[],
+        type: string
+    ) {
+        const existingRecords = await this.db.select({ id: table.id }).from(table).where(eq(table.gameId, gameId));
+        const existingIds = new Set(existingRecords.map(e => e.id));
+        const keepIds = new Set<string>();
+
+        for (const item of items) {
+            if (item.id && existingIds.has(item.id)) {
+                keepIds.add(item.id);
+                await this.db.update(table).set(item).where(eq(table.id, item.id));
+            } else {
+                const newId = crypto.randomUUID();
+                await this.db.insert(table).values({
+                    ...item,
+                    id: newId,
+                    gameId,
+                    name: item.name || "Unknown",
+                    position: item.position || 0,
+                } as any);
+            }
+        }
+
+        const toDelete = Array.from(existingIds).filter(eid => !keepIds.has(eid));
+        if (toDelete.length > 0) {
+            await this.db.delete(table).where(inArray(table.id, toDelete));
+        }
     }
 
     /**

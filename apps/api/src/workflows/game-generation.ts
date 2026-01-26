@@ -9,6 +9,7 @@ import { ImagesService } from "../services/images";
 import { AIService } from "../services/ai";
 import { eq } from "drizzle-orm";
 import { characters, npcs, userSettings } from "@packages/db/schema/d1";
+import * as d1Schema from "@packages/db/schema/d1";
 import type { GameGenerationParams } from "../lib/schemas";
 import {
     aiGameMetadataSchema,
@@ -44,7 +45,7 @@ type Env = AIEnv & {
 export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerationParams> {
     async run(event: WorkflowEvent<GameGenerationParams>, step: WorkflowStep) {
         const { userId, prompt, options, instanceId } = event.payload;
-        const db = drizzle(this.env.DB);
+        const db = drizzle(this.env.DB, { schema: d1Schema });
         const gamesService = new GamesService(db);
         const imagesService = new ImagesService(this.env.AI, this.env.IMAGES);
 
@@ -105,7 +106,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 itemSchema: aiCharacterSchema,
                 count: options.characterCount,
                 systemPrompt: "You are a creative character designer. Generate diverse and interesting playable characters. Ensure all descriptions are family-friendly and safe for work.",
-                prompt: `Create characters for a game titled "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
+                prompt: `Create characters for a game titled "${metadata.title}". Setting: ${metadata.worldDescription.slice(0, 200)}`,
             });
 
             await this.updateStatus(instanceId, {
@@ -137,7 +138,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
                 itemSchema: aiNpcSchema,
                 count: options.npcCount,
                 systemPrompt: "You are a creative NPC designer. Generate memorable and diverse NPCs with distinct personalities. Ensure all descriptions are family-friendly and safe for work.",
-                prompt: `Create NPCs for "${metadata.title}". Setting: ${metadata.background.slice(0, 200)}`,
+                prompt: `Create NPCs for "${metadata.title}". Setting: ${metadata.worldDescription.slice(0, 200)}`,
             });
 
             await this.updateStatus(instanceId, {
@@ -301,9 +302,9 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
             await gamesService.finalize(gameId, {
                 title: metadata.title,
                 description: metadata.description,
-                background: metadata.background,
-                instructions: metadata.instructions,
+                worldDescription: metadata.worldDescription,
                 objective: metadata.objective,
+                firstPrompt: metadata.firstPrompt,
                 previewImage: previewImages.previewKey ?? undefined,
                 fullSizePreviewImage: previewImages.fullSizeKey ?? undefined,
                 imageStyle: options.imageStyle,
@@ -328,7 +329,7 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
             const searchText = [
                 metadata.title,
                 metadata.description,
-                metadata.background,
+                metadata.worldDescription,
                 metadata.objective,
             ].join(" ").slice(0, 2000);
 

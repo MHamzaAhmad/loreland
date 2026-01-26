@@ -7,7 +7,6 @@ import { ToolLoopAgent, Output, stepCountIs } from "ai";
 // Import schemas and migrations from db package
 import * as schema from "@packages/db/schema/agent";
 import migrations from "@packages/db/migrations/agent";
-import type { CharacterStateSnapshot } from "@packages/db/schema/agent";
 
 // Local imports
 import { loadPrompt } from "./prompt-loader";
@@ -52,12 +51,34 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             config: gameConfig as unknown as string,
         });
 
-        // Initialize character state
-        await this.db.insert(schema.characterState).values({
-            characterId,
-            health: 100,
-            skillModifiers: {},
-        });
+        // Initialize session states from game config
+        if (gameConfig.states && gameConfig.states.length > 0) {
+            for (const state of gameConfig.states) {
+                await this.db.insert(schema.sessionStates).values({
+                    stateId: state.id,
+                    name: state.name,
+                    value: state.initialValue || "",
+                    dataType: (state.dataType as "text" | "number" | "boolean") || "text",
+                    visibility: (state.visibility as "visible" | "hidden" | "conditional") || "visible",
+                    displayCondition: state.displayCondition || null,
+                });
+            }
+        }
+
+        // Initialize session triggers from game config
+        if (gameConfig.triggers && gameConfig.triggers.length > 0) {
+            for (const trigger of gameConfig.triggers) {
+                await this.db.insert(schema.sessionTriggers).values({
+                    triggerId: trigger.id,
+                    name: trigger.name,
+                    condition: trigger.condition,
+                    effect: trigger.effect,
+                    triggerOnTurn: trigger.triggerOnTurn || null,
+                    oneShot: trigger.oneShot || false,
+                    fired: false,
+                });
+            }
+        }
 
         // Set initial state
         this.setState({
@@ -77,17 +98,21 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     private async generateOpeningTurn(gameConfig: FullGameConfig, model: string) {
         const character = gameConfig.characters.find(c => c.id === this.state.characterId);
 
+        // Get current states for prompt
+        const statesForPrompt = await this.getStatesForPrompt();
+
         // Build opening prompt with all game context
         const systemPrompt = loadPrompt("opening", {
             gameTitle: gameConfig.title,
-            background: gameConfig.background,
+            worldDescription: gameConfig.worldDescription,
             objective: gameConfig.objective,
-            instructions: gameConfig.instructions,
+            firstPrompt: gameConfig.firstPrompt || "",
+            authorStyle: gameConfig.authorStyle || "",
             characterName: character?.name || "Unknown",
             characterDescription: character?.description || "No description",
         });
 
-        // Single agent with structured output - pass model string directly
+        // Single agent with structured output
         const agent = new ToolLoopAgent({
             model: getLanguageModel(model),
             instructions: systemPrompt,
@@ -113,7 +138,8 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             assistantResponse: output.narrative,
             agentThought,
             suggestedActions: output.suggestedActions,
-            characterState: { health: 100, skillModifiers: {} },
+            statesSnapshot: statesForPrompt,
+            triggersActivated: [],
             turnOutcome: { startingFacts: output.startingFacts, immediateGoal: output.immediateGoal },
         }).returning();
 
@@ -133,7 +159,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         return {
             text: output.narrative,
             suggestedActions: output.suggestedActions,
-            characterState: { health: 100, skillModifiers: {} },
+            states: statesForPrompt,
             turnNumber: 0,
             immediateGoal: output.immediateGoal,
         };
@@ -180,17 +206,44 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     }
 
     /**
+     * Get states formatted for prompt
+     */
+    private async getStatesForPrompt(): Promise<Record<string, string>> {
+        const stateRows = await this.db.select().from(schema.sessionStates);
+        const result: Record<string, string> = {};
+        for (const s of stateRows) {
+            if (s.visibility === "visible") {
+                result[s.name] = s.value;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Get active triggers for prompt
+     */
+    private async getActiveTriggersForPrompt(): Promise<string> {
+        const triggers = await this.db.select()
+            .from(schema.sessionTriggers)
+            .where(eq(schema.sessionTriggers.fired, true));
+
+        return triggers.map(t => `${t.name}: ${t.effect}`).join("\n");
+    }
+
+    /**
      * Process a user turn and generate AI response
      */
     async processUserTurn(userMessage: string) {
         const session = await this.db.select().from(schema.gameSession).limit(1);
         if (!session.length) throw new Error("No game session found");
 
-        const charStateRows = await this.db.select().from(schema.characterState).limit(1);
-        const charState = charStateRows[0];
         const gameConfig = session[0].config as unknown as FullGameConfig;
         const model = session[0].model;
         const character = gameConfig.characters.find(c => c.id === this.state.characterId);
+
+        // Get current states
+        const statesForPrompt = await this.getStatesForPrompt();
+        const activeTriggersText = await this.getActiveTriggersForPrompt();
 
         // Get context (previous turns)
         const recentTurns = await this.db.select()
@@ -207,23 +260,24 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             `Turn ${t.turnNumber}:\nPlayer: ${t.userMessage}\nGame Master: ${t.assistantResponse}`
         ).join("\n\n");
 
-        // Build current facts from last turn
-        const lastTurn = recentTurns[0];
-        const currentFacts = lastTurn?.turnOutcome
-            ? JSON.stringify(lastTurn.turnOutcome)
-            : "Starting conditions";
+        // Format states for prompt
+        const statesText = Object.entries(statesForPrompt)
+            .map(([k, v]) => `- ${k}: ${v}`)
+            .join("\n");
 
         // Build system prompt with full context
         const systemPrompt = loadPrompt("game-master", {
             gameTitle: gameConfig.title,
-            background: gameConfig.background,
+            worldDescription: gameConfig.worldDescription,
             objective: gameConfig.objective,
-            instructions: gameConfig.instructions,
+            authorStyle: gameConfig.authorStyle || "",
+            turnInstructions: gameConfig.turnInstructions || "",
+            victoryCondition: gameConfig.victoryCondition || "",
+            defeatCondition: gameConfig.defeatCondition || "",
             characterName: character?.name || "Unknown",
             characterDescription: character?.description || "No description",
-            health: String(charState.health),
-            skills: JSON.stringify(charState.skillModifiers || {}),
-            currentFacts,
+            states: statesText,
+            activeTriggers: activeTriggersText,
             summary: summary || "",
             recentContext,
         });
@@ -245,30 +299,46 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             throw new Error("Failed to generate turn response");
         }
 
-        // Apply state changes
-        const newHealth = Math.max(0, Math.min(100, charState.health + output.outcome.healthChange));
-        const newModifiers = { ...(charState.skillModifiers as Record<string, number> || {}), ...output.outcome.skillUpdates };
+        // Apply state changes from AI response
+        const triggersActivated: string[] = [];
+        if (output.stateChanges) {
+            for (const [stateName, newValue] of Object.entries(output.stateChanges)) {
+                await this.db.update(schema.sessionStates)
+                    .set({ value: String(newValue), updatedAt: sql`(unixepoch())` })
+                    .where(eq(schema.sessionStates.name, stateName));
+            }
+        }
 
-        await this.db.update(schema.characterState)
-            .set({
-                health: newHealth,
-                skillModifiers: newModifiers,
-                updatedAt: sql`(unixepoch())`,
-            })
-            .where(eq(schema.characterState.id, 1));
+        // Check and fire triggers (simplified)
+        const newTurnNumber = this.state.currentTurn + 1;
+        const unfiredTriggers = await this.db.select()
+            .from(schema.sessionTriggers)
+            .where(eq(schema.sessionTriggers.fired, false));
+
+        for (const trigger of unfiredTriggers) {
+            // Check turn-based triggers
+            if (trigger.triggerOnTurn === newTurnNumber) {
+                await this.db.update(schema.sessionTriggers)
+                    .set({ fired: true, firedOnTurn: newTurnNumber, updatedAt: sql`(unixepoch())` })
+                    .where(eq(schema.sessionTriggers.id, trigger.id));
+                triggersActivated.push(trigger.name);
+            }
+        }
+
+        // Get updated states for snapshot
+        const updatedStates = await this.getStatesForPrompt();
 
         // Save turn
-        const newTurnNumber = this.state.currentTurn + 1;
         const [insertedTurn] = await this.db.insert(schema.turns).values({
             turnNumber: newTurnNumber,
             userMessage,
             assistantResponse: output.narrative,
-            agentThought: `[${output.outcome.success.toUpperCase()}] ${output.outcome.reasoning}`,
+            agentThought: output.outcome ? `[${output.outcome.success.toUpperCase()}] ${output.outcome.reasoning}` : null,
             suggestedActions: output.suggestedActions,
-            characterState: { health: newHealth, skillModifiers: newModifiers },
+            statesSnapshot: updatedStates,
+            triggersActivated,
             turnOutcome: {
                 outcome: output.outcome,
-                worldUpdates: output.outcome.worldUpdates,
                 gameStatus: output.gameStatus,
             },
         }).returning();
@@ -294,10 +364,11 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         return {
             text: output.narrative,
             suggestedActions: output.suggestedActions,
-            characterState: { health: newHealth, skillModifiers: newModifiers },
+            states: updatedStates,
             turnNumber: newTurnNumber,
             gameStatus: output.gameStatus,
-            outcome: output.outcome.success,
+            outcome: output.outcome?.success,
+            triggersActivated,
         };
     }
 
@@ -356,15 +427,14 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             .where(eq(schema.turns.turnNumber, turnNumber))
             .limit(1);
 
-        if (turnRows.length) {
-            const snapshot = turnRows[0].characterState as CharacterStateSnapshot;
-            await this.db.update(schema.characterState)
-                .set({
-                    health: snapshot.health,
-                    skillModifiers: snapshot.skillModifiers,
-                    updatedAt: sql`(unixepoch())`,
-                })
-                .where(eq(schema.characterState.id, 1));
+        if (turnRows.length && turnRows[0].statesSnapshot) {
+            // Restore states from snapshot
+            const snapshot = turnRows[0].statesSnapshot as Record<string, string>;
+            for (const [name, value] of Object.entries(snapshot)) {
+                await this.db.update(schema.sessionStates)
+                    .set({ value, updatedAt: sql`(unixepoch())` })
+                    .where(eq(schema.sessionStates.name, name));
+            }
         }
 
         this.setState({ ...this.state, currentTurn: turnNumber });
@@ -388,7 +458,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
      */
     async getGameState() {
         const session = await this.db.select().from(schema.gameSession).limit(1);
-        const charState = await this.db.select().from(schema.characterState).limit(1);
+        const states = await this.getStatesForPrompt();
         const recentTurns = await this.db.select()
             .from(schema.turns)
             .orderBy(desc(schema.turns.turnNumber))
@@ -396,10 +466,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
 
         return {
             currentTurn: this.state?.currentTurn ?? -1,
-            characterState: charState.length ? {
-                health: charState[0].health,
-                skillModifiers: charState[0].skillModifiers,
-            } : null,
+            states,
             recentTurns: recentTurns.reverse(),
             model: session[0]?.model,
         };
@@ -477,10 +544,15 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         scenePrompt: string,
         characterDescription?: string | null
     ): Promise<string> {
-        // Create immersive third-person scene with character visible
-        const style = "cinematic fantasy illustration, third-person view, dramatic composition, detailed environment, atmospheric lighting, digital art masterpiece";
+        // Get game config for imageInstructions
+        const session = await this.db.select().from(schema.gameSession).limit(1);
+        const gameConfig = session[0]?.config as unknown as FullGameConfig;
 
-        let prompt = `${style}, ${scenePrompt}`;
+        // Create immersive third-person scene with character visible
+        const baseStyle = gameConfig?.imageInstructions ||
+            "cinematic fantasy illustration, third-person view, dramatic composition, detailed environment, atmospheric lighting";
+
+        let prompt = `${baseStyle}, ${scenePrompt}`;
 
         if (characterDescription) {
             // Include character in the scene from third-person perspective

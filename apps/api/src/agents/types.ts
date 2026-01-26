@@ -21,9 +21,24 @@ export interface FullGameConfig {
     id: string;
     title: string;
     description: string;
-    background: string;
-    instructions: string;
+    worldDescription: string;
     objective: string;
+    firstPrompt: string;
+
+    // Narrative control
+    authorStyle?: string | null;
+    turnInstructions?: string | null;
+    summarizationInstructions?: string | null;
+
+    // Image generation
+    imageInstructions?: string | null;
+    imageStyle?: string | null;
+
+    // End conditions
+    victoryCondition?: string | null;
+    defeatCondition?: string | null;
+
+    // Related data
     characters: Array<{
         id: string;
         name: string;
@@ -43,10 +58,22 @@ export interface FullGameConfig {
         name: string;
         content: string;
     }>;
-    trackedItems: Array<{
+    states: Array<{
         id: string;
         name: string;
         description?: string | null;
+        dataType?: string | null;
+        visibility?: string | null;
+        displayCondition?: string | null;
+        initialValue?: string | null;
+    }>;
+    triggers: Array<{
+        id: string;
+        name: string;
+        condition: string;
+        effect: string;
+        triggerOnTurn?: number | null;
+        oneShot?: boolean | null;
     }>;
 }
 

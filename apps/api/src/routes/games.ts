@@ -153,7 +153,7 @@ gamesRouter.post("/", zValidator("json", createGameSchema), async (c) => {
                 userId: user.id,
                 title: game.title,
                 description: game.description,
-                background: game.background,
+                worldDescription: game.worldDescription,
                 objective: game.objective,
                 isPublic: game.public ?? false,
             }),
@@ -186,7 +186,6 @@ gamesRouter.put("/:id", zValidator("json", updateGameSchema), async (c) => {
     }
 
     // Re-vectorize if content changed & invalidate cache (async)
-    const contentChanged = data.title !== undefined || data.description !== undefined || data.sharingPermission !== undefined; // sharingPermission maps to public? No, schema says public isn't in updateGameSchema? 
     // updateGameSchema has `sharingPermission` which presumably updates `public`?
     // Wait, updateGameSchema has: sharingPermission: z.boolean().optional()
     // Service.update maps data... 
@@ -219,7 +218,7 @@ gamesRouter.put("/:id", zValidator("json", updateGameSchema), async (c) => {
                 userId: user.id,
                 title: game.title,
                 description: game.description,
-                background: game.background,
+                worldDescription: game.worldDescription,
                 objective: game.objective,
                 isPublic: game.public ?? false,
             }),
@@ -288,7 +287,7 @@ gamesRouter.post("/:id/fork", async (c) => {
             userId: user.id,
             title: newGame.title,
             description: newGame.description,
-            background: newGame.background,
+            worldDescription: newGame.worldDescription,
             objective: newGame.objective,
             isPublic: newGame.public ?? false,
         })

@@ -34,11 +34,11 @@ export class EmbeddingsService {
     private createSearchableText(game: {
         title: string;
         description: string;
-        background?: string;
+        worldDescription?: string;
         objective?: string;
     }): string {
         const parts = [game.title, game.description];
-        if (game.background) parts.push(game.background);
+        if (game.worldDescription) parts.push(game.worldDescription);
         if (game.objective) parts.push(game.objective);
 
         // Truncate to avoid token limits (model handles ~512 tokens)
@@ -55,7 +55,7 @@ export class EmbeddingsService {
         title: string;
         description: string;
         isPublic: boolean;
-        background?: string;
+        worldDescription?: string;
         objective?: string;
     }): Promise<void> {
         const text = this.createSearchableText(game);

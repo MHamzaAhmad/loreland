@@ -42,6 +42,8 @@ export const turnOutputSchema = z.object({
         .describe("Three possible follow-up actions the player could take"),
     outcome: outcomeSchema
         .describe("The game logic outcome of the user's action"),
+    stateChanges: z.record(z.string()).optional()
+        .describe("Any tracked game states that changed, mapping state name to new value"),
     scenePrompt: z.string()
         .describe("Visual scene description for image generation: environment, lighting, mood, key elements"),
     gameStatus: z.enum(["continue", "victory", "defeat"])

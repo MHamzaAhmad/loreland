@@ -38,8 +38,29 @@ export const updateNpcSchema = createNpcSchema.partial();
 export type UpdateNpcInput = z.infer<typeof updateNpcSchema>;
 
 // ============================================================================
-// Asset Schemas (Lore, Items, Triggers)
+// State & Trigger Schemas
 // ============================================================================
+
+export const stateSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(100),
+    description: z.string().max(500).optional(),
+    dataType: z.enum(["text", "number", "boolean"]).optional(),
+    visibility: z.enum(["visible", "hidden", "conditional"]).optional(),
+    displayCondition: z.string().max(500).optional(),
+    initialValue: z.string().optional(),
+    position: z.number().int().optional(),
+});
+
+export const triggerSchema = z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(100),
+    condition: z.string().min(1).max(1000),
+    effect: z.string().min(1).max(1000),
+    triggerOnTurn: z.number().int().optional(),
+    oneShot: z.boolean().optional(),
+    position: z.number().int().optional(),
+});
 
 export const lorebookSchema = z.object({
     id: z.string().optional(),
@@ -49,43 +70,34 @@ export const lorebookSchema = z.object({
     position: z.number().int().optional(),
 });
 
-export const trackedItemSchema = z.object({
-    id: z.string().optional(),
-    name: z.string().min(1).max(100),
-    description: z.string().max(500).optional(),
-    dataType: z.enum(["text", "number", "boolean"]).optional(),
-    visibility: z.enum(["everyone", "gm", "hidden"]).optional(),
-    initialValue: z.string().optional(),
-    position: z.number().int().optional(),
-});
-
-export const triggerEventSchema = z.object({
-    id: z.string().optional(),
-    name: z.string().min(1).max(100),
-    triggerOnTurn: z.number().int().optional(),
-    condition: z.string().optional(),
-    effect: z.string().optional(),
-    position: z.number().int().optional(),
-});
-
-
 // ============================================================================
 // Game Schemas
 // ============================================================================
 
 /**
- * Schema for creating a new game manually
+ * Schema for creating a new game
  */
 export const createGameSchema = z.object({
     title: z.string().min(1).max(100),
     description: z.string().min(1).max(2000),
-    background: z.string().min(1).max(5000),
-    instructions: z.string().min(1).max(5000),
+    worldDescription: z.string().min(1).max(5000),
     objective: z.string().min(1).max(1000),
+    firstPrompt: z.string().min(1).max(2000),
+
+    // Narrative control
     authorStyle: z.string().max(500).optional(),
+    turnInstructions: z.string().max(2000).optional(),
+    summarizationInstructions: z.string().max(1000).optional(),
+
+    // Image generation
+    imageInstructions: z.string().max(1000).optional(),
+    imageStyle: z.string().max(500).optional(),
+
+    // End conditions
+    victoryCondition: z.string().max(500).optional(),
+    defeatCondition: z.string().max(500).optional(),
+
     designNotes: z.string().max(2000).optional(),
-    nsfw: z.boolean().optional().default(false),
-    contentWarnings: z.string().max(500).optional(),
 });
 
 export type CreateGameInput = z.infer<typeof createGameSchema>;
@@ -96,26 +108,19 @@ export type CreateGameInput = z.infer<typeof createGameSchema>;
 export const updateGameSchema = createGameSchema.partial().extend({
     // Image settings
     imageModel: z.string().max(100).optional(),
-    imageStyle: z.string().max(500).optional(),
     previewImage: z.string().url().optional(),
     fullSizePreviewImage: z.string().url().optional(),
 
-    // Permissions
-    allowChangeCharacterName: z.boolean().optional(),
-    allowChangeCharacterDescription: z.boolean().optional(),
-    allowChangeCharacterSkills: z.boolean().optional(),
-    sharingPermission: z.boolean().optional(),
-    editingPermission: z.boolean().optional(),
+    // Settings
+    public: z.boolean().optional(),
     favorite: z.boolean().optional(),
-    firstTurn: z.number().int().optional(),
-    maxTurns: z.number().int().optional(),
 
     // Nested updates
     characters: z.array(updateCharacterSchema.extend({ id: z.string().optional() })).optional(),
     npcs: z.array(updateNpcSchema.extend({ id: z.string().optional() })).optional(),
     lorebookEntries: z.array(lorebookSchema).optional(),
-    trackedItems: z.array(trackedItemSchema).optional(),
-    triggerEvents: z.array(triggerEventSchema).optional(),
+    states: z.array(stateSchema).optional(),
+    triggers: z.array(triggerSchema).optional(),
 });
 
 export type UpdateGameInput = z.infer<typeof updateGameSchema>;
@@ -140,17 +145,11 @@ export type GenerateGameInput = z.infer<typeof generateGameSchema>;
 // Query Schemas
 // ============================================================================
 
-/**
- * Common pagination queries
- */
 export const paginationQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(100).optional().default(20),
     offset: z.coerce.number().int().min(0).optional().default(0),
 });
 
-/**
- * Schema for list games query params
- */
 export const listGamesQuerySchema = paginationQuerySchema.extend({
     favorite: z.enum(["true", "false"]).optional().transform(v => v === "true"),
     search: z.string().optional(),
@@ -160,9 +159,6 @@ export const listGamesQuerySchema = paginationQuerySchema.extend({
 
 export type ListGamesQuery = z.infer<typeof listGamesQuerySchema>;
 
-/**
- * Schema for list sessions query params
- */
 export const listSessionsQuerySchema = paginationQuerySchema.extend({});
 
 export type ListSessionsQuery = z.infer<typeof listSessionsQuerySchema>;
@@ -171,9 +167,6 @@ export type ListSessionsQuery = z.infer<typeof listSessionsQuerySchema>;
 // Workflow Types
 // ============================================================================
 
-/**
- * Params passed to GameGenerationWorkflow
- */
 export interface GameGenerationParams {
     userId: string;
     prompt: string;
@@ -187,9 +180,6 @@ export interface GameGenerationParams {
     instanceId: string;
 }
 
-/**
- * Progress data stored in workflow state
- */
 export interface GenerationProgress {
     gameId: string;
     currentStep: string;
@@ -203,22 +193,16 @@ export interface GenerationProgress {
 // AI-Generated Content Schemas
 // ============================================================================
 
-/**
- * Schema for AI-generated game metadata
- */
 export const aiGameMetadataSchema = z.object({
     title: z.string().max(100).describe("Creative game title"),
     description: z.string().min(10).max(1000).describe("Engaging game description"),
-    background: z.string().min(10).max(2000).describe("World lore and setting"),
-    instructions: z.string().min(10).max(1000).describe("How to play the game"),
+    worldDescription: z.string().min(10).max(2000).describe("World lore and setting"),
     objective: z.string().min(10).max(500).describe("Main goal of the game"),
+    firstPrompt: z.string().min(10).max(1000).describe("Opening scenario prompt"),
 });
 
 export type AIGameMetadata = z.infer<typeof aiGameMetadataSchema>;
 
-/**
- * Schema for AI-generated character
- */
 export const aiCharacterSchema = z.object({
     name: z.string().describe("Character name"),
     description: z.string().min(10).max(1000).describe("Personality, abilities, and backstory"),
@@ -227,14 +211,8 @@ export const aiCharacterSchema = z.object({
 
 export type AICharacter = z.infer<typeof aiCharacterSchema>;
 
-/**
- * Schema for AI-generated characters array
- */
 export const aiCharactersSchema = z.array(aiCharacterSchema);
 
-/**
- * Schema for AI-generated NPC
- */
 export const aiNpcSchema = z.object({
     name: z.string().describe("NPC name"),
     detail: z.string().min(10).max(500).optional().describe("Role and personality"),
@@ -245,8 +223,28 @@ export const aiNpcSchema = z.object({
 
 export type AINPC = z.infer<typeof aiNpcSchema>;
 
-/**
- * Schema for AI-generated NPCs array
- */
 export const aiNpcsSchema = z.array(aiNpcSchema);
 
+// ============================================================================
+// Turn Response Schema (AI Output)
+// ============================================================================
+
+export const turnResponseSchema = z.object({
+    narrative: z.string().describe("Vivid description of what happens (2-5 sentences)"),
+    stateChanges: z.record(z.string()).optional().describe("State name -> new value"),
+    suggestedActions: z.array(z.string()).describe("3 contextually appropriate next actions"),
+    scenePrompt: z.string().describe("Visual description for image generation"),
+    gameStatus: z.enum(["continue", "victory", "defeat"]).describe("Game status after this turn"),
+});
+
+export type TurnResponse = z.infer<typeof turnResponseSchema>;
+
+export const openingResponseSchema = z.object({
+    narrative: z.string().describe("Opening narrative (3-5 immersive sentences)"),
+    immediateGoal: z.string().describe("What the player should focus on first"),
+    suggestedActions: z.array(z.string()).describe("3 starter actions"),
+    scenePrompt: z.string().describe("Visual description for opening image"),
+    initialStates: z.record(z.string()).optional().describe("Initial state values"),
+});
+
+export type OpeningResponse = z.infer<typeof openingResponseSchema>;

@@ -12,7 +12,7 @@ export type AuthDatabaseConfig = {
     db: any; // drizzle instance
     googleClientId?: string;
     googleClientSecret?: string;
-    secret: string;
+    secret?: string;
 };
 
 /**
@@ -37,7 +37,7 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
             usePlural: true,
             schema
         }),
-        secret: config.secret,
+        secret: config.secret || "",
 
         // Origins
         trustedOrigins: [
