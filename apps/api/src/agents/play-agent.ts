@@ -10,7 +10,7 @@ import migrations from "@packages/db/migrations/agent";
 
 // Local imports
 import { loadPrompt } from "./prompt-loader";
-import { turnOutputSchema, openingOutputSchema } from "./schemas";
+import { turnOutputSchema } from "./schemas";
 import { getLanguageModel } from "../lib/ai-config";
 import type { GameSessionState, FullGameConfig, AgentDB } from "./types";
 
@@ -80,7 +80,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             }
         }
 
-        // Set initial state
+        // Set initial state (currentTurn -1 so first processUserTurn increments to 0)
         this.setState({
             sessionId,
             gameId: gameConfig.id,
@@ -88,95 +88,8 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             currentTurn: -1,
         });
 
-        // Generate opening scenario
-        return this.generateOpeningTurn(gameConfig, model);
-    }
-
-    /**
-     * Generate the opening turn with scenario and objective
-     */
-    private async generateOpeningTurn(gameConfig: FullGameConfig, model: string) {
-        const character = gameConfig.characters.find(c => c.id === this.state.characterId);
-
-        // Get current states for prompt
-        const statesForPrompt = await this.getStatesForPrompt();
-
-        // Format NPCs for prompt
-        const npcsText = this.formatNpcsForPrompt(gameConfig.npcs);
-
-        // Format lore for prompt
-        const loreText = this.formatLoreForPrompt(gameConfig.lorebookEntries);
-
-        // Format states as text
-        const statesText = Object.entries(statesForPrompt)
-            .map(([k, v]) => `- ${k}: ${v}`)
-            .join("\n");
-
-        // Build opening prompt with all game context
-        const systemPrompt = loadPrompt("opening", {
-            gameTitle: gameConfig.title,
-            worldDescription: gameConfig.worldDescription,
-            objective: gameConfig.objective,
-            firstPrompt: gameConfig.firstPrompt || "",
-            authorStyle: gameConfig.authorStyle || "",
-            characterName: character?.name || "Unknown",
-            characterDescription: character?.description || "No description",
-            npcs: npcsText,
-            lore: loreText,
-            states: statesText,
-        });
-
-        // Single agent with structured output
-        const agent = new ToolLoopAgent({
-            model: getLanguageModel(model),
-            instructions: systemPrompt,
-            output: Output.object({ schema: openingOutputSchema }),
-            stopWhen: stepCountIs(3),
-        });
-
-        const result = await agent.generate({
-            prompt: "Generate the opening scenario for this adventure.",
-        });
-
-        const output = result.output;
-        if (!output) {
-            throw new Error("Failed to generate opening scenario");
-        }
-
-        const agentThought = `Goal: ${output.immediateGoal}. Facts: ${output.startingFacts.join(", ")}`;
-
-        // Save turn 0 (opening)
-        const [insertedTurn] = await this.db.insert(schema.turns).values({
-            turnNumber: 0,
-            userMessage: "[GAME START]",
-            assistantResponse: output.narrative,
-            agentThought,
-            suggestedActions: output.suggestedActions,
-            statesSnapshot: statesForPrompt,
-            triggersActivated: [],
-            turnOutcome: { startingFacts: output.startingFacts, immediateGoal: output.immediateGoal },
-        }).returning();
-
-        this.setState({ ...this.state, currentTurn: 0 });
-
-        // Generate scene image asynchronously (non-blocking)
-        this.ctx.waitUntil(
-            this.generateAndBroadcastImage(insertedTurn.id, 0, output.scenePrompt, character?.description)
-        );
-
-        // Notify clients that image is being generated
-        this.broadcastMessage({
-            type: "turn_image_generating",
-            turnNumber: 0,
-        });
-
-        return {
-            text: output.narrative,
-            suggestedActions: output.suggestedActions,
-            states: statesForPrompt,
-            turnNumber: 0,
-            immediateGoal: output.immediateGoal,
-        };
+        // Use firstPrompt as the opening action and process like any other turn
+        return this.processUserTurn(gameConfig.firstPrompt || "Begin the adventure.");
     }
 
     /**
@@ -397,6 +310,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             activeTriggers: activeTriggersText,
             summary: summary || "",
             recentContext,
+            imageInstructions: gameConfig.imageInstructions || "",
         });
 
         // Single agent with structured output

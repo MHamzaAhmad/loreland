@@ -45,31 +45,9 @@ export const turnOutputSchema = z.object({
     stateChanges: z.record(z.string()).optional()
         .describe("Any tracked game states that changed, mapping state name to new value"),
     scenePrompt: z.string()
-        .describe("Visual scene description for image generation: environment, lighting, mood, key elements"),
+        .describe("Visual scene description for image generation. Describe the scene as if painting a picture: include setting/environment, lighting conditions, atmospheric mood, colors, and key visible elements. Focus on what can be SEEN, not actions or narrative."),
     gameStatus: z.enum(["continue", "victory", "defeat"])
         .describe("Whether the game continues, or ends in victory/defeat"),
 });
 
 export type TurnOutput = z.infer<typeof turnOutputSchema>;
-
-// ============================================================================
-// OPENING OUTPUT SCHEMA
-// ============================================================================
-
-/**
- * Complete structured output for the opening scenario
- */
-export const openingOutputSchema = z.object({
-    narrative: z.string()
-        .describe("Opening narrative setting the scene and atmosphere (3-5 sentences)"),
-    immediateGoal: z.string()
-        .describe("The immediate short-term goal for the player based on the objective"),
-    suggestedActions: z.array(z.string())
-        .describe("Three possible starting actions the player could take"),
-    scenePrompt: z.string()
-        .describe("Visual scene description for the opening image: environment, lighting, mood, key elements"),
-    startingFacts: z.array(z.string())
-        .describe("Key facts about the starting situation, e.g. ['You are outside the castle', 'It is night time']"),
-});
-
-export type OpeningOutput = z.infer<typeof openingOutputSchema>;
