@@ -1,16 +1,14 @@
 import { type VariantProps, cva } from "class-variance-authority";
-
 import { cn } from "@/lib/utils";
-
 import { Input as ShadcnInput } from "@/components/ui/input";
 
 export const inputVariants = cva(
-  "w-full bg-transparent border-b border-[var(--primary)]/30 px-4 py-2 text-sm font-bold tracking-[0.2em] placeholder:text-[var(--primary)]/20 focus:border-[var(--primary)] focus:outline-none transition-all",
+  "flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {
         default: "",
-        ghost: "border-none px-0",
+        ghost: "border-none shadow-none focus-visible:ring-0 px-0",
       },
     },
     defaultVariants: {
@@ -25,22 +23,10 @@ export interface BitInputProps
 
 function Input({ className, variant, ...props }: BitInputProps) {
   return (
-    <div className="relative w-full group/input">
-      <ShadcnInput
-        {...props}
-        className={cn(inputVariants({ variant }), "rounded-none", className)}
-      />
-
-      {/* HUD-Focus line */}
-      <div className="absolute bottom-0 left-0 w-0 h-[2px] bg-[var(--primary)] group-focus-within:w-full transition-all duration-700 shadow-[var(--hud-glow)]" />
-
-      {/* Decorative dots */}
-      <div className="absolute -bottom-1 left-0 flex gap-1 opacity-0 group-focus-within:opacity-100 transition-opacity duration-500">
-        <div className="size-0.5 bg-[var(--primary)]" />
-        <div className="size-0.5 bg-[var(--primary)]/50" />
-        <div className="size-0.5 bg-[var(--primary)]/20" />
-      </div>
-    </div>
+    <ShadcnInput
+      {...props}
+      className={cn(inputVariants({ variant }), className)}
+    />
   );
 }
 

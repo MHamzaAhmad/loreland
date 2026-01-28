@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useGames } from '@packages/ui-logic'
-import { Plus } from 'lucide-react'
+import { Plus } from '@phosphor-icons/react'
 import { Button } from '../components/ui/8bit/button'
 import { GameCard } from '../components/GameCard'
 import { SearchBar } from '../components/SearchBar'
@@ -37,56 +37,65 @@ function Home() {
   const error = gamesQuery.error
 
   return (
-    <div className="min-h-screen p-4 md:p-8 relative">
-      <div className="hud-bracket absolute inset-4 pointer-events-none opacity-10" />
+    <div className="min-h-screen bg-background pb-20">
+      <main className="max-w-7xl mx-auto px-6 md:px-12 pt-12">
 
-      {/* Actions */}
-      <div className="max-w-4xl mx-auto mb-16 flex flex-col md:flex-row gap-8 items-stretch md:items-center relative z-10">
-        <div className="flex-1">
-          <SearchBar onSearch={handleSearch} />
+        {/* Hero / Header Section */}
+        <div className="flex flex-col md:flex-row gap-8 items-end justify-between mb-12 border-b border-dashed border-border/60 pb-12">
+          <div className="space-y-2 max-w-2xl">
+            <h1 className="text-5xl md:text-6xl font-serif font-bold tracking-tight text-foreground">
+              Worlds
+            </h1>
+            <p className="text-xl text-muted-foreground font-serif leading-relaxed max-w-lg">
+              A collection of created realms.
+            </p>
+          </div>
+
+          <div className="w-full md:w-auto">
+            <Link to="/games/new">
+              <Button size="lg" className="h-14 px-8 text-lg font-serif font-medium bg-foreground text-background hover:bg-foreground/90 rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                <Plus weight="bold" className="mr-2" size={20} />
+                Start New World
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link to="/games/new">
-          <Button variant="default" className="w-full md:w-auto shadow-[var(--hud-glow)] group/init">
-            <Plus className="h-4 w-4 mr-2 group-hover/init:rotate-90 transition-transform" />
-            <span className="font-bold tracking-[0.3em] text-xs">INITIALIZE_VISION_CORE</span>
-          </Button>
-        </Link>
-      </div>
 
-      {/* Content */}
-      <main className="max-w-6xl mx-auto relative z-10">
+        {/* Search & Filter */}
+        <div className="mb-12">
+          <SearchBar onSearch={handleSearch} placeholder="Search across worlds..." />
+        </div>
+
+        {/* Grid Content */}
         {isLoading && (
-          <div className="text-center py-20 flex flex-col items-center gap-4">
-            <div className="size-12 border-2 border-[var(--primary)]/20 border-t-[var(--primary)] rounded-full animate-spin" />
-            <p className="text-[10px] font-mono tracking-[0.4em] animate-pulse text-[var(--primary)]">SYNCING_WITH_NEURAL_GRID...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[3/4] rounded-3xl bg-muted/40 animate-pulse border border-border/40" />
+            ))}
           </div>
         )}
 
         {error && (
-          <div className="text-center py-20 hud-panel p-8 border-[var(--destructive)]/50">
-            <div className="hud-bracket absolute inset-0 opacity-40 border-[var(--destructive)]" />
-            <p className="text-xs font-mono text-[var(--destructive)] tracking-widest uppercase">
-              CRITICAL_ERR: DATA_SYNC_FAILED
-            </p>
-            <p className="text-[10px] text-[var(--destructive)]/60 mt-2">Check connection to vision-array</p>
+          <div className="py-20 text-center space-y-4">
+            <div className="text-destructive font-medium font-serif">Unable to load worlds</div>
+            <p className="text-muted-foreground text-sm">Please check your connection and try again.</p>
           </div>
         )}
 
         {!isLoading && games.length === 0 && (
-          <div className="text-center py-20 hud-panel p-12 space-y-8">
-            <div className="hud-bracket absolute inset-0 opacity-20" />
-            <div className="text-6xl opacity-20 grayscale scale-110">⌬</div>
+          <div className="py-32 text-center space-y-6">
+            <div className="mx-auto w-24 h-24 bg-secondary/30 rounded-full flex items-center justify-center text-4xl text-muted-foreground">
+              ⌬
+            </div>
             <div className="space-y-2">
-              <p className="text-xs font-mono tracking-[0.5em] text-[var(--primary)]/60">
-                {searchQuery ? 'NO_MATCHING_OBJECTS_FOUND' : 'DATABASE_EMPTY // 0x00'}
+              <h3 className="text-xl font-serif font-semibold text-foreground">No worlds found</h3>
+              <p className="text-muted-foreground font-serif">
+                {searchQuery ? `No results for "${searchQuery}"` : "The archives are currently empty."}
               </p>
-              <p className="text-[10px] text-[var(--muted-foreground)] uppercase tracking-widest">Awaiting vision core initialization</p>
             </div>
             {!searchQuery && (
               <Link to="/games/new">
-                <Button variant="outline" size="lg">
-                  <span className="text-xs tracking-[0.3em]">INIT_FIRST_VISION</span>
-                </Button>
+                <Button variant="dashed">Create First World</Button>
               </Link>
             )}
           </div>
@@ -94,18 +103,19 @@ function Home() {
 
         {games.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {games.map((game) => (
                 <GameCard key={game.id} game={game} />
               ))}
             </div>
 
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-              className="mt-8"
-            />
+            <div className="mt-16 flex justify-center">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
           </>
         )}
       </main>

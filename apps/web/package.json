@@ -14,6 +14,7 @@
 	"dependencies": {
 		"@cloudflare/vite-plugin": "^1.13.8",
 		"@packages/ui-logic": "workspace:*",
+		"@phosphor-icons/react": "^2.1.10",
 		"@radix-ui/react-progress": "^1.1.8",
 		"@radix-ui/react-slot": "^1.2.4",
 		"@tailwindcss/vite": "^4.0.6",
@@ -27,7 +28,6 @@
 		"better-auth": "catalog:auth",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
-		"lucide-react": "^0.562.0",
 		"react": "catalog:core",
 		"react-dom": "catalog:core",
 		"react-markdown": "^10.1.0",

@@ -1,31 +1,31 @@
-import { type VariantProps, cva } from "class-variance-authority";
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
 
-import { cn } from "@/lib/utils";
-
-import { Button as ShadcnButton } from "@/components/ui/button";
-import { soundService } from "@/lib/sounds";
-
-export const buttonVariants = cva(
-  "relative inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-bold uppercase tracking-[0.3em] transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 overflow-hidden group/btn",
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 active:scale-95",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[var(--hud-glow)] hover:scale-[1.02] active:scale-[0.98]",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md",
         destructive:
-          "bg-[var(--destructive)] text-[var(--destructive-foreground)] shadow-[0_0_15px_rgba(255,0,60,0.3)]",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-[var(--primary)]/40 bg-transparent text-[var(--primary)] hover:bg-[var(--primary)]/10",
+          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-[var(--secondary)] text-[var(--secondary-foreground)] hover:bg-[var(--secondary)]/90",
-        ghost: "hover:bg-[var(--primary)]/10 text-[var(--foreground)]",
-        link: "text-[var(--primary)] underline-offset-4 hover:underline",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+        dashed:
+          "border border-dashed border-primary/30 bg-background text-primary shadow-sm hover:border-primary hover:bg-primary/5",
       },
       size: {
-        default: "h-12 px-8 py-3",
-        sm: "h-10 px-6 text-[10px]",
-        lg: "h-14 px-12 text-base",
-        icon: "size-12",
+        default: "h-9 px-4 py-2",
+        sm: "h-8 rounded-md px-3 text-xs",
+        lg: "h-12 rounded-xl px-8 text-base",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: {
@@ -33,48 +33,26 @@ export const buttonVariants = cva(
       size: "default",
     },
   }
-);
+)
 
-export interface BitButtonProps
+export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
   VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
-  ref?: React.Ref<HTMLButtonElement>;
+  asChild?: boolean
 }
 
-function Button({ children, asChild, className, variant, size, ...props }: BitButtonProps) {
-  return (
-    <ShadcnButton
-      {...props}
-      className={cn(buttonVariants({ variant, size, className }), "rounded-none")}
-      size={size}
-      variant={variant}
-      asChild={asChild}
-      onMouseEnter={() => soundService.play('hover')}
-      onClick={(e) => {
-        soundService.play('click')
-        props.onClick?.(e)
-      }}
-    >
-      <span className="relative z-10 flex items-center gap-2">
-        {children}
-      </span>
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
 
-      {/* HUD Split-Border Brackets */}
-      {variant !== 'link' && variant !== 'ghost' && (
-        <>
-          <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-white/40 group-hover/btn:border-white transition-colors" />
-          <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-white/40 group-hover/btn:border-white transition-colors" />
-
-          {/* Energy Swipe Effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
-
-          {/* Subtle Scanline inside button */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px)] bg-[length:100%_3px]" />
-        </>
-      )}
-    </ShadcnButton>
-  );
-}
-
-export { Button };
+export { Button, buttonVariants }

@@ -4,7 +4,6 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createApiClient, ApiClientProvider } from '@packages/ui-logic'
 import Header from '../components/Header'
-import MatrixBackground from '../components/MatrixBackground'
 
 import appCss from '../styles.css?url'
 
@@ -53,7 +52,7 @@ export const Route = createRootRoute({
       },
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Rajdhani:wght@300;400;500;600;700&family=Fira+Code:wght@300..700&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Lora:ital,wght@0,400..700;1,400..700&display=swap',
       },
     ],
   }),
@@ -61,15 +60,15 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
   notFoundComponent: () => (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4 space-y-4">
-      <h1 className="text-4xl md:text-6xl font-orbitron text-primary animate-pulse tracking-widest">
+      <h1 className="text-4xl md:text-6xl font-sans text-primary animate-pulse tracking-wide">
         404
       </h1>
       <div className="h-px w-32 bg-primary/20" />
-      <p className="text-xl font-mono text-primary/60 uppercase tracking-widest">
-        SIGNAL_LOST // SECTOR_UNKNOWN
+      <p className="text-xl text-primary/60 uppercase tracking-wide">
+        Page Not Found
       </p>
-      <p className="text-muted-foreground font-mono text-sm max-w-md">
-        The coordinates you requested do not exist in this timeline.
+      <p className="text-muted-foreground text-sm max-w-md">
+        The page you are looking for does not exist.
       </p>
     </div>
   ),
@@ -83,13 +82,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   const isImmersiveMode = /\/games\/[^/]+\/play\/.+/.test(location.pathname)
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body className="bg-background text-foreground min-h-screen flex flex-col font-['Rajdhani'] antialiased selection:bg-[var(--primary)] selection:text-[var(--primary-foreground)]">
-        <MatrixBackground />
-        <div className="scanline-overlay" />
+      <body className="bg-background text-foreground min-h-screen flex flex-col font-['DM_Sans'] antialiased">
         <QueryClientProvider client={queryClient}>
           <ApiClientProvider client={apiClient}>
             <div className="flex-1 flex flex-col relative z-0">

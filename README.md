@@ -119,6 +119,7 @@ Exports:
 
 1. **Drizzle ORM everywhere**: Same ORM for D1 and Agent SQLite via `drizzle-orm/d1` and `drizzle-orm/durable-sqlite`
 
+
 2. **Better Auth over Clerk**: Self-hosted, no external dependency, works with Drizzle adapter
 
 3. **Agent per session**: Each game session gets its own Cloudflare Agent with isolated SQLite storage for zero-latency conversation access
@@ -126,3 +127,24 @@ Exports:
 4. **Rolling summary**: Instead of sending full history to LLM, we maintain a summary + last N messages to manage context window
 
 5. **R2 for images**: Generated images stored in R2, referenced in messages by key
+
+## Design System
+
+Loreland features a distinct "Research/Canvas" aesthetic designed to feel like a premium digital archive or laboratory journal.
+
+### Visual Language
+- **Typography**:
+  - **Headings**: `Lora` (Serif) - Adds an academic, story-rich feel to titles and "World" names.
+  - **Body**: `DM Sans` (Sans-serif) - Ensures clean, modern readability for UI elements and long descriptions.
+- **Color Palette**: "Warm Paper" theme.
+  - Backgrounds: Soft off-white (`#fcfbf9`) warmth.
+  - Accents: Pastel headers for cards (deterministic based on ID) and sleek monochrome UI elements.
+- **Iconography**: `Phosphor Icons` (Bold/Fill weights) for a robust, consistent look.
+
+### Core Components
+- **Game Cards**: Large, spacious cards with pastel headers, decorative typography, and dashed borders, resembling research dossiers.
+- **Buttons**:
+  - **Dashed**: A signature style for secondary actions, mimicking dotted lines on paper.
+  - **Solid Pill**: Primary actions (e.g., "Start New World") use a high-contrast pill shape for clear affordance.
+- **Header**: Ultra-compact (`h-12`) with a blurred background and subtle "L" logo, keeping focus on the content.
+

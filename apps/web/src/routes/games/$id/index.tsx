@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useGame, useDeleteGame, getImageUrl, useUser, useForkGame } from '@packages/ui-logic'
-import { ArrowLeft, Trash2, UserCircle, Play, Globe, MapPin, Target, Edit, GitFork } from 'lucide-react'
+import { ArrowLeft, Trash, UserCircle, Play, Globe, MapPin, Target, PencilSimple, GitFork } from '@phosphor-icons/react'
 import { Loader2 } from 'lucide-react'
-import { soundService } from '../../../lib/sounds'
+import { Button } from '../../../components/ui/8bit/button'
 
 export const Route = createFileRoute('/games/$id/')({
     component: GameDetail,
@@ -22,15 +22,13 @@ function GameDetail() {
     const forkGame = useForkGame();
 
     const handleDelete = async () => {
-        if (!confirm('WARNING: PERMANENT DATA PURGE. Are you sure you want to delete this simulation?')) return
-
+        if (!confirm('Are you sure you want to delete this vision? This action cannot be undone.')) return
         await deleteMutation.mutateAsync(id)
         navigate({ to: '/' })
     }
 
     const handleFork = () => {
         if (!game) return;
-        soundService.play('click');
         forkGame.mutate(game.id, {
             onSuccess: (response) => {
                 navigate({ to: '/games/$id', params: { id: response.game.id } });
@@ -40,236 +38,190 @@ function GameDetail() {
 
     if (gameQuery.isLoading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-black text-primary font-mono gap-2">
-                <Loader2 className="animate-spin" />
-                <span>ACCESSING_ARCHIVES...</span>
+            <div className="h-[50vh] flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
         )
     }
 
     if (gameQuery.error || !game) {
         return (
-            <div className="h-screen flex flex-col items-center justify-center gap-4 font-mono bg-black">
-                <div className="text-destructive">[DATA_CORRUPTION_DETECTED]</div>
-                <div className="text-muted-foreground text-sm">Target simulation not found in archives.</div>
-                <Link to="/" className="text-primary hover:underline text-sm flex items-center gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>RETURN_TO_CATALOG</span>
+            <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                <div className="text-xl font-medium text-foreground">Vision not found</div>
+                <p className="text-muted-foreground">The requested vision could not be located.</p>
+                <Link to="/">
+                    <Button variant="outline">
+                        Return Home
+                    </Button>
                 </Link>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-background relative selection:bg-primary/30 overflow-hidden font-mono text-sm">
-            {/* Background elements */}
-            <div className="scanline-overlay pointer-events-none fixed inset-0 z-50 opacity-50" />
-            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0 pointer-events-none" />
-
-            <div className="relative z-10 max-w-6xl mx-auto p-4 md:p-8 flex flex-col h-full">
-                {/* Header */}
-                <header className="mb-8 flex items-center justify-between border-b border-primary/20 pb-4">
-                    <Link to="/" className="group flex items-center gap-2 text-primary/60 hover:text-primary transition-colors text-xs font-mono uppercase tracking-widest">
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                        <span>Back_to_Grid</span>
+        <div className="min-h-screen bg-background pb-20">
+            <div className="max-w-5xl mx-auto p-6 md:p-12 space-y-8">
+                {/* Header Navigation */}
+                <header className="flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-sm font-medium">Back to Gallery</span>
                     </Link>
-                    <div className="text-[10px] text-primary/40 font-mono">
-                        ARCHIVE_ID: {game.id.split('-')[0].toUpperCase()}
+
+                    <div className="flex items-center gap-2">
+                        {isOwner && (
+                            <Link to="/games/$id/edit" params={{ id: game.id }}>
+                                <Button variant="ghost" size="sm">
+                                    <PencilSimple size={16} />
+                                    <span>Edit</span>
+                                </Button>
+                            </Link>
+                        )}
+
+                        {(game.public || isOwner) && !isOwner && (
+                            <Button variant="ghost" size="sm" onClick={handleFork} disabled={forkGame.isPending}>
+                                <GitFork size={16} />
+                                <span>Fork</span>
+                            </Button>
+                        )}
+
+                        {isOwner && (
+                            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                <Trash size={16} />
+                            </Button>
+                        )}
                     </div>
                 </header>
 
-                <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column: Visuals & Actions */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="relative aspect-[3/4] w-full overflow-hidden border-2 border-primary/20 bg-black/50 group">
-                            {previewUrl ? (
-                                <>
-                                    <img
-                                        src={previewUrl}
-                                        alt={game.title}
-                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-                                </>
-                            ) : (
-                                <div className="w-full h-full flex flex-col items-center justify-center text-primary/30 gap-4">
-                                    <Globe className="w-16 h-16 animate-pulse" />
-                                    <span className="text-xs uppercase tracking-widest">No_Visual_Data</span>
-                                    <div className="grid grid-cols-8 gap-1 opacity-20">
-                                        {Array.from({ length: 16 }).map((_, i) => (
-                                            <div key={i} className="w-2 h-2 bg-primary" />
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Overlay Stats */}
-                            <div className="absolute bottom-4 left-4 right-4">
-                                <div className="flex justify-between items-end border-b border-primary/30 pb-2 mb-2">
-                                    <span className="text-xs text-primary/60">STATUS</span>
-                                    <span className="text-xs text-primary font-bold">ONLINE</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <Link to="/games/$id/play" params={{ id: game.id }} className="block" onClick={() => soundService.play('click')}>
-                                <button className="w-full group relative px-6 py-4 bg-primary/10 hover:bg-primary/20 border border-primary/50 hover:border-primary transition-all overflow-hidden">
-                                    <div className="absolute inset-0 translate-x-[-100%] group-hover:translate-x-[100%] bg-gradient-to-r from-transparent via-primary/20 to-transparent transition-transform duration-1000" />
-                                    <div className="flex items-center justify-center gap-3 text-primary font-orbitron tracking-widest">
-                                        <Play className="w-5 h-5 fill-current" />
-                                        <span>INITIALIZE_SIMULATION</span>
-                                    </div>
-                                </button>
-                            </Link>
-
-                            {/* Owner Actions */}
-                            {isOwner && (
-                                <>
-                                    <Link to="/games/$id/edit" params={{ id: game.id }} className="block" onClick={() => soundService.play('click')}>
-                                        <button className="w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/30 hover:border-primary/60 text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all">
-                                            <Edit className="w-4 h-4" />
-                                            <span>MODIFY_PARAMETERS</span>
-                                        </button>
-                                    </Link>
-
-                                    <button
-                                        onClick={() => {
-                                            soundService.play('click');
-                                            handleDelete();
-                                        }}
-                                        disabled={deleteMutation.isPending}
-                                        className="w-full px-4 py-3 bg-red-950/20 hover:bg-red-950/40 border border-red-500/30 hover:border-red-500/60 text-red-500/80 hover:text-red-400 font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Purge_Archives</span>
-                                    </button>
-                                </>
-                            )}
-
-                            {/* Fork Action for Public Games (Non-Owners) */}
-                            {!isOwner && game.public && (
-                                <button
-                                    onClick={handleFork}
-                                    disabled={forkGame.isPending}
-                                    className="w-full px-4 py-3 bg-primary/5 hover:bg-primary/10 border border-primary/30 hover:border-primary/60 text-primary font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
-                                >
-                                    {forkGame.isPending ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <GitFork className="w-4 h-4" />
-                                    )}
-                                    <span>FORK_SIMULATION</span>
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Right Column: Data & Stats */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div>
-                            <h1 className="text-4xl md:text-5xl font-orbitron text-primary tracking-wide mb-2 text-shadow-glow">
-                                {game.title.toUpperCase()}
+                <main className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                    {/* Main Content Info */}
+                    <div className="lg:col-span-7 space-y-8">
+                        <div className="space-y-4">
+                            <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight leading-tight">
+                                {game.title}
                             </h1>
-                            <p className="text-primary/60 text-sm md:text-base leading-relaxed border-l-2 border-primary/30 pl-4 py-1">
+                            <p className="text-lg text-muted-foreground leading-relaxed">
                                 {game.description}
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="hud-panel p-4 bg-primary/5 border border-primary/20 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-1 opacity-20">
-                                    <MapPin className="w-12 h-12" />
+                        <div className="flex flex-wrap gap-3">
+                            {/* Tags or Meta info could go here */}
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/50 text-secondary-foreground text-xs font-medium">
+                                <Globe size={14} />
+                                <span>{game.public ? 'Public Universe' : 'Private Vision'}</span>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/50 text-secondary-foreground text-xs font-medium">
+                                <UserCircle size={14} />
+                                <span>{game.characters?.length || 0} Characters</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                            <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm space-y-3">
+                                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                    <MapPin size={18} />
+                                    <span className="text-xs font-semibold uppercase tracking-wider">World Context</span>
                                 </div>
-                                <h3 className="text-xs font-mono text-primary/50 uppercase mb-2 flex items-center gap-2">
-                                    <Globe className="w-3 h-3" /> World_Context
-                                </h3>
-                                <p className="text-sm text-primary/80 line-clamp-4">
+                                <p className="text-sm text-foreground/80 leading-relaxed">
                                     {game.background}
                                 </p>
                             </div>
 
-                            <div className="hud-panel p-4 bg-primary/5 border border-primary/20 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-1 opacity-20">
-                                    <Target className="w-12 h-12" />
+                            <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-sm space-y-3">
+                                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                                    <Target size={18} />
+                                    <span className="text-xs font-semibold uppercase tracking-wider">Objective</span>
                                 </div>
-                                <h3 className="text-xs font-mono text-primary/50 uppercase mb-2 flex items-center gap-2">
-                                    <Target className="w-3 h-3" /> Directive
-                                </h3>
-                                <p className="text-sm text-primary/80 line-clamp-4">
+                                <p className="text-sm text-foreground/80 leading-relaxed">
                                     {game.objective}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Roster */}
-                        <div className="border-t border-primary/20 pt-6">
-                            <div className="flex items-center gap-4 mb-6">
-                                <h2 className="text-xl font-orbitron text-primary tracking-widest">
-                                    ACTIVE_ROSTER
-                                </h2>
-                                <div className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
-                                <span className="text-xs font-mono text-primary/40">
-                                    {game.characters?.length || 0} UNITS
-                                </span>
-                            </div>
+                        {/* Roster Section */}
+                        <div className="pt-8 space-y-6">
+                            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                                Active Roster
+                            </h2>
 
                             {game.characters && game.characters.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {game.characters.map((char) => (
-                                        <div key={char.id} className="group relative border border-primary/20 bg-black/40 hover:border-primary/60 transition-colors">
-                                            <div className="aspect-square relative overflow-hidden">
+                                        <div key={char.id} className="group relative overflow-hidden rounded-xl bg-card border border-border/50 shadow-sm hover:shadow-md transition-all">
+                                            <div className="aspect-square bg-muted relative">
                                                 {char.portrait ? (
                                                     <img
                                                         src={getImageUrl(char.portrait)}
                                                         alt={char.name}
-                                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <UserCircle className="w-8 h-8 text-primary/20" />
+                                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
+                                                        <UserCircle className="w-12 h-12" />
                                                     </div>
                                                 )}
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-60" />
-                                                <div className="absolute bottom-2 left-2 right-2">
-                                                    <div className="text-[10px] font-mono text-primary/50 uppercase">UNIT_{char.id.toString().padStart(2, '0')}</div>
-                                                    <div className="text-sm font-bold text-primary truncate">{char.name}</div>
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+                                                <div className="absolute bottom-3 left-3 right-3 text-white">
+                                                    <div className="text-sm font-semibold truncate">{char.name}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-8 border border-dashed border-primary/20 text-primary/30 text-xs font-mono uppercase">
-                                    NO_PERSONNEL_RECORDS_FOUND
+                                <div className="p-8 rounded-xl border border-dashed border-border text-center text-muted-foreground text-sm">
+                                    No characters initialized in this vision.
                                 </div>
                             )}
                         </div>
+                    </div>
 
-                        {/* NPCs */}
-                        {game.npcs && game.npcs.length > 0 && (
-                            <div className="border-t border-primary/20 pt-6">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <h2 className="text-lg font-orbitron text-primary/80 tracking-widest">
-                                        KNOWN_ENTITIES
-                                    </h2>
-                                    <div className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent" />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {game.npcs.map((npc) => (
-                                        <div key={npc.id} className="p-3 border-l-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
-                                            <div className="flex justify-between items-start">
-                                                <span className="text-sm font-bold text-primary">{npc.name}</span>
-                                                <span className="text-[10px] text-primary/40 uppercase font-mono">{npc.location || "UNKNOWN"}</span>
-                                            </div>
-                                            {npc.oneLiner && (
-                                                <div className="mt-1 text-xs text-primary/60 italic">"{npc.oneLiner}"</div>
-                                            )}
-                                        </div>
-                                    ))}
+                    {/* Right Column: Visual & CTA */}
+                    <div className="lg:col-span-5 space-y-6">
+                        <div className="sticky top-24 space-y-6">
+                            <div className="rounded-3xl overflow-hidden shadow-xl shadow-black/5 bg-muted aspect-[3/4] relative group">
+                                {previewUrl ? (
+                                    <img
+                                        src={previewUrl}
+                                        alt={game.title}
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-secondary/30 text-secondary-foreground/30">
+                                        <Globe className="w-20 h-20 opacity-50" />
+                                    </div>
+                                )}
+
+                                <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/50 to-transparent">
+                                    <Link to="/games/$id/play" params={{ id: game.id }} className="block w-full">
+                                        <Button size="lg" className="w-full h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl">
+                                            <Play weight="fill" className="mr-2" />
+                                            Enter Simulation
+                                        </Button>
+                                    </Link>
                                 </div>
                             </div>
-                        )}
+
+                            {game.npcs && game.npcs.length > 0 && (
+                                <div className="rounded-2xl bg-card border border-border/50 shadow-sm p-6 space-y-4">
+                                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Known Entities
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {game.npcs.map((npc) => (
+                                            <div key={npc.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                                                <div className="mt-1 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                                                <div>
+                                                    <div className="text-sm font-medium text-foreground">{npc.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{npc.location || "Unknown Location"}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </main>
             </div>

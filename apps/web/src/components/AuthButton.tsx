@@ -3,17 +3,9 @@ import { Link } from '@tanstack/react-router'
 import { useUser, useAuth } from '@packages/ui-logic'
 import { signInAnonymously, signOut } from '../lib/auth-client'
 import { Button } from './ui/8bit/button'
-import { LogOut, UserPlus } from 'lucide-react'
+import { SignOut, UserPlus } from '@phosphor-icons/react'
 import { useMutation } from '@tanstack/react-query'
 
-/**
- * Auth button component
- * 
- * Shows different states:
- * - Loading: "..."
- * - Anonymous: "GUEST" + "LINK ACCOUNT"
- * - Linked: Username + "SIGN OUT"
- */
 export function AuthButton() {
     const { data, isLoading, refetch } = useUser()
     const { invalidateUser } = useAuth()
@@ -54,7 +46,7 @@ export function AuthButton() {
         // Mark as attempted and sign in
         didAttemptRef.current = true
         signInMutation.mutate()
-    }, [isLoading, data?.authenticated]) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isLoading, data?.authenticated])
 
     const isPending = isLoading || signInMutation.isPending
 
@@ -62,7 +54,7 @@ export function AuthButton() {
     if (isPending) {
         return (
             <Button variant="ghost" size="sm" disabled>
-                <span className="text-[10px] animate-pulse">...</span>
+                <div className="h-2 w-12 bg-muted animate-pulse rounded" />
             </Button>
         )
     }
@@ -71,7 +63,7 @@ export function AuthButton() {
     if (!data?.authenticated || !data.user) {
         return (
             <Button variant="ghost" size="sm" disabled>
-                <span className="text-[10px]">...</span>
+                <div className="h-2 w-12 bg-muted rounded" />
             </Button>
         )
     }
@@ -82,13 +74,16 @@ export function AuthButton() {
     if (user.isAnonymous) {
         return (
             <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[var(--8bit-muted-foreground)]">
-                    GUEST
-                </span>
+                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-secondary/40 rounded-md border border-transparent">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                        Guest
+                    </span>
+                </div>
                 <Link to="/auth/link">
-                    <Button size="sm" variant="default">
-                        <UserPlus className="h-3 w-3" />
-                        <span className="text-[10px]">LINK</span>
+                    <Button size="sm" variant="dashed" className="h-8 px-3 text-xs gap-1.5 border-dashed border-foreground/20 hover:border-foreground/40 hover:bg-secondary/60">
+                        <UserPlus size={14} weight="fill" className="text-foreground/70" />
+                        <span>Link Account</span>
                     </Button>
                 </Link>
             </div>
@@ -97,17 +92,24 @@ export function AuthButton() {
 
     // Linked user
     return (
-        <div className="flex items-center gap-2">
-            <span className="text-[10px] truncate max-w-[100px]">
-                {user.name || user.email}
-            </span>
+        <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-secondary/30 border border-transparent hover:border-border/40 transition-colors">
+                <div className="w-5 h-5 rounded bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
+                    {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
+                </div>
+                <span className="text-xs font-medium text-foreground/80 truncate max-w-[100px]">
+                    {user.name || user.email}
+                </span>
+            </div>
             <Button
                 size="sm"
                 variant="ghost"
+                className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
                 onClick={() => signOutMutation.mutate()}
                 disabled={signOutMutation.isPending}
+                title="Sign Out"
             >
-                <LogOut className="h-3 w-3" />
+                <SignOut size={14} weight="bold" />
             </Button>
         </div>
     )
