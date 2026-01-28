@@ -29,6 +29,13 @@
       "when": 1767037431992,
       "tag": "0003_oval_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1769585171453,
+      "tag": "0004_wild_moira_mactaggert",
+      "breakpoints": true
     }
   ]
 }
