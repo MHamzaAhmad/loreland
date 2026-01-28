@@ -34,60 +34,62 @@ export function ActionConsole({ onSendTurn, suggestedActions, isTyping, isConnec
     }, [isTyping, suggestedActions]);
 
     return (
-        <div className="p-4 border-t border-primary/20 bg-background/50 backdrop-blur-xl relative z-20">
+        <div className="relative z-20 max-w-3xl mx-auto space-y-4">
+
             {/* Suggested Actions */}
             {suggestedActions.length > 0 && !isTyping && (
-                <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                <div className="flex flex-wrap gap-2 justify-center animate-in slide-in-from-bottom-2 fade-in">
                     {suggestedActions.map((action, idx) => (
                         <button
                             key={idx}
                             onClick={() => handleSuggestion(action)}
                             disabled={isTyping || !isConnected}
-                            className="group relative px-4 py-2 bg-primary/5 hover:bg-primary/10 border border-primary/30 hover:border-primary/60 text-xs md:text-sm text-primary transition-all duration-300 rounded-sm clip-path-polygon"
+                            className="group px-4 py-2 bg-white hover:bg-primary hover:text-white border border-border/60 hover:border-primary shadow-sm hover:shadow-md text-sm text-foreground transition-all duration-200 rounded-full font-medium"
                         >
-                            <span className="relative z-10 flex items-center gap-2">
+                            <span className="flex items-center gap-2">
                                 <Sparkles className="w-3 h-3 opacity-50 group-hover:opacity-100" />
                                 {action}
                             </span>
-                            <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 blur-md transition-opacity" />
                         </button>
                     ))}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="relative max-w-3xl mx-auto flex gap-2">
+            <form onSubmit={handleSubmit} className="relative flex gap-2">
                 <div className="relative flex-1">
                     <input
                         ref={inputRef}
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={isConnected ? "Enter action..." : "Connecting..."}
+                        placeholder={isConnected ? "What do you do next?" : "Connecting..."}
                         disabled={!isConnected || isTyping}
-                        className="w-full bg-black/40 border border-primary/20 focus:border-primary/60 text-foreground px-4 py-3 pr-10 rounded-sm focus:outline-none focus:ring-1 focus:ring-primary/40 font-mono text-sm disabled:opacity-50 transition-all"
+                        className="w-full bg-white border border-border/60 focus:border-primary text-foreground px-6 py-4 pr-12 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/20 text-lg shadow-sm disabled:opacity-50 transition-all font-serif placeholder:font-sans placeholder:text-muted-foreground/60"
                     />
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
                 </div>
 
                 <button
                     type="submit"
                     disabled={!input.trim() || !isConnected || isTyping}
                     className={cn(
-                        "px-4 bg-primary text-black font-bold uppercase tracking-wider text-xs md:text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2",
-                        "clip-path-polygon" // Assuming you add a custom class or style for shaped buttons if needed, or rely on standard rounded
+                        "w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-sm",
+                        !input.trim() || !isConnected || isTyping
+                            ? "bg-secondary text-muted-foreground cursor-not-allowed"
+                            : "bg-primary text-primary-foreground hover:scale-105 hover:shadow-md"
                     )}
                 >
-                    <span>Execute</span>
-                    <Send className="w-4 h-4" />
+                    <Send className="w-5 h-5 ml-0.5" />
                 </button>
             </form>
 
             {/* Connection Status Indicator */}
-            <div className="absolute bottom-1 right-2 flex items-center gap-1.5 pointer-events-none">
-                <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isConnected ? "bg-green-500" : "bg-red-500")} />
-                <span className="text-[9px] text-muted-foreground font-mono uppercase">
-                    {isConnected ? "NET_ONLINE" : "NET_OFFLINE"}
-                </span>
+            <div className="flex justify-center">
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/50 border border-border/20 backdrop-blur-sm">
+                    <div className={cn("w-1.5 h-1.5 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                        {isConnected ? "Connected" : "Offline"}
+                    </span>
+                </div>
             </div>
         </div>
     );

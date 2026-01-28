@@ -35,20 +35,18 @@ export function GameInterface({
 }: GameInterfaceProps) {
 
     return (
-        <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden relative selection:bg-primary/30">
-            {/* Scanline Overlay */}
-            <div className="scanline-overlay pointer-events-none" />
+        <div className="h-[100dvh] w-full flex flex-col bg-[#fcfbf9] overflow-hidden relative selection:bg-primary/10">
 
             {/* Header / Nav */}
-            <header className="h-14 border-b border-primary/20 flex items-center px-4 bg-background/80 backdrop-blur-md z-30 shrink-0">
-                <Link to="/games/$id" params={{ id: gameId }} className="flex items-center gap-2 text-primary/60 hover:text-primary transition-colors text-sm font-mono uppercase">
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>ABORT_MISSION</span>
+            <header className="h-16 border-b border-dashed border-primary/20 flex items-center px-6 bg-white/50 backdrop-blur-md z-30 shrink-0 justify-between">
+                <Link to="/games/$id" params={{ id: gameId }} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    <span className="text-sm font-serif font-medium">Return to World</span>
                 </Link>
-                <div className="mx-auto font-orbitron text-primary tracking-widest text-lg animate-pulse">
-                    LORELAND_SIMULATION
+                <div className="font-serif font-bold text-lg text-foreground/80 tracking-tight">
+                    Active Session
                 </div>
-                <div className="w-20" /> {/* Spacer for centering */}
+                <div className="w-[100px]" /> {/* Spacer for centering */}
             </header>
 
             <div className="flex-1 flex overflow-hidden">
@@ -61,7 +59,7 @@ export function GameInterface({
                     />
 
                     {/* Input Area - Overlay on top of the turn display at the bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/90 to-transparent z-20">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#fcfbf9] via-[#fcfbf9]/95 to-transparent z-20 pt-12">
                         <ActionConsole
                             onSendTurn={onSendTurn}
                             suggestedActions={suggestedActions}
@@ -72,35 +70,35 @@ export function GameInterface({
                 </main>
 
                 {/* Sidebar (HUD) */}
-                <aside className="hidden md:flex flex-col w-72 border-l border-primary/20 bg-background/50 backdrop-blur-sm p-4 gap-4 z-20">
+                <aside className="hidden md:flex flex-col w-80 border-l border-dashed border-primary/20 bg-[#fcfbf9] p-6 gap-6 z-20">
                     <CharacterHUD characterState={characterState} />
 
                     {/* Mission Log */}
-                    <div className="flex-1 flex flex-col min-h-0 border border-primary/20 bg-black/20 rounded">
-                        <div className="p-2 border-b border-primary/20 bg-primary/5 text-xs font-mono uppercase tracking-wider text-primary/70">
-                            MISSION_LOG
+                    <div className="flex-1 flex flex-col min-h-0 bg-white rounded-xl border border-border/40 shadow-sm overflow-hidden">
+                        <div className="p-3 border-b border-border/40 bg-secondary/30 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            Game History
                         </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-thumb-primary/20">
+                        <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
                             {history.length === 0 ? (
-                                <div className="text-center py-8 text-primary/30 text-[10px] font-mono">
-                                    NO_PRIOR_RECORDS
+                                <div className="text-center py-8 text-muted-foreground/40 text-xs font-serif italic">
+                                    No history recorded yet.
                                 </div>
                             ) : (
                                 [...history].reverse().map((entry) => (
                                     <div
                                         key={entry.turnNumber}
-                                        className="group relative p-2 rounded hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all cursor-pointer"
+                                        className="group relative p-3 rounded-lg hover:bg-secondary/50 border border-transparent hover:border-border/50 transition-all cursor-pointer"
                                         onClick={() => onRewind?.(entry.turnNumber)}
                                     >
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-mono text-primary/50">
-                                                TURN_{entry.turnNumber.toString().padStart(3, '0')}
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                                                Turn {entry.turnNumber}
                                             </span>
-                                            <span className="opacity-0 group-hover:opacity-100 text-[10px] text-primary/80 uppercase">
-                                                RESTORE
+                                            <span className="opacity-0 group-hover:opacity-100 text-[10px] text-primary font-medium">
+                                                Restore
                                             </span>
                                         </div>
-                                        <div className="text-xs text-primary/80 line-clamp-2">
+                                        <div className="text-xs text-muted-foreground line-clamp-2 font-serif leading-relaxed">
                                             {entry.summary}
                                         </div>
                                     </div>

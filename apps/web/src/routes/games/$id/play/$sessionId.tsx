@@ -61,11 +61,11 @@ function ActiveGameRoute() {
 
     if (error) {
         return (
-            <div className="h-screen flex flex-col items-center justify-center gap-4 font-mono bg-background">
-                <div className="text-destructive">[CONNECTION_FAILURE]</div>
-                <div className="text-muted-foreground text-sm">{error}</div>
-                <Link to="/games/$id/play" params={{ id: gameId }} className="text-primary hover:underline text-sm">
-                    ← RETURN TO LOGS
+            <div className="h-screen flex flex-col items-center justify-center gap-4 bg-[#fcfbf9]">
+                <div className="text-destructive font-serif font-bold">Connection Failed</div>
+                <div className="text-muted-foreground text-sm font-serif">{error}</div>
+                <Link to="/games/$id/play" params={{ id: gameId }} className="text-primary hover:underline text-sm font-serif">
+                    Return to Game
                 </Link>
             </div>
         );
@@ -73,9 +73,9 @@ function ActiveGameRoute() {
 
     if (!wsUrl) {
         return (
-            <div className="h-screen flex items-center justify-center bg-black text-primary font-mono gap-2">
-                <Loader2 className="animate-spin" />
-                <span>ESTABLISHING_UPLINK...</span>
+            <div className="h-screen flex flex-col items-center justify-center bg-[#fcfbf9] text-primary gap-4">
+                <Loader2 className="animate-spin text-primary/60" />
+                <span className="font-serif italic text-muted-foreground">Connecting to world...</span>
             </div>
         );
     }

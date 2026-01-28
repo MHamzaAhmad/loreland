@@ -217,3 +217,14 @@ export interface AuthState {
     authenticated: boolean;
     user: User | null;
 }
+
+export interface SessionSummary {
+    id: string;
+    gameId: string;
+    characterId: string;
+    characterName: string | null;
+    currentTurn: number;
+    model: string;
+    lastPlayedAt: string;
+    createdAt: string;
+}

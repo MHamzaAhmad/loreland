@@ -7,6 +7,7 @@ import type {
     GenerateGameInput,
     GenerationStatus,
     SearchResponse,
+    SessionSummary,
 } from "../types";
 
 /**
@@ -184,7 +185,7 @@ export function createApiClient(options: ApiClientOptions) {
                 if (params?.offset) searchParams.set("offset", String(params.offset));
 
                 const query = searchParams.toString();
-                return request<{ sessions: { id: string; createdAt: number }[]; pagination?: { limit: number; offset: number; count: number } }>(`/api/games/${gameId}/sessions${query ? `?${query}` : ""}`);
+                return request<{ sessions: SessionSummary[]; pagination?: { limit: number; offset: number; count: number } }>(`/api/games/${gameId}/sessions${query ? `?${query}` : ""}`);
             },
 
             /**

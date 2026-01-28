@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useApiClient } from "@packages/ui-logic";
-import { Loader2, Plus, Clock, Play, LogOut } from "lucide-react";
+import { ArrowLeft, BookOpen, Clock, FileText, Plus, UserCircle, CaretRight } from "@phosphor-icons/react";
 import type { SessionSummary } from "@packages/ui-logic";
-import { soundService } from "../../../../lib/sounds";
 import { useState } from "react";
 import { Pagination } from "../../../../components/common/Pagination";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/games/$id/play/")({
     component: SessionListScreen,
@@ -27,20 +27,18 @@ function SessionListScreen() {
 
     if (sessionsQuery.isLoading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-background text-primary font-mono gap-2">
-                <Loader2 className="animate-spin" />
-                <span>LOADING_MISSION_LOGS...</span>
+            <div className="h-screen flex items-center justify-center bg-[#fcfbf9]">
+                <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
             </div>
         );
     }
 
     if (sessionsQuery.isError) {
         return (
-            <div className="h-screen flex flex-col items-center justify-center gap-4 font-mono bg-background">
-                <div className="text-destructive">[SYSTEM_ERROR]</div>
-                <div className="text-muted-foreground text-sm">{(sessionsQuery.error as Error).message}</div>
+            <div className="h-screen flex flex-col items-center justify-center gap-4 bg-[#fcfbf9]">
+                <div className="text-destructive font-bold">Error loading sessions</div>
                 <Link to="/games/$id" params={{ id: gameId }} className="text-primary hover:underline text-sm">
-                    ← RETURN TO BRIEFING
+                    Return to World
                 </Link>
             </div>
         );
@@ -51,102 +49,113 @@ function SessionListScreen() {
     const totalPages = Math.ceil(totalCount / LIMIT);
 
     return (
-        <div className="min-h-screen bg-background p-4 md:p-8 flex flex-col items-center">
-            <div className="max-w-4xl w-full space-y-8">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-primary/20 pb-6">
-                    <div>
-                        <h1 className="text-3xl font-orbitron text-primary tracking-widest mb-2">
-                            SESSION_LOG
+        <div className="min-h-screen bg-[#fcfbf9] pb-20 font-sans">
+            {/* Header Section */}
+            <div className="relative bg-[var(--pastel-blue)] text-[var(--pastel-blue-fg)] transition-colors duration-500">
+                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]" />
+
+                <div className="relative max-w-4xl mx-auto px-6 md:px-12 py-8 md:py-12">
+                    <header className="flex items-center justify-between mb-8">
+                        <Link to="/games/$id" params={{ id: gameId }} className="flex items-center gap-2 text-current/70 hover:text-current transition-colors group">
+                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-medium font-serif">Back to World</span>
+                        </Link>
+                    </header>
+
+                    <div className="space-y-4">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/60 border border-white/20 text-[11px] font-bold uppercase tracking-wider shadow-sm text-current">
+                            <BookOpen size={14} weight="bold" />
+                            <span>Game History</span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black font-serif tracking-tight text-current/90">
+                            Your Games
                         </h1>
-                        <p className="text-muted-foreground font-mono text-sm">
-                            Select a simulation to resume or initialize a new one.
+                        <p className="text-lg text-current/80 max-w-2xl font-serif">
+                            Resume your adventures or start a new game.
                         </p>
                     </div>
-                    <Link
-                        to="/games/$id"
-                        params={{ id: gameId }}
-                        className="hud-button-secondary text-xs flex items-center gap-2 px-3 py-2 border border-primary/30 rounded hover:bg-primary/10 transition-colors"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        EXIT_SIMULATION
-                    </Link>
                 </div>
+            </div>
 
-                {/* Session List */}
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center text-xs font-mono text-primary/50 uppercase tracking-wider px-2">
-                        <span>Available Sessions</span>
-                        <span>{Math.max(sessions.length, totalCount)} Records Found</span>
-                    </div>
+            <div className="max-w-4xl mx-auto px-6 relative z-10 -mt-8">
+                <div className="space-y-6">
+                    {/* New Session Button */}
+                    <Link
+                        to="/games/$id/play/new"
+                        params={{ id: gameId }}
+                        className="group flex items-center gap-6 p-6 bg-card rounded-2xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-white shadow-sm hover:shadow-md transition-all"
+                    >
+                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Plus size={24} weight="bold" className="text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-serif font-bold text-foreground group-hover:text-primary transition-colors">Start New Game</h3>
+                            <p className="text-muted-foreground text-sm mt-1">Begin a new adventure with a selected character.</p>
+                        </div>
+                    </Link>
 
-                    <div className="grid gap-3">
-                        <Link
-                            to="/games/$id/play/new"
-                            params={{ id: gameId }}
-                            onClick={() => soundService.play('click')}
-                            className="group relative flex items-center gap-4 p-6 border border-dashed border-primary/30 hover:border-primary/80 hover:bg-primary/5 transition-all w-full text-left rounded-lg"
-                        >
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Plus className="w-6 h-6 text-primary" />
+                    {/* Session List */}
+                    <div className="bg-card rounded-3xl border border-dashed border-border/60 p-6 md:p-8 shadow-sm space-y-4">
+                        <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-muted-foreground px-2 pb-2">
+                            <span>Saved Games</span>
+                            <span>{totalCount} Total</span>
+                        </div>
+
+                        {sessions.length > 0 ? (
+                            <div className="grid gap-3">
+                                {sessions.map((session) => (
+                                    <Link
+                                        key={session.id}
+                                        to="/games/$id/play/$sessionId"
+                                        params={{ id: gameId, sessionId: session.id }}
+                                        className="group block"
+                                    >
+                                        <div className="flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-secondary/20 hover:bg-white hover:border-border hover:shadow-sm transition-all">
+                                            <div className="w-12 h-12 rounded-full bg-white border border-border/50 flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                                                <UserCircle size={28} weight="duotone" />
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className="font-serif font-bold text-lg text-foreground truncate group-hover:text-primary transition-colors">
+                                                        {session.characterName || "Unknown Character"}
+                                                    </h3>
+                                                    <span className="px-1.5 py-0.5 rounded-md bg-white border border-border/50 text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                                                        Turn {session.currentTurn}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Clock size={14} />
+                                                        {session.lastPlayedAt ? new Date(session.lastPlayedAt).toLocaleDateString() : 'Just now'}
+                                                    </span>
+                                                    <span className="font-mono opacity-50">#{session.id.slice(0, 6)}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all">
+                                                <CaretRight size={20} weight="bold" />
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
                             </div>
-                            <div>
-                                <h3 className="font-orbitron text-lg text-primary group-hover:translate-x-1 transition-transform">
-                                    INITIALIZE_NEW_SIMULATION
-                                </h3>
-                                <p className="text-sm text-muted-foreground font-mono mt-1">
-                                    Begin a new story timeline
-                                </p>
-                            </div>
-                        </Link>
-
-                        {sessions.map((session) => (
-                            <div
-                                key={session.id}
-                                className="group flex items-center gap-4 p-4 border border-primary/10 bg-primary/5 hover:border-primary/50 transition-all rounded-lg"
-                            >
-                                <div className="hidden md:flex w-12 h-12 rounded-full bg-black border border-primary/20 items-center justify-center font-mono text-xs text-primary/50">
-                                    {session.currentTurn}
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-orbitron text-lg text-primary truncate">
-                                        {session.characterName || "Unknown Operative"}
-                                    </h3>
-                                    <div className="flex items-center gap-4 mt-1 text-xs font-mono text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {session.lastPlayedAt ? new Date(session.lastPlayedAt).toLocaleDateString() : 'New'}
-                                        </span>
-                                        <span className="text-primary/40">ID: {session.id.slice(0, 8)}</span>
-                                        <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary/60 text-[10px]">
-                                            {session.model}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <Link
-                                    to="/games/$id/play/$sessionId"
-                                    params={{ id: gameId, sessionId: session.id }}
-                                    className="hud-button-primary text-xs whitespace-nowrap flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded font-bold"
-                                >
-                                    <Play className="w-3 h-3" />
-                                    RESUME
-                                </Link>
-                            </div>
-                        ))}
-
-                        {sessions.length === 0 && (
-                            <div className="text-center py-12 text-muted-foreground font-mono text-sm border border-primary/10 rounded-lg">
-                                [NO_ACTIVE_SESSIONS_DETECTED]
+                        ) : (
+                            <div className="text-center py-12 text-muted-foreground/60 space-y-2">
+                                <FileText size={32} className="mx-auto opacity-50" />
+                                <p className="font-serif italic">No games found. Start a new one above.</p>
                             </div>
                         )}
 
-                        <Pagination
-                            currentPage={page}
-                            totalPages={totalPages}
-                            onPageChange={setPage}
-                        />
+                        {totalPages > 1 && (
+                            <div className="pt-4 border-t border-dashed border-border/50">
+                                <Pagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    onPageChange={setPage}
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

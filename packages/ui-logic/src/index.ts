@@ -39,6 +39,7 @@ export type {
     SearchResponse,
     User,
     AuthState,
+    SessionSummary,
 } from "./types";
 
 export * from "./game/types";
