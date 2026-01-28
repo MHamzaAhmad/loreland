@@ -8,6 +8,9 @@ import { userRouter } from "./routes/user";
 import { settingsRouter } from "./routes/settings";
 import { imagesRouter } from "./routes/images";
 import { playRouter } from "./routes/play";
+import { webhooksRouter } from "./routes/webhooks";
+import { internalRouter } from "./routes/internal";
+import { creditsRouter } from "./routes/credits";
 
 // Re-export workflow and agent for Cloudflare
 export { GameGenerationWorkflow } from "./workflows/game-generation";
@@ -60,11 +63,20 @@ app.route("/api/games", playRouter);
 // Game CRUD routes
 app.route("/api/games", gamesRouter);
 
+// Credits routes (balance, transactions)
+app.route("/api/credits", creditsRouter);
+
 // Settings routes
 app.route("/api/settings", settingsRouter);
 
 // Image proxy routes
 app.route("/api/images", imagesRouter);
+
+// Webhook routes (Polar.sh) - no session required, validated via signature
+app.route("/api/webhooks", webhooksRouter);
+
+// Internal routes (for Durable Objects) - protected by internal secret
+app.route("/api/internal", internalRouter);
 
 export default app;
 

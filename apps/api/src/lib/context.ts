@@ -21,6 +21,20 @@ export type AppEnv = {
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
         BETTER_AUTH_SECRET: string;
+        // Polar.sh integration
+        POLAR_WEBHOOK_SECRET: string;
+        POLAR_MODE?: string;
+        // Internal API auth
+        INTERNAL_SECRET: string;
+        // Billing config overrides
+        CREDIT_RATE?: string;
+        CREDIT_MARGIN?: string;
+        MIN_CREDITS?: string;
+        IMAGE_COST_PREVIEW?: string;
+        IMAGE_COST_PORTRAIT?: string;
+        IMAGE_COST_SCENE?: string;
+        MIN_BALANCE_PLAY?: string;
+        MIN_BALANCE_GENERATE?: string;
     };
     Variables: {
         auth: Auth;

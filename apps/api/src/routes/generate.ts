@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import type { AppEnv } from "../lib/context";
 import { generateGameSchema } from "../lib/schemas";
 import { GameGenerationService } from "../services/generation";
+import { CreditsService } from "../services/credits";
 
 const generateRouter = new Hono<AppEnv>();
 
@@ -13,6 +14,22 @@ generateRouter.post("/", zValidator("json", generateGameSchema), async (c) => {
     const user = c.get("user");
     if (!user) {
         return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    // Check if user has sufficient credits
+    const db = c.get("db");
+    const creditsService = new CreditsService(db, c.env);
+    const balance = await creditsService.getBalance(user.id);
+    const config = creditsService.getConfig();
+
+    if (balance < config.minBalance.toGenerate) {
+        return c.json({
+            error: "Insufficient credits",
+            code: "INSUFFICIENT_CREDITS",
+            balance,
+            required: config.minBalance.toGenerate,
+            message: `You need at least ${config.minBalance.toGenerate} credits to generate a game. Current balance: ${balance}`,
+        }, 402);
     }
 
     const { prompt, options } = c.req.valid("json");

@@ -3,6 +3,42 @@ import type { LanguageModel } from 'ai';
 import type { z } from 'zod';
 
 /**
+ * AI Usage data from OpenRouter/Provider
+ */
+export interface AIUsage {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    /** Cost in USD from OpenRouter (undefined if not available) */
+    costUSD?: number;
+}
+
+/**
+ * AI Response wrapper that includes usage data
+ */
+export interface AIResponse<T> {
+    data: T;
+    usage: AIUsage;
+}
+
+/**
+ * Extract usage data from AI SDK result
+ */
+function extractUsage(result: { usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number } }): AIUsage {
+    const usage = result.usage ?? {};
+    // OpenRouter returns cost in the experimental_providerMetadata or directly in usage
+    // Access it via type assertion since it's provider-specific
+    const usageAny = usage as { cost?: number; promptTokens?: number; completionTokens?: number; totalTokens?: number };
+
+    return {
+        promptTokens: usageAny.promptTokens ?? 0,
+        completionTokens: usageAny.completionTokens ?? 0,
+        totalTokens: usageAny.totalTokens ?? 0,
+        costUSD: usageAny.cost,
+    };
+}
+
+/**
  * AI Service for LLM operations
  * 
  * Provides a unified interface for text generation and structured output
@@ -34,6 +70,34 @@ export class AIService {
             return result.text;
         } catch (error) {
             console.error('Error in generateText:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate text with usage data
+     */
+    async generateTextWithUsage(options: {
+        systemPrompt?: string;
+        prompt: string;
+        temperature?: number;
+    }): Promise<AIResponse<string>> {
+        const { systemPrompt, prompt, temperature } = options;
+
+        try {
+            const result = await generateText({
+                model: this.model,
+                system: systemPrompt,
+                prompt,
+                temperature,
+            });
+
+            return {
+                data: result.text,
+                usage: extractUsage(result),
+            };
+        } catch (error) {
+            console.error('Error in generateTextWithUsage:', error);
             throw error;
         }
     }
@@ -79,6 +143,48 @@ export class AIService {
     }
 
     /**
+     * Generate structured output with usage data
+     * Returns both the parsed object and usage/cost information
+     */
+    async generateObjectWithUsage<T extends z.ZodTypeAny>(options: {
+        schema: T;
+        name?: string;
+        description?: string;
+        systemPrompt?: string;
+        prompt: string;
+        temperature?: number;
+    }): Promise<AIResponse<z.infer<T>>> {
+        const { schema, name, description, systemPrompt, prompt, temperature } = options;
+
+        try {
+            const result = await generateText({
+                model: this.model,
+                system: systemPrompt,
+                prompt,
+                temperature,
+                output: Output.object({
+                    schema,
+                    name,
+                    description,
+                }),
+            });
+
+            return {
+                data: result.output,
+                usage: extractUsage(result),
+            };
+        } catch (error) {
+            if (NoObjectGeneratedError.isInstance(error)) {
+                console.error('NoObjectGeneratedError in generateObjectWithUsage:');
+                console.error('Cause:', error.cause);
+                console.error('Text:', error.text);
+                console.error('Usage:', error.usage);
+            }
+            throw error;
+        }
+    }
+
+    /**
      * Generate an array of objects with schema validation
      * Uses Output.array() for generating multiple items
      * Useful for generating multiple items like characters or NPCs
@@ -114,6 +220,48 @@ export class AIService {
                 console.error('Cause:', error.cause);
                 console.error('Text:', error.text);
                 console.error('Response:', error.response);
+                console.error('Usage:', error.usage);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Generate an array of objects with usage data
+     */
+    async generateArrayWithUsage<T extends z.ZodTypeAny>(options: {
+        itemSchema: T;
+        count: number;
+        name?: string;
+        description?: string;
+        systemPrompt?: string;
+        prompt: string;
+        temperature?: number;
+    }): Promise<AIResponse<Array<z.infer<T>>>> {
+        const { itemSchema, count, name, description, systemPrompt, prompt, temperature } = options;
+
+        try {
+            const result = await generateText({
+                model: this.model,
+                system: systemPrompt,
+                prompt: `${prompt}\n\nGenerate exactly ${count} items.`,
+                temperature,
+                output: Output.array({
+                    element: itemSchema,
+                    name,
+                    description,
+                }),
+            });
+
+            return {
+                data: result.output,
+                usage: extractUsage(result),
+            };
+        } catch (error) {
+            if (NoObjectGeneratedError.isInstance(error)) {
+                console.error('NoObjectGeneratedError in generateArrayWithUsage:');
+                console.error('Cause:', error.cause);
+                console.error('Text:', error.text);
                 console.error('Usage:', error.usage);
             }
             throw error;
