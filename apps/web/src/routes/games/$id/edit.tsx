@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useGame, useUpdateGame } from '@packages/ui-logic'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, Save, Plus, Trash, Globe, Users, Box, Zap, Settings } from 'lucide-react'
+import { ArrowLeft, FloppyDisk, Plus, Trash, Globe, Users, Cube, Lightning, Gear, Books, Article } from '@phosphor-icons/react'
 import { Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -14,6 +14,16 @@ export const Route = createFileRoute('/games/$id/edit')({
 function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs))
 }
+
+const pastelClasses = [
+    'bg-[var(--pastel-red)] text-[var(--pastel-red-fg)]',
+    'bg-[var(--pastel-orange)] text-[var(--pastel-orange-fg)]',
+    'bg-[var(--pastel-yellow)] text-[var(--pastel-yellow-fg)]',
+    'bg-[var(--pastel-green)] text-[var(--pastel-green-fg)]',
+    'bg-[var(--pastel-blue)] text-[var(--pastel-blue-fg)]',
+    'bg-[var(--pastel-purple)] text-[var(--pastel-purple-fg)]',
+    'bg-[var(--pastel-pink)] text-[var(--pastel-pink-fg)]',
+]
 
 function EditGame() {
     const { id } = Route.useParams()
@@ -32,6 +42,12 @@ function EditGame() {
     const [lore, setLore] = useState<any[]>([])
     const [items, setItems] = useState<any[]>([])
     const [triggers, setTriggers] = useState<any[]>([])
+
+    const colorClass = useMemo(() => {
+        if (!game) return pastelClasses[0];
+        const index = game.id.charCodeAt(0) % pastelClasses.length;
+        return pastelClasses[index];
+    }, [game?.id]);
 
     useEffect(() => {
         if (game) {
@@ -66,138 +82,135 @@ function EditGame() {
                 },
             })
             queryClient.invalidateQueries({ queryKey: ['games', id] })
-            alert('SYSTEM UPDATE SUCCESSFUL')
         } catch (e) {
             console.error(e)
-            alert('SYSTEM UPDATE FAILED')
+            alert('Update failed')
         }
     }
 
     if (isLoading) {
         return (
-            <div className="h-screen flex items-center justify-center bg-black text-primary font-mono gap-2">
-                <Loader2 className="animate-spin" />
-                <span>ACCESSING_MAINFRAME...</span>
+            <div className="h-screen flex items-center justify-center bg-[#fcfbf9]">
+                <Loader2 className="animate-spin w-8 h-8 text-muted-foreground" />
             </div>
         )
     }
 
     if (!game) {
         return (
-            <div className="h-screen flex flex-col items-center justify-center gap-4 font-mono bg-black">
-                <div className="text-destructive">[DATA_CORRUPTION_DETECTED]</div>
-                <div className="text-muted-foreground text-sm">Target simulation not found in archives.</div>
-                <Link to="/games/mine" className="text-primary hover:underline text-sm flex items-center gap-2">
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>RETURN_TO_BASE</span>
+            <div className="h-screen flex flex-col items-center justify-center gap-4 bg-[#fcfbf9]">
+                <div className="text-xl font-serif font-medium">World not found</div>
+                <Link to="/" className="text-sm underline hover:text-primary">
+                    Return to Gallery
                 </Link>
             </div>
         )
     }
 
     const tabs = [
-        { id: 'general', label: 'CORE_DATA', icon: Settings },
-        { id: 'characters', label: 'ROSTER', icon: Users },
-        { id: 'npcs', label: 'ENTITIES', icon: Users },
-        { id: 'lore', label: 'DATABASE', icon: Globe },
-        { id: 'items', label: 'INVENTORY', icon: Box },
-        { id: 'triggers', label: 'EVENTS', icon: Zap },
+        { id: 'general', label: 'Overview', icon: Gear },
+        { id: 'characters', label: 'Characters', icon: Users },
+        { id: 'npcs', label: 'NPCs', icon: Users },
+        { id: 'lore', label: 'Lore', icon: Books },
+        { id: 'items', label: 'Items', icon: Cube },
+        { id: 'triggers', label: 'Triggers', icon: Lightning },
     ]
 
     return (
-        <div className="min-h-screen bg-background relative selection:bg-primary/30 font-mono text-sm pb-20">
-            {/* Background elements */}
-            <div className="scanline-overlay pointer-events-none fixed inset-0 z-50 opacity-50" />
-            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0 pointer-events-none" />
+        <div className="min-h-screen bg-[#fcfbf9] pb-20">
+            {/* Header Section */}
+            <div className={`relative ${colorClass} transition-colors duration-500`}>
+                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]" />
 
-            <div className="relative z-10 max-w-6xl mx-auto p-4 md:p-8">
-                <header className="mb-8 flex items-center justify-between border-b border-primary/20 pb-6">
-                    <div className="flex items-center gap-4">
-                        <Link to="/games/mine" className="group flex items-center gap-2 text-primary/60 hover:text-primary transition-colors text-xs font-mono uppercase tracking-widest">
-                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                            <span>Return</span>
+                <div className="relative max-w-6xl mx-auto px-6 md:px-12 py-8">
+                    {/* Navigation */}
+                    <header className="flex items-center justify-between mb-8">
+                        <Link to="/games/$id" params={{ id }} className="flex items-center gap-2 text-current/70 hover:text-current transition-colors group">
+                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-medium font-serif">Back to World</span>
                         </Link>
-                        <div className="h-8 w-px bg-primary/20" />
-                        <div>
-                            <div className="text-[10px] text-primary/40 font-mono mb-1">EDIT_MODE</div>
-                            <h1 className="text-xl md:text-2xl font-orbitron text-primary tracking-wide">
-                                {game.title.toUpperCase()}
-                            </h1>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleSave}
-                        disabled={updateGame.isPending}
-                        className="hud-button-primary flex items-center gap-2 px-6 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/50 hover:border-primary transition-all text-primary font-bold tracking-wider disabled:opacity-50"
-                    >
-                        {updateGame.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        <span>{updateGame.isPending ? 'UPLOADING...' : 'SAVE_CHANGES'}</span>
-                    </button>
-                </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wider opacity-60 mr-2">
+                                Edit Mode
+                            </span>
+                            <button
+                                onClick={handleSave}
+                                disabled={updateGame.isPending}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-foreground text-background hover:bg-foreground/90 rounded-full font-medium transition-all shadow-md disabled:opacity-50"
+                            >
+                                {updateGame.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FloppyDisk size={18} weight="fill" />}
+                                <span>{updateGame.isPending ? 'Saving...' : 'Save Changes'}</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <h1 className="text-4xl md:text-5xl font-black font-serif tracking-tight leading-[0.9] text-current/90 max-w-4xl">
+                        Editing: {game.title}
+                    </h1>
+                </div>
+            </div>
+
+            <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-6 relative z-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Sidebar Tabs */}
-                    <div className="lg:col-span-1 space-y-2">
-                        {tabs.map(tab => {
-                            const Icon = tab.icon
-                            const isActive = activeTab === tab.id
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={cn(
-                                        "w-full flex items-center gap-3 px-4 py-3 text-xs font-mono tracking-wider transition-all border-l-2 text-left group",
-                                        isActive
-                                            ? "border-primary bg-primary/10 text-primary"
-                                            : "border-transparent text-primary/40 hover:text-primary/70 hover:bg-primary/5"
-                                    )}
-                                >
-                                    <Icon className={cn("w-4 h-4", isActive ? "text-primary" : "text-primary/40 group-hover:text-primary/70")} />
-                                    {tab.label}
-                                </button>
-                            )
-                        })}
+                    <div className="lg:col-span-3 space-y-2">
+                        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-2 border border-dashed border-border/60">
+                            {tabs.map(tab => {
+                                const Icon = tab.icon
+                                const isActive = activeTab === tab.id
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={cn(
+                                            "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all rounded-xl text-left mb-1",
+                                            isActive
+                                                ? "bg-white shadow-sm text-foreground border border-border/50"
+                                                : "text-muted-foreground hover:bg-white/50 hover:text-foreground"
+                                        )}
+                                    >
+                                        <Icon size={18} weight={isActive ? "fill" : "regular"} className={cn(isActive ? "text-foreground" : "text-muted-foreground")} />
+                                        {tab.label}
+                                    </button>
+                                )
+                            })}
+                        </div>
                     </div>
 
                     {/* Content Area */}
-                    <div className="lg:col-span-3">
-                        <div className="bg-black/40 border border-primary/20 p-6 backdrop-blur-sm min-h-[500px] relative">
-                            {/* Content Decorators */}
-                            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/50" />
-                            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/50" />
-                            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary/50" />
-                            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary/50" />
-
+                    <div className="lg:col-span-9">
+                        <div className="bg-white rounded-3xl border border-dashed border-border/60 p-8 shadow-sm min-h-[500px] relative">
                             {activeTab === 'general' && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <div className="flex items-center gap-2 text-primary/50 border-b border-primary/10 pb-2 mb-6">
-                                        <Settings className="w-4 h-4" />
-                                        <span className="text-xs font-mono uppercase tracking-widest">Core_Parameters</span>
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="flex items-center gap-2 text-muted-foreground border-b border-dashed border-border pb-4">
+                                        <Gear size={20} />
+                                        <h2 className="font-serif text-lg font-semibold text-foreground">Core Parameters</h2>
                                     </div>
 
-                                    <FormGroup label="SIMULATION_TITLE">
+                                    <FormGroup label="World Title">
                                         <Input value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} />
                                     </FormGroup>
 
-                                    <FormGroup label="MISSION_BRIEF (Description)">
+                                    <FormGroup label="Description">
                                         <Textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} />
                                     </FormGroup>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <FormGroup label="WORLD_CONTEXT">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <FormGroup label="World Context">
                                             <Textarea value={formData.background || ''} onChange={e => setFormData({ ...formData, background: e.target.value })} rows={8} />
                                         </FormGroup>
-                                        <div className="space-y-6">
-                                            <FormGroup label="PRIMARY_OBJECTIVE">
+                                        <div className="space-y-8">
+                                            <FormGroup label="Primary Objective">
                                                 <Textarea value={formData.objective || ''} onChange={e => setFormData({ ...formData, objective: e.target.value })} rows={3} />
                                             </FormGroup>
-                                            <FormGroup label="OPERATIONAL_GUIDELINES">
+                                            <FormGroup label="AI Instructions">
                                                 <Textarea value={formData.instructions || ''} onChange={e => setFormData({ ...formData, instructions: e.target.value })} rows={3} />
                                             </FormGroup>
                                         </div>
                                     </div>
 
-                                    <FormGroup label="VISUAL_STYLE_PROMPT">
+                                    <FormGroup label="Visual Style Prompt">
                                         <Input value={formData.imageStyle || ''} onChange={e => setFormData({ ...formData, imageStyle: e.target.value })} placeholder="e.g. moody cyberpunk, neon lights, rain" />
                                     </FormGroup>
                                 </div>
@@ -207,15 +220,15 @@ function EditGame() {
                                 <ListEditor
                                     items={characters}
                                     setItems={setCharacters}
-                                    title="ACTIVE_ROSTER"
-                                    itemName="Unit"
+                                    title="Characters"
+                                    itemName="Character"
                                     icon={Users}
                                     fields={[
-                                        { key: 'name', label: 'UNIT_ID (Name)', type: 'text' },
-                                        { key: 'description', label: 'PROFILE', type: 'textarea' },
-                                        { key: 'appearance', label: 'VISUAL_DATA', type: 'textarea' }
+                                        { key: 'name', label: 'Name', type: 'text' },
+                                        { key: 'description', label: 'Profile', type: 'textarea' },
+                                        { key: 'appearance', label: 'Visual Description', type: 'textarea' }
                                     ]}
-                                    newItem={{ name: 'New Unit', description: '', appearance: '', position: 0 }}
+                                    newItem={{ name: 'New Character', description: '', appearance: '', position: 0 }}
                                 />
                             )}
 
@@ -223,16 +236,16 @@ function EditGame() {
                                 <ListEditor
                                     items={npcs}
                                     setItems={setNpcs}
-                                    title="KNOWN_ENTITIES"
-                                    itemName="Entity"
+                                    title="NPCs"
+                                    itemName="NPC"
                                     icon={Users}
                                     fields={[
-                                        { key: 'name', label: 'DESIGNATION', type: 'text' },
-                                        { key: 'detail', label: 'INTEL', type: 'textarea' },
-                                        { key: 'oneLiner', label: 'VOICE_SAMPLE', type: 'text' },
-                                        { key: 'location', label: 'LAST_KNOWN_LOCATION', type: 'text' }
+                                        { key: 'name', label: 'Name', type: 'text' },
+                                        { key: 'detail', label: 'Details', type: 'textarea' },
+                                        { key: 'oneLiner', label: 'Voice/One-liner', type: 'text' },
+                                        { key: 'location', label: 'Location', type: 'text' }
                                     ]}
-                                    newItem={{ name: 'New Entity', detail: '', oneLiner: '', location: '', position: 0 }}
+                                    newItem={{ name: 'New NPC', detail: '', oneLiner: '', location: '', position: 0 }}
                                 />
                             )}
 
@@ -240,12 +253,12 @@ function EditGame() {
                                 <ListEditor
                                     items={lore}
                                     setItems={setLore}
-                                    title="DATA_ARCHIVES"
+                                    title="Lore Entries"
                                     itemName="Entry"
                                     icon={Globe}
                                     fields={[
-                                        { key: 'name', label: 'KEYWORD', type: 'text' },
-                                        { key: 'content', label: 'DATA_CONTENT', type: 'textarea' }
+                                        { key: 'name', label: 'Keyword', type: 'text' },
+                                        { key: 'content', label: 'Content', type: 'textarea' }
                                     ]}
                                     newItem={{ name: 'New Keyword', content: '', position: 0 }}
                                 />
@@ -255,13 +268,13 @@ function EditGame() {
                                 <ListEditor
                                     items={items}
                                     setItems={setItems}
-                                    title="ASSET_MANIFEST"
+                                    title="Items"
                                     itemName="Item"
-                                    icon={Box}
+                                    icon={Cube}
                                     fields={[
-                                        { key: 'name', label: 'ITEM_ID', type: 'text' },
-                                        { key: 'initialValue', label: 'INITIAL_STATE', type: 'text' },
-                                        { key: 'description', label: 'SPECIFICATIONS', type: 'text' }
+                                        { key: 'name', label: 'Name', type: 'text' },
+                                        { key: 'initialValue', label: 'Initial State', type: 'text' },
+                                        { key: 'description', label: 'Description', type: 'text' }
                                     ]}
                                     newItem={{ name: 'Item', initialValue: '1', description: '', position: 0 }}
                                 />
@@ -271,14 +284,14 @@ function EditGame() {
                                 <ListEditor
                                     items={triggers}
                                     setItems={setTriggers}
-                                    title="EVENT_TRIGGERS"
+                                    title="Triggers"
                                     itemName="Trigger"
-                                    icon={Zap}
+                                    icon={Lightning}
                                     fields={[
-                                        { key: 'name', label: 'EVENT_ID', type: 'text' },
-                                        { key: 'triggerOnTurn', label: 'SEQUENCE_STEP', type: 'number' },
-                                        { key: 'effect', label: 'EXECUTION_INSTRUCTION', type: 'textarea' },
-                                        { key: 'condition', label: 'CONDITION_LOGIC', type: 'text' }
+                                        { key: 'name', label: 'Event ID', type: 'text' },
+                                        { key: 'triggerOnTurn', label: 'Turn #', type: 'number' },
+                                        { key: 'effect', label: 'Effect', type: 'textarea' },
+                                        { key: 'condition', label: 'Condition', type: 'text' }
                                     ]}
                                     newItem={{ name: 'Event', triggerOnTurn: 1, effect: '', condition: '', position: 0 }}
                                 />
@@ -295,9 +308,8 @@ function EditGame() {
 
 function FormGroup({ label, children }: { label: string, children: React.ReactNode }) {
     return (
-        <div className="space-y-1.5">
-            <label className="text-[10px] font-mono uppercase text-primary/60 tracking-wider flex items-center gap-2">
-                <span className="w-1 h-1 bg-primary/40 rounded-full" />
+        <div className="space-y-2">
+            <label className="text-xs font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2">
                 {label}
             </label>
             {children}
@@ -309,7 +321,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     return (
         <input
             {...props}
-            className="w-full bg-black/50 border border-primary/20 text-primary placeholder:text-primary/20 p-3 font-mono text-sm focus:outline-none focus:border-primary/60 focus:bg-primary/5 transition-all"
+            className="w-full bg-secondary/30 border border-border/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground/20 transition-all placeholder:text-muted-foreground/50"
         />
     )
 }
@@ -318,7 +330,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     return (
         <textarea
             {...props}
-            className="w-full bg-black/50 border border-primary/20 text-primary placeholder:text-primary/20 p-3 font-mono text-sm focus:outline-none focus:border-primary/60 focus:bg-primary/5 transition-all resize-y min-h-[100px]"
+            className="w-full bg-secondary/30 border border-border/50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground/20 transition-all resize-y min-h-[100px] placeholder:text-muted-foreground/50"
         />
     )
 }
@@ -341,42 +353,41 @@ function ListEditor({ items, setItems, title, itemName, icon: Icon, fields, newI
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center border-b border-primary/10 pb-2 mb-6">
-                <div className="flex items-center gap-2 text-primary/50">
-                    {Icon && <Icon className="w-4 h-4" />}
-                    <span className="text-xs font-mono uppercase tracking-widest">{title}</span>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center border-b border-dashed border-border pb-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    {Icon && <Icon size={20} />}
+                    <span className="font-serif text-lg font-semibold text-foreground">{title}</span>
                 </div>
                 <button
                     onClick={add}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-xs font-mono uppercase tracking-wider transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
                 >
-                    <Plus className="h-3 w-3" /> ADD_{itemName.toUpperCase()}
+                    <Plus weight="bold" /> Add {itemName}
                 </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid gap-6">
                 {items.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-16 border border-dashed border-primary/20 bg-primary/5 text-primary/30 gap-4">
-                        <Box className="w-8 h-8 opacity-50" />
-                        <div className="text-xs font-mono uppercase tracking-widest">No_Data_Found</div>
+                    <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border/50 rounded-2xl bg-secondary/5 text-muted-foreground/50 gap-3">
+                        <Article size={32} weight="light" />
+                        <div className="text-sm">No items found</div>
                     </div>
                 )}
 
                 {items.map((item: any, index: number) => (
-                    <div key={index} className="border border-primary/20 bg-black/20 hover:border-primary/40 transition-colors relative group">
-                        <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => remove(index)} className="text-red-500/50 hover:text-red-500 transition-colors p-1">
-                                <Trash className="h-4 w-4" />
+                    <div key={index} className="border border-border/50 bg-card rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden group">
+                        <div className="px-4 py-3 border-b border-border/10 bg-secondary/20 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-mono text-muted-foreground opacity-50">#{String(index + 1).padStart(2, '0')}</span>
+                                <span className="font-serif font-medium text-foreground">{item.name || 'Untitled'}</span>
+                            </div>
+                            <button onClick={() => remove(index)} className="text-muted-foreground hover:text-destructive transition-colors p-1 opacity-50 group-hover:opacity-100">
+                                <Trash size={16} />
                             </button>
                         </div>
 
-                        <div className="p-2 border-b border-primary/10 bg-primary/5 flex items-center gap-2">
-                            <span className="text-[10px] font-mono text-primary/40">#{String(index + 1).padStart(2, '0')}</span>
-                            <span className="font-orbitron text-xs text-primary/80">{item.name || 'UNTITLED_UNIT'}</span>
-                        </div>
-
-                        <div className="p-4 space-y-4">
+                        <div className="p-6 space-y-5">
                             {fields.map((field: any) => (
                                 <FormGroup key={field.key} label={field.label}>
                                     {field.type === 'textarea' ? (
