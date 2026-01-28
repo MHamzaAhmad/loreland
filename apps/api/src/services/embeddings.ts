@@ -104,22 +104,13 @@ export class EmbeddingsService {
 
         let filter: VectorizeVectorMetadataFilter | undefined;
 
-        if (options?.userId && options?.isPublic) {
-            // Search own OR public
-            // Not natively supported in single query easily if we want "mine OR public" without complex boolean logic
-            // Cloudflare Vectorize supports $or
-            filter = {
-                $or: [
-                    { userId: { $eq: options.userId } },
-                    { isPublic: { $eq: "true" } }
-                ] as any // Cast to satisfy strict union type of VectorizeVectorMetadataFilter
-            };
-        } else if (options?.userId) {
-            // Only mine
-            filter = { userId: { $eq: options.userId } };
-        } else if (options?.isPublic) {
-            // Only public
+        // Public gallery mode: only public games
+        if (options?.isPublic === true) {
             filter = { isPublic: { $eq: "true" } };
+        }
+        // Private/user mode: only user's own games
+        else if (options?.userId) {
+            filter = { userId: { $eq: options.userId } };
         }
 
         const results = await this.vectorize.query(embedding, {

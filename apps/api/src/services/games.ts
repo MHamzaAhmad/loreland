@@ -8,7 +8,11 @@ export class GamesService {
     constructor(private db: DrizzleD1Database<typeof schema>) { }
 
     /**
-     * List games for a user with pagination
+     * List games with filtering
+     * 
+     * Modes:
+     * - isPublic=true: Only public games (for main page gallery)
+     * - isPublic=false/undefined with userId: Only user's own games (for /games/mine)
      */
     async list(options: {
         userId?: string;
@@ -25,12 +29,13 @@ export class GamesService {
             conditions.push(inArray(games.id, options.ids));
         }
 
-        if (options.userId && options.isPublic) {
-            conditions.push(sql`(${games.userId} = ${options.userId} OR ${games.public} = 1)`);
-        } else if (options.userId) {
-            conditions.push(eq(games.userId, options.userId));
-        } else if (options.isPublic) {
+        // Public gallery mode: only public games
+        if (options.isPublic === true) {
             conditions.push(eq(games.public, true));
+        }
+        // Private/user mode: only user's own games
+        else if (options.userId) {
+            conditions.push(eq(games.userId, options.userId));
         }
 
         if (options.favorite !== undefined) {

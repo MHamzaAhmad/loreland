@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useGames } from '@packages/ui-logic'
-import { Plus } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass, Books } from '@phosphor-icons/react'
 import { Button } from '../components/ui/8bit/button'
 import { GameCard } from '../components/GameCard'
-import { SearchBar } from '../components/SearchBar'
 import { Pagination } from '../components/common/Pagination'
 
 export const Route = createFileRoute('/')({
@@ -18,14 +17,14 @@ function Home() {
 
   const gamesQuery = useGames({
     search: searchQuery,
-    public: true, // Show public games on home
+    public: true, // Show only public games on home
     limit: LIMIT,
     offset: (page - 1) * LIMIT
   })
 
   // Reset page when search changes
-  const handleSearch = (query: string) => {
-    setSearchQuery(query)
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     setPage(1)
   }
 
@@ -37,85 +36,104 @@ function Home() {
   const error = gamesQuery.error
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <main className="max-w-7xl mx-auto px-6 md:px-12 pt-12">
+    <div className="min-h-screen bg-background">
+      {/* Compact Header */}
+      <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
+          <h1 className="text-sm font-semibold text-foreground shrink-0">Worlds</h1>
 
-        {/* Hero / Header Section */}
-        <div className="flex flex-col md:flex-row gap-8 items-end justify-between mb-12 border-b border-dashed border-border/60 pb-12">
-          <div className="space-y-2 max-w-2xl">
-            <h1 className="text-5xl md:text-6xl font-serif font-bold tracking-tight text-foreground">
-              Worlds
-            </h1>
-            <p className="text-xl text-muted-foreground font-serif leading-relaxed max-w-lg">
-              A collection of created realms.
-            </p>
-          </div>
+          {/* Search */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-md">
+            <div className="relative">
+              <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search worlds..."
+                className="w-full h-9 pl-9 pr-4 rounded-lg border border-border/60 bg-secondary/30 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
+          </form>
 
-          <div className="w-full md:w-auto">
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/games/mine">
+              <Button variant="ghost" size="sm" className="h-9 px-3 text-sm gap-1.5">
+                <Books size={16} />
+                <span className="hidden sm:inline">My Worlds</span>
+              </Button>
+            </Link>
             <Link to="/games/new">
-              <Button size="lg" className="h-14 px-8 text-lg font-serif font-medium bg-foreground text-background hover:bg-foreground/90 rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all">
-                <Plus weight="bold" className="mr-2" size={20} />
-                Start New World
+              <Button size="sm" className="h-9 px-3 text-sm gap-1.5 bg-foreground text-background hover:bg-foreground/90">
+                <Plus size={16} weight="bold" />
+                <span className="hidden sm:inline">Create</span>
               </Button>
             </Link>
           </div>
         </div>
+      </header>
 
-        {/* Search & Filter */}
-        <div className="mb-12">
-          <SearchBar onSearch={handleSearch} placeholder="Search across worlds..." />
-        </div>
-
-        {/* Grid Content */}
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        {/* Loading State */}
         {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[3/4] rounded-3xl bg-muted/40 animate-pulse border border-border/40" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <div key={i} className="aspect-[3/4] rounded-2xl bg-muted/40 animate-pulse" />
             ))}
           </div>
         )}
 
+        {/* Error State */}
         {error && (
-          <div className="py-20 text-center space-y-4">
-            <div className="text-destructive font-medium font-serif">Unable to load worlds</div>
-            <p className="text-muted-foreground text-sm">Please check your connection and try again.</p>
+          <div className="py-20 text-center space-y-2">
+            <div className="text-destructive font-medium">Unable to load worlds</div>
+            <p className="text-sm text-muted-foreground">Please try again later.</p>
           </div>
         )}
 
+        {/* Empty State */}
         {!isLoading && games.length === 0 && (
-          <div className="py-32 text-center space-y-6">
-            <div className="mx-auto w-24 h-24 bg-secondary/30 rounded-full flex items-center justify-center text-4xl text-muted-foreground">
-              ⌬
+          <div className="py-24 text-center space-y-4">
+            <div className="mx-auto w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center text-2xl text-muted-foreground">
+              🌍
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-serif font-semibold text-foreground">No worlds found</h3>
-              <p className="text-muted-foreground font-serif">
-                {searchQuery ? `No results for "${searchQuery}"` : "The archives are currently empty."}
+            <div className="space-y-1">
+              <h3 className="font-medium text-foreground">
+                {searchQuery ? 'No matching worlds' : 'No worlds yet'}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery
+                  ? `No results for "${searchQuery}"`
+                  : "Be the first to create a world."}
               </p>
             </div>
             {!searchQuery && (
               <Link to="/games/new">
-                <Button variant="dashed">Create First World</Button>
+                <Button size="sm" className="mt-2">Create World</Button>
               </Link>
             )}
           </div>
         )}
 
+        {/* Games Grid */}
         {games.length > 0 && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {games.map((game) => (
                 <GameCard key={game.id} game={game} />
               ))}
             </div>
 
-            <div className="mt-16 flex justify-center">
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-            </div>
+            {totalPages > 1 && (
+              <div className="mt-10 flex justify-center">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
           </>
         )}
       </main>
