@@ -199,6 +199,13 @@ export const aiGameMetadataSchema = z.object({
     worldDescription: z.string().min(10).max(2000).describe("World lore and setting"),
     objective: z.string().min(10).max(500).describe("Main goal of the game"),
     firstPrompt: z.string().min(10).max(1000).describe("Opening scenario prompt"),
+    // Enhanced fields
+    authorStyle: z.string().max(500).optional().describe("Narrative voice and writing style for the AI (e.g. mysterious storyteller, witty narrator)"),
+    turnInstructions: z.string().max(1000).optional().describe("Instructions given to the AI each turn about how to respond"),
+    summarizationInstructions: z.string().max(500).optional().describe("How to summarize the story (e.g. focus on plot points and character relationships)"),
+    victoryCondition: z.string().max(500).optional().describe("How the player wins the game"),
+    defeatCondition: z.string().max(500).optional().describe("How the player loses the game"),
+    imageInstructions: z.string().max(500).optional().describe("Style instructions for generated scene images (e.g. cinematic fantasy illustration, dramatic lighting)"),
 });
 
 export type AIGameMetadata = z.infer<typeof aiGameMetadataSchema>;
@@ -219,11 +226,47 @@ export const aiNpcSchema = z.object({
     oneLiner: z.string().min(5).max(300).optional().describe("Memorable quote"),
     appearance: z.string().min(5).max(500).optional().describe("Physical description"),
     location: z.string().min(5).max(300).optional().describe("Where the NPC can be found"),
+    secretInfo: z.string().max(500).optional().describe("Secret information about this NPC that players can discover"),
 });
 
 export type AINPC = z.infer<typeof aiNpcSchema>;
 
 export const aiNpcsSchema = z.array(aiNpcSchema);
+
+// State generation schema
+export const aiStateSchema = z.object({
+    name: z.string().describe("State name like 'Health', 'Gold', 'Reputation', 'Hunger'"),
+    description: z.string().max(200).optional().describe("What this state represents and how it affects gameplay"),
+    dataType: z.enum(["text", "number", "boolean"]).describe("Data type of the state value"),
+    initialValue: z.string().describe("Starting value (e.g. '100', 'true', 'Neutral')"),
+    visibility: z.enum(["visible", "hidden"]).optional().describe("Whether players can see this state"),
+});
+
+export type AIState = z.infer<typeof aiStateSchema>;
+
+export const aiStatesSchema = z.array(aiStateSchema);
+
+// Trigger generation schema  
+export const aiTriggerSchema = z.object({
+    name: z.string().describe("Trigger name for identification"),
+    condition: z.string().describe("Natural language condition when this triggers (e.g. 'Health drops below 20')"),
+    effect: z.string().describe("What happens when triggered (e.g. 'Character becomes desperate, dialogue options change')"),
+    oneShot: z.boolean().optional().describe("Whether this trigger fires only once"),
+});
+
+export type AITrigger = z.infer<typeof aiTriggerSchema>;
+
+export const aiTriggersSchema = z.array(aiTriggerSchema);
+
+// Lorebook entry generation schema
+export const aiLorebookSchema = z.object({
+    name: z.string().describe("Entry name/title (e.g. 'Dragon Lore', 'Kingdom History')"),
+    content: z.string().min(20).max(1000).describe("Detailed lore content that adds depth to the world"),
+});
+
+export type AILorebook = z.infer<typeof aiLorebookSchema>;
+
+export const aiLorebooksSchema = z.array(aiLorebookSchema);
 
 // ============================================================================
 // Turn Response Schema (AI Output)

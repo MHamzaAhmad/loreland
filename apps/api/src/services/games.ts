@@ -336,6 +336,14 @@ export class GamesService {
             worldDescription: string;
             objective: string;
             firstPrompt: string;
+            // Enhanced fields from generation
+            authorStyle?: string;
+            turnInstructions?: string;
+            summarizationInstructions?: string;
+            victoryCondition?: string;
+            defeatCondition?: string;
+            // Image fields
+            imageInstructions?: string;
             previewImage?: string;
             fullSizePreviewImage?: string;
             imageStyle?: string;

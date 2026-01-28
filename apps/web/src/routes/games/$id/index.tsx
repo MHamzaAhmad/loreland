@@ -164,7 +164,7 @@ function GameDetail() {
                                     <div className="h-px flex-1 bg-border border-t border-dashed" />
                                 </div>
                                 <div className="p-6 rounded-2xl bg-[#f5f5f4]/50 border border-border/50 text-foreground/80 leading-relaxed font-serif">
-                                    {game.background}
+                                    {(game as any).worldDescription}
                                 </div>
                             </div>
 

@@ -101,6 +101,17 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         // Get current states for prompt
         const statesForPrompt = await this.getStatesForPrompt();
 
+        // Format NPCs for prompt
+        const npcsText = this.formatNpcsForPrompt(gameConfig.npcs);
+
+        // Format lore for prompt
+        const loreText = this.formatLoreForPrompt(gameConfig.lorebookEntries);
+
+        // Format states as text
+        const statesText = Object.entries(statesForPrompt)
+            .map(([k, v]) => `- ${k}: ${v}`)
+            .join("\n");
+
         // Build opening prompt with all game context
         const systemPrompt = loadPrompt("opening", {
             gameTitle: gameConfig.title,
@@ -110,6 +121,9 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             authorStyle: gameConfig.authorStyle || "",
             characterName: character?.name || "Unknown",
             characterDescription: character?.description || "No description",
+            npcs: npcsText,
+            lore: loreText,
+            states: statesText,
         });
 
         // Single agent with structured output
@@ -220,7 +234,52 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     }
 
     /**
-     * Get active triggers for prompt
+     * Get all states including hidden ones (for trigger evaluation)
+     */
+    private async getAllStates(): Promise<Record<string, { value: string; dataType: string }>> {
+        const stateRows = await this.db.select().from(schema.sessionStates);
+        const result: Record<string, { value: string; dataType: string }> = {};
+        for (const s of stateRows) {
+            result[s.name] = { value: s.value, dataType: s.dataType || "text" };
+        }
+        return result;
+    }
+
+    /**
+     * Format NPCs for prompt inclusion
+     */
+    private formatNpcsForPrompt(npcs: FullGameConfig["npcs"]): string {
+        if (!npcs || npcs.length === 0) return "";
+        return npcs.map(npc => {
+            let line = `- **${npc.name}**`;
+            if (npc.detail) line += `: ${npc.detail}`;
+            return line;
+        }).join("\n");
+    }
+
+    /**
+     * Format lorebook entries for prompt inclusion
+     */
+    private formatLoreForPrompt(lore: FullGameConfig["lorebookEntries"]): string {
+        if (!lore || lore.length === 0) return "";
+        return lore.map(entry => `### ${entry.name}\n${entry.content}`).join("\n\n");
+    }
+
+    /**
+     * Get pending (unfired) triggers for prompt
+     */
+    private async getPendingTriggersForPrompt(): Promise<string> {
+        const triggers = await this.db.select()
+            .from(schema.sessionTriggers)
+            .where(eq(schema.sessionTriggers.fired, false));
+
+        if (triggers.length === 0) return "";
+
+        return triggers.map(t => `- **${t.name}**: When "${t.condition}" → ${t.effect}`).join("\n");
+    }
+
+    /**
+     * Get active (fired) triggers for prompt
      */
     private async getActiveTriggersForPrompt(): Promise<string> {
         const triggers = await this.db.select()
@@ -228,6 +287,56 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             .where(eq(schema.sessionTriggers.fired, true));
 
         return triggers.map(t => `${t.name}: ${t.effect}`).join("\n");
+    }
+
+    /**
+     * Evaluate trigger conditions against current state
+     * Simple parser that handles: "Health < 20", "Gold >= 100", "Status = 'Poisoned'"
+     */
+    private evaluateTriggerCondition(condition: string, states: Record<string, { value: string; dataType: string }>): boolean {
+        // Parse simple conditions like "Health < 20" or "Gold >= 100"
+        const match = condition.match(/^(\w+)\s*(<=?|>=?|==?|!=)\s*(.+)$/);
+        if (!match) return false;
+
+        const [, stateName, operator, targetRaw] = match;
+        const stateData = states[stateName];
+        if (!stateData) return false;
+
+        const target = targetRaw.trim().replace(/^['"]|['"]$/g, ""); // Remove quotes
+        const currentValue = stateData.value;
+
+        if (stateData.dataType === "number") {
+            const numCurrent = parseFloat(currentValue);
+            const numTarget = parseFloat(target);
+            if (isNaN(numCurrent) || isNaN(numTarget)) return false;
+
+            switch (operator) {
+                case "<": return numCurrent < numTarget;
+                case "<=": return numCurrent <= numTarget;
+                case ">": return numCurrent > numTarget;
+                case ">=": return numCurrent >= numTarget;
+                case "=":
+                case "==": return numCurrent === numTarget;
+                case "!=": return numCurrent !== numTarget;
+            }
+        } else if (stateData.dataType === "boolean") {
+            const boolCurrent = currentValue.toLowerCase() === "true";
+            const boolTarget = target.toLowerCase() === "true";
+            switch (operator) {
+                case "=":
+                case "==": return boolCurrent === boolTarget;
+                case "!=": return boolCurrent !== boolTarget;
+            }
+        } else {
+            // Text comparison
+            switch (operator) {
+                case "=":
+                case "==": return currentValue === target;
+                case "!=": return currentValue !== target;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -244,6 +353,11 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         // Get current states
         const statesForPrompt = await this.getStatesForPrompt();
         const activeTriggersText = await this.getActiveTriggersForPrompt();
+        const pendingTriggersText = await this.getPendingTriggersForPrompt();
+
+        // Format NPCs and lore
+        const npcsText = this.formatNpcsForPrompt(gameConfig.npcs);
+        const loreText = this.formatLoreForPrompt(gameConfig.lorebookEntries);
 
         // Get context (previous turns)
         const recentTurns = await this.db.select()
@@ -276,7 +390,10 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             defeatCondition: gameConfig.defeatCondition || "",
             characterName: character?.name || "Unknown",
             characterDescription: character?.description || "No description",
+            npcs: npcsText,
+            lore: loreText,
             states: statesText,
+            pendingTriggers: pendingTriggersText,
             activeTriggers: activeTriggersText,
             summary: summary || "",
             recentContext,
@@ -309,19 +426,36 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             }
         }
 
-        // Check and fire triggers (simplified)
+        // Get updated states for trigger evaluation
+        const allStates = await this.getAllStates();
+
+        // Check and fire triggers
         const newTurnNumber = this.state.currentTurn + 1;
         const unfiredTriggers = await this.db.select()
             .from(schema.sessionTriggers)
             .where(eq(schema.sessionTriggers.fired, false));
 
         for (const trigger of unfiredTriggers) {
+            let shouldFire = false;
+
             // Check turn-based triggers
             if (trigger.triggerOnTurn === newTurnNumber) {
+                shouldFire = true;
+            }
+
+            // Check condition-based triggers
+            if (!shouldFire && trigger.condition) {
+                shouldFire = this.evaluateTriggerCondition(trigger.condition, allStates);
+            }
+
+            if (shouldFire) {
                 await this.db.update(schema.sessionTriggers)
                     .set({ fired: true, firedOnTurn: newTurnNumber, updatedAt: sql`(unixepoch())` })
                     .where(eq(schema.sessionTriggers.id, trigger.id));
                 triggersActivated.push(trigger.name);
+
+                // If oneShot is false or trigger should persist, we might want different behavior
+                // For now, once fired, it stays in "fired" state
             }
         }
 
@@ -358,7 +492,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
 
         // Generate summary every 5 turns
         if (newTurnNumber % 5 === 0) {
-            this.ctx.waitUntil(this.generateSummary(model));
+            this.ctx.waitUntil(this.generateSummary(model, gameConfig));
         }
 
         return {
@@ -375,12 +509,18 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     /**
      * Generate a rolling summary of the story
      */
-    private async generateSummary(model: string) {
+    private async generateSummary(model: string, gameConfig?: FullGameConfig) {
         const allTurns = await this.db.select()
             .from(schema.turns)
             .orderBy(schema.turns.turnNumber);
 
         const existingSummary = await this.db.select().from(schema.summary).limit(1);
+
+        // Get game config if not provided
+        if (!gameConfig) {
+            const session = await this.db.select().from(schema.gameSession).limit(1);
+            gameConfig = session[0]?.config as unknown as FullGameConfig;
+        }
 
         const recentEvents = allTurns.slice(-5).map(t =>
             `Player: ${t.userMessage}\nGame Master: ${t.assistantResponse}`
@@ -389,6 +529,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         const summaryPrompt = loadPrompt("summary", {
             previousSummary: existingSummary.length ? existingSummary[0].content : undefined,
             recentEvents,
+            summarizationInstructions: gameConfig?.summarizationInstructions || "",
         });
 
         const summaryAgent = new ToolLoopAgent({
@@ -548,7 +689,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         const session = await this.db.select().from(schema.gameSession).limit(1);
         const gameConfig = session[0]?.config as unknown as FullGameConfig;
 
-        // Create immersive third-person scene with character visible
+        // Use imageInstructions from game config, with fallback
         const baseStyle = gameConfig?.imageInstructions ||
             "cinematic fantasy illustration, third-person view, dramatic composition, detailed environment, atmospheric lighting";
 

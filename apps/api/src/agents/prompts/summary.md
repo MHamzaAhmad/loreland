@@ -1,6 +1,8 @@
-# Story Summary Prompt
+# Story Summary
 
-You are a story summarizer. Create a concise summary of the events that maintains important plot points, character developments, and key decisions.
+{{#if summarizationInstructions}}
+{{summarizationInstructions}}
+{{/if}}
 
 {{#if previousSummary}}
 ## Previous Summary
@@ -10,12 +12,4 @@ You are a story summarizer. Create a concise summary of the events that maintain
 {{/if}}
 {{recentEvents}}
 
-## Instructions
-
-Provide an updated summary of the entire story so far. Maximum 500 words.
-
-Focus on:
-- Key plot points
-- Character development
-- Important decisions made
-- Current situation
+Provide an updated summary (max 500 words).

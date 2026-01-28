@@ -8,89 +8,167 @@ export interface Game {
     userId: string;
     title: string;
     description: string;
-    background: string;
-    instructions: string;
+    // World & Narrative
+    worldDescription: string;
+    authorStyle: string | null;
+    turnInstructions: string | null;
+    summarizationInstructions: string | null;
+    firstPrompt: string;
+    // End Conditions
     objective: string;
+    victoryCondition: string | null;
+    defeatCondition: string | null;
+    // Image Generation
+    imageModel: string | null;
+    imageStyle: string | null;
+    imageInstructions: string | null;
     previewImage: string | null;
     fullSizePreviewImage: string | null;
-    imageStyle: string | null;
-    nsfw: boolean;
+    // Metadata
+    version: string | null;
+    designNotes: string | null;
+    sourceGameId: string | null;
     public: boolean;
+    favorite: boolean;
     createdAt: string;
     updatedAt: string;
 }
 
 export interface GameFull extends Game {
+    skills: GameSkill[];
     characters: Character[];
     npcs: Npc[];
+    lorebookEntries: LorebookEntry[];
+    states: State[];
+    triggers: Trigger[];
+}
+
+export interface GameSkill {
+    id: string;
+    gameId: string;
+    name: string;
+    position: number;
 }
 
 export interface Character {
-    id: number;
+    id: string;
     gameId: string;
     characterId: string;
     name: string;
     description: string;
     portrait: string | null;
     fullSizePortrait: string | null;
+    portraitOptions: string[];
+    fullSizePortraitOptions: string[];
+    currentPortraitIndex: number;
+    portraitPromptDetails: Record<string, unknown> | null;
     position: number;
 }
 
 export interface Npc {
-    id: number;
+    id: string;
     gameId: string;
     name: string;
     detail: string | null;
     oneLiner: string | null;
     appearance: string | null;
     location: string | null;
-    position: number | null;
+    secretInfo: string | null;
+    names: string[];
+    imgAppearance: string | null;
+    imgClothing: string | null;
+    position: number;
+}
+
+export interface LorebookEntry {
+    id: string;
+    gameId: string;
+    name: string;
+    content: string;
+    keywords: string[];
+    position: number;
+}
+
+export interface State {
+    id: string;
+    gameId: string;
+    name: string;
+    description: string | null;
+    dataType: "text" | "number" | "boolean";
+    initialValue: string | null;
+    visibility: "visible" | "hidden" | "conditional";
+    displayCondition: string | null;
+    position: number;
+}
+
+export interface Trigger {
+    id: string;
+    gameId: string;
+    name: string;
+    condition: string;
+    effect: string;
+    triggerOnTurn: number | null;
+    oneShot: boolean;
+    position: number;
 }
 
 export interface CreateGameInput {
     title: string;
     description: string;
-    background: string;
-    instructions: string;
+    worldDescription: string;
     objective: string;
+    firstPrompt: string;
+    // Optional
+    authorStyle?: string;
+    turnInstructions?: string;
+    summarizationInstructions?: string;
+    victoryCondition?: string;
+    defeatCondition?: string;
+    imageInstructions?: string;
+    imageStyle?: string;
+    designNotes?: string;
 }
 
 export interface UpdateGameInput {
     title?: string;
     description?: string;
-    background?: string;
-    instructions?: string;
+    worldDescription?: string;
     objective?: string;
-
-    // Additional fields
+    firstPrompt?: string;
+    // Narrative
+    authorStyle?: string;
+    turnInstructions?: string;
+    summarizationInstructions?: string;
+    // End Conditions
+    victoryCondition?: string;
+    defeatCondition?: string;
+    // Image settings
     imageModel?: string;
     imageStyle?: string;
+    imageInstructions?: string;
     previewImage?: string;
     fullSizePreviewImage?: string;
-    allowChangeCharacterName?: boolean;
-    allowChangeCharacterDescription?: boolean;
-    allowChangeCharacterSkills?: boolean;
-    sharingPermission?: boolean;
-    editingPermission?: boolean;
+    // Settings
+    public?: boolean;
     favorite?: boolean;
-    firstTurn?: number;
-    maxTurns?: number;
-
+    designNotes?: string;
     // Nested updates
     characters?: (Partial<Character> & { id?: string })[];
     npcs?: (Partial<Npc> & { id?: string })[];
-    lorebookEntries?: { id?: string; name: string; content: string; keywords?: string[] }[];
-    trackedItems?: { id?: string; name: string; description?: string; dataType?: "text" | "number" | "boolean"; visibility?: "everyone" | "gm" | "hidden"; initialValue?: string }[];
-    triggerEvents?: { id?: string; name: string; triggerOnTurn?: number; condition?: string; effect?: string }[];
+    lorebookEntries?: (Partial<LorebookEntry> & { id?: string })[];
+    states?: (Partial<State> & { id?: string })[];
+    triggers?: (Partial<Trigger> & { id?: string })[];
 }
 
 export interface GenerateGameInput {
     prompt: string;
-    characterCount?: number;
-    npcCount?: number;
-    generatePreviewImage?: boolean;
-    generateCharacterPortraits?: boolean;
-    imageStyle?: string;
+    options?: {
+        characterCount?: number;
+        npcCount?: number;
+        generatePreviewImage?: boolean;
+        generateCharacterPortraits?: boolean;
+        imageStyle?: string;
+    };
 }
 
 export interface GenerationStatus {
