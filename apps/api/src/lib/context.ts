@@ -35,6 +35,7 @@ export type AppEnv = {
         IMAGE_COST_SCENE?: string;
         MIN_BALANCE_PLAY?: string;
         MIN_BALANCE_GENERATE?: string;
+        CREATOR_REVENUE_SHARE?: string;
     };
     Variables: {
         auth: Auth;

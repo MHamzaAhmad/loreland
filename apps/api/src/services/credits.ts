@@ -20,13 +20,14 @@ import type * as schema from "@packages/db/schema/d1";
  * Metadata for credit transactions
  */
 export interface CreditMetadata {
-    type: "purchase" | "usage" | "refund" | "bonus";
+    type: "purchase" | "usage" | "refund" | "bonus" | "earnings";
     operationType?: "turn" | "game_generation" | "image" | "summary";
     costBreakdown?: {
         aiCostUSD?: number;
         aiCredits?: number;
         imageCredits?: number;
         imageType?: string;
+        creatorShare?: number;
     };
     polarEventId?: string;
     sessionId?: string;
@@ -116,6 +117,111 @@ export class CreditsService {
             },
             ...metadata,
         });
+    }
+
+    /**
+     * Deduct credits with creator revenue share
+     * 
+     * When a player plays another creator's game, 20% of credits
+     * goes to the game creator (added to their balance).
+     * No earnings if player === creator (playing own game).
+     */
+    async deductWithCreatorShare(
+        playerId: string,
+        creatorId: string,
+        gameId: string,
+        turnCost: TurnCost,
+        metadata?: { sessionId?: string; turnNumber?: number }
+    ): Promise<{ success: boolean; creatorEarnings: number }> {
+        const amount = turnCost.totalCredits;
+
+        // Calculate creator's share (only if playing someone else's game)
+        const creatorShare = creatorId !== playerId
+            ? Math.floor(amount * this.config.creatorRevenueShare * 100) / 100
+            : 0;
+
+        // Deduct from player (atomic)
+        const success = await this.deductForTurn(playerId, turnCost, {
+            ...metadata,
+            gameId,
+            costBreakdown: {
+                ...turnCost.breakdown,
+                creatorShare,
+            },
+        });
+
+        if (!success) {
+            return { success: false, creatorEarnings: 0 };
+        }
+
+        // Credit creator (if different from player)
+        if (creatorShare > 0) {
+            await this.addCreatorEarnings(creatorId, creatorShare, {
+                gameId,
+                playerId,
+                sessionId: metadata?.sessionId,
+                turnNumber: metadata?.turnNumber,
+                totalCharged: amount,
+            });
+        }
+
+        return { success: true, creatorEarnings: creatorShare };
+    }
+
+    /**
+     * Add earnings to creator's balance
+     * Earnings are added to regular balance (unified with purchases)
+     */
+    async addCreatorEarnings(
+        creatorId: string,
+        amount: number,
+        info: {
+            gameId: string;
+            playerId: string;
+            sessionId?: string;
+            turnNumber?: number;
+            totalCharged: number;
+        }
+    ): Promise<void> {
+        if (amount <= 0) return;
+
+        // Add to creator's balance AND track lifetime earnings
+        await this.db.run(sql`
+            INSERT INTO user_credits (user_id, balance, lifetime_spent, lifetime_earned, updated_at)
+            VALUES (${creatorId}, ${amount}, 0, ${amount}, ${Date.now()})
+            ON CONFLICT(user_id) DO UPDATE SET
+                balance = balance + ${amount},
+                lifetime_earned = lifetime_earned + ${amount},
+                updated_at = ${Date.now()}
+        `);
+
+        const newBalance = await this.getBalance(creatorId);
+
+        // Log as earnings transaction
+        await this.db.insert(creditTransactions).values({
+            userId: creatorId,
+            amount,
+            balanceAfter: newBalance,
+            type: "earnings",
+            metadata: {
+                gameId: info.gameId,
+                playerId: info.playerId,
+                sessionId: info.sessionId,
+                turnNumber: info.turnNumber,
+                description: `Creator earnings from game play`,
+            },
+        });
+
+        // Log to creator_earnings table for analytics
+        await this.db.run(sql`
+            INSERT INTO creator_earnings (
+                id, creator_id, game_id, player_id, 
+                credits_earned, total_charged, session_id, turn_number, created_at
+            ) VALUES (
+                ${crypto.randomUUID()}, ${creatorId}, ${info.gameId}, ${info.playerId},
+                ${amount}, ${info.totalCharged}, ${info.sessionId ?? null}, ${info.turnNumber ?? null}, ${Date.now()}
+            )
+        `);
     }
 
     /**

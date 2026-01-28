@@ -33,6 +33,9 @@ export interface BillingConfig {
         /** Minimum credits to start game generation */
         toGenerate: number;
     };
+
+    /** Creator revenue share (0.20 = 20% of credits to game creator) */
+    creatorRevenueShare: number;
 }
 
 /**
@@ -53,6 +56,8 @@ const DEFAULT_CONFIG: BillingConfig = {
         toPlay: 10,
         toGenerate: 50,
     },
+
+    creatorRevenueShare: 0.20, // 20% to game creators
 };
 
 /**
@@ -67,6 +72,7 @@ interface BillingEnvVars {
     IMAGE_COST_SCENE?: string;
     MIN_BALANCE_PLAY?: string;
     MIN_BALANCE_GENERATE?: string;
+    CREATOR_REVENUE_SHARE?: string;
 }
 
 /**
@@ -111,6 +117,10 @@ export function getBillingConfig(env?: Partial<BillingEnvVars>): BillingConfig {
                 ? parseInt(env.MIN_BALANCE_GENERATE, 10)
                 : DEFAULT_CONFIG.minBalance.toGenerate,
         },
+
+        creatorRevenueShare: env?.CREATOR_REVENUE_SHARE
+            ? parseFloat(env.CREATOR_REVENUE_SHARE)
+            : DEFAULT_CONFIG.creatorRevenueShare,
     };
 }
 

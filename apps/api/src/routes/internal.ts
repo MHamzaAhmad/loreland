@@ -93,11 +93,13 @@ internalRouter.post("/credits/deduct", async (c) => {
 
 /**
  * POST /api/internal/credits/deduct-turn
- * Deduct credits for a turn with cost breakdown
+ * Deduct credits for a turn with cost breakdown and creator revenue share
  */
 internalRouter.post("/credits/deduct-turn", async (c) => {
     const body = await c.req.json<{
         userId: string;
+        creatorId: string;   // Game creator (for revenue sharing)
+        gameId: string;      // Game being played
         aiCostUSD: number;
         imageGenerated: boolean;
         sessionId?: string;
@@ -111,13 +113,16 @@ internalRouter.post("/credits/deduct-turn", async (c) => {
     // Build turn cost
     const turnCost = buildTurnCost(body.aiCostUSD, body.imageGenerated, config);
 
-    // Deduct atomically
-    const success = await creditsService.deductForTurn(body.userId, turnCost, {
-        sessionId: body.sessionId,
-        turnNumber: body.turnNumber,
-    });
+    // Deduct with creator revenue share
+    const result = await creditsService.deductWithCreatorShare(
+        body.userId,
+        body.creatorId,
+        body.gameId,
+        turnCost,
+        { sessionId: body.sessionId, turnNumber: body.turnNumber }
+    );
 
-    if (!success) {
+    if (!result.success) {
         const balance = await creditsService.getBalance(body.userId);
         return c.json({
             error: "Insufficient credits",
@@ -133,6 +138,7 @@ internalRouter.post("/credits/deduct-turn", async (c) => {
         success: true,
         newBalance,
         turnCost,
+        creatorEarnings: result.creatorEarnings,
     });
 });
 
