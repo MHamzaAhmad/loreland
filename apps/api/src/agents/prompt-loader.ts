@@ -9,7 +9,6 @@
  */
 
 // Import prompts as raw text (bundled at build time)
-import openingPrompt from "./prompts/opening.md";
 import gameMasterPrompt from "./prompts/game-master.md";
 import summaryPrompt from "./prompts/summary.md";
 
@@ -17,7 +16,6 @@ import summaryPrompt from "./prompts/summary.md";
  * Available prompt names
  */
 export type PromptName =
-    | "opening"
     | "game-master"
     | "summary";
 
@@ -25,7 +23,6 @@ export type PromptName =
  * Prompt templates map
  */
 const PROMPTS: Record<PromptName, string> = {
-    "opening": openingPrompt,
     "game-master": gameMasterPrompt,
     "summary": summaryPrompt,
 };
