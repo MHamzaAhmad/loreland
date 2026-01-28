@@ -180,7 +180,19 @@ gamesRouter.put("/:id", zValidator("json", updateGameSchema), async (c) => {
     const embeddingsService = new EmbeddingsService(c.env.AI, c.env.VECTORIZE);
     const cacheService = new GameCacheService(c.env.CACHE);
 
-    const game = await service.update(id, data, user.id);
+    let game;
+    try {
+        game = await service.update(id, data, user.id);
+    } catch (error) {
+        if (error instanceof Error && error.message.includes("Forked games cannot be made public")) {
+            return c.json({
+                error: "Forked games cannot be made public",
+                code: "FORKED_GAME_PUBLIC_BLOCKED",
+                message: "Games forked from other creators cannot be made public to protect original creator revenue."
+            }, 403);
+        }
+        throw error;
+    }
     if (!game) {
         return c.json({ error: "Game not found" }, 404);
     }

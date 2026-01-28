@@ -84,6 +84,7 @@ export class GamesService {
             defeatCondition: original.defeatCondition,
             designNotes: original.designNotes,
             sourceGameId: original.id,
+            public: false, // Forked games cannot be made public
             imageModel: original.imageModel,
             imageStyle: original.imageStyle,
             imageInstructions: original.imageInstructions,
@@ -237,6 +238,11 @@ export class GamesService {
     async update(id: string, data: UpdateGameInput, userId: string) {
         const existing = await this.get(id, userId);
         if (!existing) return null;
+
+        // Forked games cannot be made public (to protect creator revenue)
+        if (existing.sourceGameId && data.public === true) {
+            throw new Error("Forked games cannot be made public");
+        }
 
         const { characters: chars, npcs: npcList, lorebookEntries: lore, states: stateList, triggers: triggerList, ...gameData } = data;
 
