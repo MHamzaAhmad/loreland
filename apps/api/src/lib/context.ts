@@ -23,6 +23,7 @@ export type AppEnv = {
         BETTER_AUTH_SECRET: string;
         // Polar.sh integration
         POLAR_WEBHOOK_SECRET: string;
+        POLAR_ACCESS_TOKEN?: string; // For usage billing event ingestion
         POLAR_MODE?: string;
         // Internal API auth
         INTERNAL_SECRET: string;

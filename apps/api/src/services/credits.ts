@@ -15,6 +15,7 @@ import {
 } from "../lib/billing-config";
 import type { TurnCost } from "../lib/turn-cost";
 import type * as schema from "@packages/db/schema/d1";
+import { PolarService } from "./polar";
 
 /**
  * Metadata for credit transactions
@@ -38,6 +39,7 @@ export interface CreditMetadata {
 
 export class CreditsService {
     private config: BillingConfig;
+    private polar: PolarService | null = null;
 
     constructor(
         private db: DrizzleD1Database<typeof schema>,
@@ -50,9 +52,13 @@ export class CreditsService {
             IMAGE_COST_SCENE?: string;
             MIN_BALANCE_PLAY?: string;
             MIN_BALANCE_GENERATE?: string;
+            POLAR_ACCESS_TOKEN?: string;
         }>
     ) {
         this.config = getBillingConfig(env);
+        if (env?.POLAR_ACCESS_TOKEN) {
+            this.polar = new PolarService(env.POLAR_ACCESS_TOKEN);
+        }
     }
 
     /**
@@ -77,16 +83,40 @@ export class CreditsService {
     }
 
     /**
+     * Get user's full credit record
+     */
+    async getUserCredits(userId: string): Promise<typeof userCredits.$inferSelect | null> {
+        return await this.db
+            .select()
+            .from(userCredits)
+            .where(eq(userCredits.userId, userId))
+            .get() ?? null;
+    }
+
+    /**
      * Get user's current credit balance
      */
     async getBalance(userId: string): Promise<number> {
-        const result = await this.db
-            .select({ balance: userCredits.balance })
-            .from(userCredits)
-            .where(eq(userCredits.userId, userId))
-            .get();
-
+        const result = await this.getUserCredits(userId);
         return result?.balance ?? 0;
+    }
+
+    /**
+     * Set user's billing mode
+     */
+    async setBillingMode(
+        userId: string,
+        mode: "prepaid" | "usage",
+        subscriptionId: string | null
+    ): Promise<void> {
+        await this.db.run(sql`
+            INSERT INTO user_credits (user_id, balance, lifetime_spent, lifetime_earned, billing_mode, polar_subscription_id, updated_at)
+            VALUES (${userId}, 0, 0, 0, ${mode}, ${subscriptionId}, ${Date.now()})
+            ON CONFLICT(user_id) DO UPDATE SET
+                billing_mode = ${mode},
+                polar_subscription_id = ${subscriptionId},
+                updated_at = ${Date.now()}
+        `);
     }
 
     /**
@@ -99,13 +129,61 @@ export class CreditsService {
 
     /**
      * Atomic credit deduction for a turn
-     * Returns false if insufficient credits
+     * 
+     * Handles two billing modes:
+     * - prepaid: Deducts from balance (fails if insufficient)
+     * - usage: Sends event to Polar (always succeeds)
+     * 
+     * @returns true if deduction succeeded, false if insufficient credits (prepaid only)
      */
     async deductForTurn(
         userId: string,
         turnCost: TurnCost,
         metadata?: Partial<CreditMetadata>
     ): Promise<boolean> {
+        // Check user's billing mode
+        const userRecord = await this.getUserCredits(userId);
+        const billingMode = userRecord?.billingMode ?? "prepaid";
+
+        // Usage mode: send to Polar, always succeeds
+        if (billingMode === "usage" && this.polar) {
+            await this.polar.ingestUsage({
+                externalCustomerId: userId,
+                credits: turnCost.totalCredits,
+                metadata: {
+                    gameId: metadata?.gameId,
+                    sessionId: metadata?.sessionId,
+                    turnNumber: metadata?.turnNumber,
+                    aiCostUSD: turnCost.breakdown.aiCostUSD,
+                    imageGenerated: turnCost.imageCredits > 0,
+                },
+            });
+
+            // Log locally for reference (no balance change)
+            await this.db.insert(creditTransactions).values({
+                userId,
+                amount: -turnCost.totalCredits,
+                balanceAfter: userRecord?.balance ?? 0, // Balance unchanged
+                type: "usage",
+                operationType: "turn",
+                costBreakdown: {
+                    aiCostUSD: turnCost.breakdown.aiCostUSD,
+                    aiCredits: turnCost.aiCredits,
+                    imageCredits: turnCost.imageCredits,
+                    imageType: turnCost.breakdown.imageType,
+                },
+                metadata: {
+                    sessionId: metadata?.sessionId,
+                    gameId: metadata?.gameId,
+                    turnNumber: metadata?.turnNumber,
+                    description: "Usage billing - sent to Polar",
+                },
+            });
+
+            return true;
+        }
+
+        // Prepaid mode: deduct from balance
         return this.deductCredits(userId, turnCost.totalCredits, {
             type: "usage",
             operationType: "turn",

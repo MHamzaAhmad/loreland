@@ -124,6 +124,44 @@ webhooksRouter.post("/polar", async (c) => {
                 // For now, just log. Credits already purchased remain.
                 // Could implement grace period or credit expiration here.
                 console.log(`Webhook ${eventId}: Subscription canceled`);
+
+                // If this was a usage billing subscription, revert to prepaid
+                const customer = event.data.customer as { email?: string } | undefined;
+                if (customer?.email) {
+                    const user = await db
+                        .select()
+                        .from(users)
+                        .where(eq(users.email, customer.email))
+                        .get();
+
+                    if (user) {
+                        const creditsService = new CreditsService(db, c.env);
+                        await creditsService.setBillingMode(user.id, "prepaid", null);
+                        console.log(`Webhook ${eventId}: Reverted user ${user.id} to prepaid billing`);
+                    }
+                }
+                break;
+            }
+
+            case "subscription.active": {
+                // User subscribed - check if it's a usage billing plan
+                const product = event.data.product as { metadata?: { billingMode?: string } } | undefined;
+                const customer = event.data.customer as { email?: string } | undefined;
+                const subscriptionId = event.data.id as string;
+
+                if (product?.metadata?.billingMode === "usage" && customer?.email) {
+                    const user = await db
+                        .select()
+                        .from(users)
+                        .where(eq(users.email, customer.email))
+                        .get();
+
+                    if (user) {
+                        const creditsService = new CreditsService(db, c.env);
+                        await creditsService.setBillingMode(user.id, "usage", subscriptionId);
+                        console.log(`Webhook ${eventId}: Set user ${user.id} to usage billing`);
+                    }
+                }
                 break;
             }
 

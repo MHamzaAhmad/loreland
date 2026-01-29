@@ -15,6 +15,10 @@ export const userCredits = sqliteTable("user_credits", {
     balance: real("balance").notNull().default(0),
     lifetimeSpent: real("lifetime_spent").notNull().default(0),
     lifetimeEarned: real("lifetime_earned").notNull().default(0), // Creator earnings
+    /** Billing mode: 'prepaid' (credit packs) or 'usage' (pay as you go) */
+    billingMode: text("billing_mode", { enum: ["prepaid", "usage"] }).notNull().default("prepaid"),
+    /** Polar subscription ID for usage billing mode */
+    polarSubscriptionId: text("polar_subscription_id"),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),

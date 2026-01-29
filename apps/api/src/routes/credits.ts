@@ -22,12 +22,15 @@ creditsRouter.get("/", async (c) => {
 
     const db = c.get("db");
     const creditsService = new CreditsService(db, c.env);
+    const userCredits = await creditsService.getUserCredits(user.id);
     const summary = await creditsService.getUsageSummary(user.id);
     const config = creditsService.getConfig();
 
     return c.json({
         balance: summary.balance,
         lifetimeSpent: summary.lifetimeSpent,
+        lifetimeEarned: userCredits?.lifetimeEarned ?? 0,
+        billingMode: userCredits?.billingMode ?? "prepaid",
         recentTransactionCount: summary.recentTransactions,
         minimums: {
             toPlay: config.minBalance.toPlay,
