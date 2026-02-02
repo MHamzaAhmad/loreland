@@ -46,6 +46,7 @@
     }
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.42.5"
+    "@polar-sh/sdk": "^0.42.5",
+    "sonner": "^2.0.7"
   }
 }

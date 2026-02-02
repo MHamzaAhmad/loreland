@@ -228,3 +228,65 @@ export interface SessionSummary {
     lastPlayedAt: string;
     createdAt: string;
 }
+
+// Credit System Types
+
+export interface CreditBalance {
+    balance: number;
+    lifetimeSpent: number;
+    lifetimeEarned: number;
+    recentTransactionCount: number;
+    minimums: {
+        toPlay: number;
+        toGenerate: number;
+    };
+}
+
+export interface CreditPackage {
+    sku: string;
+    name: string;
+    description?: string;
+    credits: number;
+    price: number;
+    currency: string;
+    discount: number;
+    pricePerCredit: number;
+    imageUrl?: string;
+}
+
+export interface CreditTransaction {
+    id: string;
+    amount: number;
+    balanceAfter: number;
+    type: "purchase" | "usage" | "refund" | "bonus" | "earnings";
+    operationType?: "turn" | "game_generation" | "image" | "summary";
+    costBreakdown?: {
+        aiCostUSD?: number;
+        aiCredits?: number;
+        imageCredits?: number;
+        imageType?: string;
+        creatorShare?: number;
+    };
+    createdAt: string;
+}
+
+export interface PurchaseResponse {
+    payment_url: string;
+    package: string;
+    credits: number;
+    price: number;
+    currency: string;
+}
+
+export interface BillingConfig {
+    creditRate: number;
+    imageCosts: {
+        preview1024: number;
+        portrait512: number;
+        scene1024x576: number;
+    };
+    minBalance: {
+        toPlay: number;
+        toGenerate: number;
+    };
+}

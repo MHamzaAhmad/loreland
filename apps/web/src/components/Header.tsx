@@ -5,14 +5,17 @@ import {
   X,
   House,
   Compass,
-  User,
   Lightning,
 } from '@phosphor-icons/react'
 import { AuthButton } from './AuthButton'
+import { CreditBalance } from './CreditBalance'
+import { MobileCreditButton } from './MobileCreditButton'
+import { CreditStore } from './CreditStore'
 import { cn } from '@/lib/utils'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const [isStoreOpen, setIsStoreOpen] = useState(false)
   const location = useLocation()
 
   const toggleMenu = () => {
@@ -83,6 +86,11 @@ export default function Header() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Desktop: Credit balance in header */}
+            <div className="hidden md:block">
+              <CreditBalance onBuyClick={() => setIsStoreOpen(true)} />
+            </div>
+            
             <div className="hidden md:block scale-90 origin-right">
               <AuthButton />
             </div>
@@ -96,6 +104,17 @@ export default function Header() {
           </div>
         </div>
       </header>
+      
+      {/* Mobile: Floating credit button */}
+      <div className="md:hidden">
+        <MobileCreditButton onClick={() => setIsStoreOpen(true)} />
+      </div>
+      
+      {/* Credit Store Modal */}
+      <CreditStore 
+        isOpen={isStoreOpen} 
+        onClose={() => setIsStoreOpen(false)} 
+      />
 
       {/* Mobile Drawer */}
       <div className={cn(

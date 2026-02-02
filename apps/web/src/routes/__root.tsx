@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createApiClient, ApiClientProvider } from '@packages/ui-logic'
 import Header from '../components/Header'
+import { Toaster } from '../components/ui/toaster'
 
 import appCss from '../styles.css?url'
 
@@ -95,6 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 {children}
               </main>
             </div>
+            <Toaster />
           </ApiClientProvider>
         </QueryClientProvider>
         <TanStackDevtools

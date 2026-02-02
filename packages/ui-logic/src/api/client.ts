@@ -8,6 +8,11 @@ import type {
     GenerationStatus,
     SearchResponse,
     SessionSummary,
+    CreditBalance,
+    CreditPackage,
+    CreditTransaction,
+    PurchaseResponse,
+    BillingConfig,
 } from "../types";
 
 /**
@@ -206,6 +211,43 @@ export function createApiClient(options: ApiClientOptions) {
             },
         },
 
+        credits: {
+            /**
+             * Get current credit balance and summary
+             */
+            getBalance: () => request<CreditBalance>("/api/credits"),
+
+            /**
+             * Get available credit packages from Xsolla
+             */
+            getPackages: (locale?: string) => {
+                const params = locale ? `?locale=${locale}` : "";
+                return request<{ packages: CreditPackage[] }>(`/api/credits/packages${params}`);
+            },
+
+            /**
+             * Initiate purchase - returns Xsolla payment URL
+             */
+            purchase: (sku: string) => {
+                return request<PurchaseResponse>("/api/credits/purchase", {
+                    method: "POST",
+                    body: JSON.stringify({ package: sku }),
+                });
+            },
+
+            /**
+             * Get transaction history
+             */
+            getTransactions: (limit?: number) => {
+                const params = limit ? `?limit=${limit}` : "";
+                return request<{ transactions: CreditTransaction[] }>(`/api/credits/transactions${params}`);
+            },
+
+            /**
+             * Get billing config
+             */
+            getConfig: () => request<BillingConfig>("/api/credits/config"),
+        },
 
     };
 }

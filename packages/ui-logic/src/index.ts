@@ -22,6 +22,12 @@ export {
     generationKeys,
     userKeys,
     useGameSession,
+    useCreditBalance,
+    useCreditPackages,
+    usePurchaseCredits,
+    useCreditTransactions,
+    useBillingConfig,
+    creditKeys,
 } from "./hooks";
 
 // Types
@@ -40,6 +46,11 @@ export type {
     User,
     AuthState,
     SessionSummary,
+    CreditBalance,
+    CreditPackage,
+    CreditTransaction,
+    PurchaseResponse,
+    BillingConfig,
 } from "./types";
 
 export * from "./game/types";

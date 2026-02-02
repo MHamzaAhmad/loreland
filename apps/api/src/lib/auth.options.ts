@@ -4,6 +4,7 @@ import { anonymous } from "better-auth/plugins"
 import { eq } from "drizzle-orm";
 import { games } from "@packages/db/schema/d1";
 import * as schema from "@packages/db/schema/d1";
+import { CreditsService } from "../services/credits";
 
 /**
  * Configuration for creating auth options
@@ -84,6 +85,35 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
             cookieCache: {
                 enabled: true,
                 maxAge: 60 * 5, // 5 minutes
+            },
+        },
+
+        // Database hooks
+        databaseHooks: {
+            user: {
+                create: {
+                    after: async (user) => {
+                        // Give 1000 free credits to new users
+                        const creditsService = new CreditsService(config.db, {
+                            CREDIT_RATE: "0.001",
+                            CREDIT_MARGIN: "1.5",
+                            MIN_CREDITS: "1",
+                            IMAGE_COST_PREVIEW: "5",
+                            IMAGE_COST_PORTRAIT: "3",
+                            IMAGE_COST_SCENE: "4",
+                            MIN_BALANCE_PLAY: "10",
+                            MIN_BALANCE_GENERATE: "50",
+                            CREATOR_REVENUE_SHARE: "0.20",
+                        });
+                        
+                        await creditsService.addCredits(user.id, 1000, {
+                            type: "bonus",
+                            description: "Welcome bonus - 1,000 free credits",
+                        });
+                        
+                        console.log(`Added 1000 welcome credits to new user ${user.id}`);
+                    },
+                },
             },
         },
     };

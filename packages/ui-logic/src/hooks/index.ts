@@ -20,5 +20,13 @@ export {
     userKeys,
 } from "./use-auth";
 export { useGameSession } from "./useGameSession";
+export {
+    useCreditBalance,
+    useCreditPackages,
+    usePurchaseCredits,
+    useCreditTransactions,
+    useBillingConfig,
+    creditKeys,
+} from "./useCredits";
 
 
