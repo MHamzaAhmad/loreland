@@ -15,10 +15,6 @@ export const userCredits = sqliteTable("user_credits", {
     balance: real("balance").notNull().default(0),
     lifetimeSpent: real("lifetime_spent").notNull().default(0),
     lifetimeEarned: real("lifetime_earned").notNull().default(0), // Creator earnings
-    /** Billing mode: 'prepaid' (credit packs) or 'usage' (pay as you go) */
-    billingMode: text("billing_mode", { enum: ["prepaid", "usage"] }).notNull().default("prepaid"),
-    /** Polar subscription ID for usage billing mode */
-    polarSubscriptionId: text("polar_subscription_id"),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),
@@ -80,15 +76,23 @@ export const creatorEarnings = sqliteTable("creator_earnings", {
 ]);
 
 /**
- * Polar Webhooks
+ * Xsolla Webhooks
  * 
- * Tracks processed webhook events for idempotency.
- * Prevents double-processing of the same event.
+ * Tracks processed webhook events from Xsolla Pay Station.
+ * Prevents double-processing of the same payment event.
  */
-export const polarWebhooks = sqliteTable("polar_webhooks", {
+export const xsollaWebhooks = sqliteTable("xsolla_webhooks", {
     eventId: text("event_id").primaryKey(),
     eventType: text("event_type").notNull(),
+    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
+    sku: text("sku").notNull(),
+    quantity: integer("quantity").notNull().default(1),
+    amount: real("amount"),
+    currency: text("currency"),
     processedAt: integer("processed_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),
-});
+}, (table) => [
+    index("xsolla_webhooks_user_idx").on(table.userId),
+    index("xsolla_webhooks_type_idx").on(table.eventType),
+]);

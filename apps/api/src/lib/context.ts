@@ -21,10 +21,12 @@ export type AppEnv = {
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
         BETTER_AUTH_SECRET: string;
-        // Polar.sh integration
-        POLAR_WEBHOOK_SECRET: string;
-        POLAR_ACCESS_TOKEN?: string; // For usage billing event ingestion
-        POLAR_MODE?: string;
+        // Xsolla Pay Station integration
+        XSOLLA_MERCHANT_ID: string;
+        XSOLLA_PROJECT_ID: string;
+        XSOLLA_API_KEY: string; 
+        XSOLLA_WEBHOOK_SECRET: string;
+        XSOLLA_SANDBOX?: string;
         // Internal API auth
         INTERNAL_SECRET: string;
         // Billing config overrides

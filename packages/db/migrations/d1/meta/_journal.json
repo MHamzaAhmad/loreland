@@ -43,6 +43,13 @@
       "when": 1769630661749,
       "tag": "0005_fresh_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1770037599729,
+      "tag": "0006_last_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

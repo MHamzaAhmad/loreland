@@ -3,6 +3,11 @@
  * 
  * Handles all credit operations with atomic transactions to prevent race conditions.
  * Uses D1 SQL for atomic balance updates.
+ * 
+ * Xsolla Integration:
+ * - Credits are purchased via Xsolla Pay Station (virtual currency packages)
+ * - All gameplay uses prepaid credits (no usage-based billing)
+ * - Creator earnings are tracked separately for future cash-out
  */
 
 import { eq, sql, desc } from "drizzle-orm";
@@ -15,7 +20,6 @@ import {
 } from "../lib/billing-config";
 import type { TurnCost } from "../lib/turn-cost";
 import type * as schema from "@packages/db/schema/d1";
-import { PolarService } from "./polar";
 
 /**
  * Metadata for credit transactions
@@ -30,7 +34,7 @@ export interface CreditMetadata {
         imageType?: string;
         creatorShare?: number;
     };
-    polarEventId?: string;
+    xsollaEventId?: string;
     sessionId?: string;
     gameId?: string;
     turnNumber?: number;
@@ -39,7 +43,6 @@ export interface CreditMetadata {
 
 export class CreditsService {
     private config: BillingConfig;
-    private polar: PolarService | null = null;
 
     constructor(
         private db: DrizzleD1Database<typeof schema>,
@@ -52,13 +55,10 @@ export class CreditsService {
             IMAGE_COST_SCENE?: string;
             MIN_BALANCE_PLAY?: string;
             MIN_BALANCE_GENERATE?: string;
-            POLAR_ACCESS_TOKEN?: string;
+            CREATOR_REVENUE_SHARE?: string;
         }>
     ) {
         this.config = getBillingConfig(env);
-        if (env?.POLAR_ACCESS_TOKEN) {
-            this.polar = new PolarService(env.POLAR_ACCESS_TOKEN);
-        }
     }
 
     /**
@@ -102,24 +102,6 @@ export class CreditsService {
     }
 
     /**
-     * Set user's billing mode
-     */
-    async setBillingMode(
-        userId: string,
-        mode: "prepaid" | "usage",
-        subscriptionId: string | null
-    ): Promise<void> {
-        await this.db.run(sql`
-            INSERT INTO user_credits (user_id, balance, lifetime_spent, lifetime_earned, billing_mode, polar_subscription_id, updated_at)
-            VALUES (${userId}, 0, 0, 0, ${mode}, ${subscriptionId}, ${Date.now()})
-            ON CONFLICT(user_id) DO UPDATE SET
-                billing_mode = ${mode},
-                polar_subscription_id = ${subscriptionId},
-                updated_at = ${Date.now()}
-        `);
-    }
-
-    /**
      * Check if user has sufficient credits
      */
     async hasSufficientCredits(userId: string, required: number): Promise<boolean> {
@@ -128,62 +110,16 @@ export class CreditsService {
     }
 
     /**
-     * Atomic credit deduction for a turn
+     * Deduct credits for a turn (prepaid only)
      * 
-     * Handles two billing modes:
-     * - prepaid: Deducts from balance (fails if insufficient)
-     * - usage: Sends event to Polar (always succeeds)
-     * 
-     * @returns true if deduction succeeded, false if insufficient credits (prepaid only)
+     * Uses atomic UPDATE to prevent race conditions.
+     * Returns true if deduction succeeded, false if insufficient credits.
      */
     async deductForTurn(
         userId: string,
         turnCost: TurnCost,
         metadata?: Partial<CreditMetadata>
     ): Promise<boolean> {
-        // Check user's billing mode
-        const userRecord = await this.getUserCredits(userId);
-        const billingMode = userRecord?.billingMode ?? "prepaid";
-
-        // Usage mode: send to Polar, always succeeds
-        if (billingMode === "usage" && this.polar) {
-            await this.polar.ingestUsage({
-                externalCustomerId: userId,
-                credits: turnCost.totalCredits,
-                metadata: {
-                    gameId: metadata?.gameId,
-                    sessionId: metadata?.sessionId,
-                    turnNumber: metadata?.turnNumber,
-                    aiCostUSD: turnCost.breakdown.aiCostUSD,
-                    imageGenerated: turnCost.imageCredits > 0,
-                },
-            });
-
-            // Log locally for reference (no balance change)
-            await this.db.insert(creditTransactions).values({
-                userId,
-                amount: -turnCost.totalCredits,
-                balanceAfter: userRecord?.balance ?? 0, // Balance unchanged
-                type: "usage",
-                operationType: "turn",
-                costBreakdown: {
-                    aiCostUSD: turnCost.breakdown.aiCostUSD,
-                    aiCredits: turnCost.aiCredits,
-                    imageCredits: turnCost.imageCredits,
-                    imageType: turnCost.breakdown.imageType,
-                },
-                metadata: {
-                    sessionId: metadata?.sessionId,
-                    gameId: metadata?.gameId,
-                    turnNumber: metadata?.turnNumber,
-                    description: "Usage billing - sent to Polar",
-                },
-            });
-
-            return true;
-        }
-
-        // Prepaid mode: deduct from balance
         return this.deductCredits(userId, turnCost.totalCredits, {
             type: "usage",
             operationType: "turn",
@@ -249,6 +185,7 @@ export class CreditsService {
     /**
      * Add earnings to creator's balance
      * Earnings are added to regular balance (unified with purchases)
+     * Track separately in creator_earnings table for analytics
      */
     async addCreatorEarnings(
         creatorId: string,
@@ -346,7 +283,7 @@ export class CreditsService {
             operationType: metadata.operationType,
             costBreakdown: metadata.costBreakdown,
             metadata: {
-                polarEventId: metadata.polarEventId,
+                xsollaEventId: metadata.xsollaEventId,
                 sessionId: metadata.sessionId,
                 gameId: metadata.gameId,
                 turnNumber: metadata.turnNumber,
@@ -365,7 +302,7 @@ export class CreditsService {
     async addCredits(
         userId: string,
         amount: number,
-        metadata: Pick<CreditMetadata, "type" | "polarEventId" | "description">
+        metadata: Pick<CreditMetadata, "type" | "xsollaEventId" | "description">
     ): Promise<void> {
         if (amount <= 0) return;
 
@@ -386,7 +323,7 @@ export class CreditsService {
             balanceAfter: newBalance,
             type: metadata.type,
             metadata: {
-                polarEventId: metadata.polarEventId,
+                xsollaEventId: metadata.xsollaEventId,
                 description: metadata.description,
             },
         });
@@ -413,6 +350,7 @@ export class CreditsService {
     async getUsageSummary(userId: string): Promise<{
         balance: number;
         lifetimeSpent: number;
+        lifetimeEarned: number;
         recentTransactions: number;
     }> {
         const credits = await this.db
@@ -430,6 +368,7 @@ export class CreditsService {
         return {
             balance: credits?.balance ?? 0,
             lifetimeSpent: credits?.lifetimeSpent ?? 0,
+            lifetimeEarned: credits?.lifetimeEarned ?? 0,
             recentTransactions: recentCount?.count ?? 0,
         };
     }
