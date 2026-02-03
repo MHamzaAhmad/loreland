@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { listSessionsQuerySchema } from "../lib/schemas";
 import { eq, and, desc } from "drizzle-orm";
-import { playSessions } from "@packages/db/schema/d1";
+import { playSessions, userSettings } from "@packages/db/schema/d1";
 import type { AppEnv } from "../lib/context";
 import { GamesService } from "../services/games";
 
@@ -98,12 +98,20 @@ playRouter.post("/:gameId/play/start", async (c) => {
 
         const character = gameConfig.characters.find(c => c.id === body.characterId);
 
+        // Fetch user's model preference from settings
+        const userSettingsRecord = await db.query.userSettings.findFirst({
+            where: eq(userSettings.userId, user.id)
+        });
+        
+        // Use user's preferred model or fall back to default
+        const modelToUse = userSettingsRecord?.modelPreference || "nova-flash";
+
         const [newSession] = await db.insert(playSessions).values({
             gameId,
             userId: user.id,
             characterId: body.characterId,
             characterName: character?.name,
-            model: body.model || "gemini-2.0-flash",
+            model: modelToUse,
         }).returning();
 
         session = newSession;
@@ -112,8 +120,8 @@ playRouter.post("/:gameId/play/start", async (c) => {
         const agentId = c.env.PLAY_AGENT.idFromName(session.id);
         const agent = c.env.PLAY_AGENT.get(agentId);
 
-        // Call startGame on the agent
-        await agent.startGame(session.id, gameConfig, body.characterId, body.model);
+        // Call startGame on the agent with the user's preferred model
+        await agent.startGame(session.id, gameConfig, body.characterId, modelToUse);
     }
 
     return c.json({

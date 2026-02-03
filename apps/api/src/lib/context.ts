@@ -21,6 +21,8 @@ export type AppEnv = {
         GOOGLE_CLIENT_ID?: string;
         GOOGLE_CLIENT_SECRET?: string;
         BETTER_AUTH_SECRET: string;
+        // OpenRouter API configuration
+        OPENROUTER_API_KEY: string;
         // Xsolla Pay Station integration
         XSOLLA_MERCHANT_ID: string;
         XSOLLA_PROJECT_ID: string;

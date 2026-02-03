@@ -290,3 +290,30 @@ export interface BillingConfig {
         toGenerate: number;
     };
 }
+
+/**
+ * User settings and preferences
+ */
+export interface UserSettings {
+    modelPreference: string | null;
+}
+
+/**
+ * AI Model with detailed information for UI display
+ */
+export interface AIModel {
+    id: string;
+    name: string;
+    displayName: string;
+    description: string;
+    provider: string;
+    tier: "standard" | "premium";
+    isDefault: boolean;
+    whenToUse: string;
+    pros: string[];
+    cons: string[];
+    costLevel: 1 | 2 | 3 | 4 | 5;
+    costDescription: string;
+    speed: "instant" | "fast" | "balanced" | "slow" | "thorough";
+    bestFor: string[];
+}

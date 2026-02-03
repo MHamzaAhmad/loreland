@@ -46,6 +46,7 @@
     }
   },
   "dependencies": {
+    "@openrouter/ai-sdk-provider": "^2.1.1",
     "@polar-sh/sdk": "^0.42.5",
     "sonner": "^2.0.7"
   }

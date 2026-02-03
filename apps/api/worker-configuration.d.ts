@@ -9,8 +9,7 @@ declare namespace Cloudflare {
 	interface Env {
 		CACHE: KVNamespace;
 		DEFAULT_MODEL: "nova-flash";
-		GEMINI_API_KEY: string;
-		AI_GATEWAY_API_KEY: string;
+		OPENROUTER_API_KEY: string;
 		BETTER_AUTH_SECRET: string;
 		PLAY_AGENT: DurableObjectNamespace<import("./src/index").PlayAgent>;
 		GENERATION_STATUS: DurableObjectNamespace<import("./src/index").GenerationStatusAgent>;
@@ -26,7 +25,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DEFAULT_MODEL" | "GEMINI_API_KEY" | "AI_GATEWAY_API_KEY" | "BETTER_AUTH_SECRET">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DEFAULT_MODEL" | "OPENROUTER_API_KEY" | "BETTER_AUTH_SECRET">> {}
 }
 declare module "*.sql" {
 	const value: string;

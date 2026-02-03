@@ -18,7 +18,7 @@
 	 */
 	"vars": {
 		"DEFAULT_MODEL": "nova-flash"
-		// VERCEL_AI_GATEWAY_API_KEY should be set via secrets
+		// OPENROUTER_API_KEY should be set via wrangler secrets
 	},
 	/**
 	 * D1 Database - Central database for users, games, etc.

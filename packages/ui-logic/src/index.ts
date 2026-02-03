@@ -28,6 +28,10 @@ export {
     useCreditTransactions,
     useBillingConfig,
     creditKeys,
+    useUserSettings,
+    useUpdateUserSettings,
+    useAvailableModels,
+    settingsKeys,
 } from "./hooks";
 
 // Types
@@ -51,6 +55,8 @@ export type {
     CreditTransaction,
     PurchaseResponse,
     BillingConfig,
+    UserSettings,
+    AIModel,
 } from "./types";
 
 export * from "./game/types";

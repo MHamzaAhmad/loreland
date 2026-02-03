@@ -1,8 +1,8 @@
 /**
  * AI Configuration
  * 
- * Unified AI configuration using Vercel AI Gateway.
- * All models are accessed through the gateway for:
+ * Unified AI configuration using OpenRouter.
+ * All models are accessed through OpenRouter for:
  * - Unified API key management
  * - Provider fallbacks
  * - Cost tracking
@@ -13,26 +13,29 @@ import { getModel, getDefaultModel, resolveModelToActual } from './models';
  * Environment variables for AI configuration
  */
 export interface AIEnv {
-    /** Vercel AI Gateway API key (set as secret) */
-    AI_GATEWAY_API_KEY?: string;
+    /** OpenRouter API key (set as secret) */
+    OPENROUTER_API_KEY: string;
     /** Default model ID (gamified name) */
     DEFAULT_MODEL?: string;
 }
 
 /**
- * Get a language model from Vercel AI Gateway
+ * Resolve a gamified model ID to its actual OpenRouter model string
  * 
  * @param modelId - Gamified model ID (e.g., "nova-flash", "titan")
  *                  If not provided, uses the default model
- * @returns LanguageModel instance for use with AI SDK
+ * @returns Actual OpenRouter model string (e.g., "google/gemini-2.5-flash")
  * 
  * @example
- * // Get default model
- * const model = getLanguageModel();
+ * // Get default model string
+ * const modelStr = getLanguageModel();
  * 
  * @example
- * // Get specific model
- * const model = getLanguageModel("titan");
+ * // Get specific model string
+ * const modelStr = getLanguageModel("titan");
+ * 
+ * @deprecated Use resolveModelToActual from './models' directly or use 
+ *             createOpenRouterClient + getOpenRouterModel for LanguageModel instances
  */
 export function getLanguageModel(modelId?: string | null): string {
     const actualModel = resolveModelToActual(modelId);

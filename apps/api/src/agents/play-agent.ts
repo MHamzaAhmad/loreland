@@ -11,7 +11,7 @@ import migrations from "@packages/db/migrations/agent";
 // Local imports
 import { loadPrompt } from "./prompt-loader";
 import { turnOutputSchema } from "./schemas";
-import { getLanguageModel } from "../lib/ai-config";
+import { createOpenRouterClient, getOpenRouterModel } from "../lib/openrouter";
 import type { GameSessionState, FullGameConfig, AgentDB } from "./types";
 
 // ============================================================================
@@ -313,9 +313,10 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             imageInstructions: gameConfig.imageInstructions || "",
         });
 
-        // Single agent with structured output
+        // Single agent with structured output using OpenRouter
+        const openrouter = createOpenRouterClient(this.env.OPENROUTER_API_KEY);
         const agent = new ToolLoopAgent({
-            model: getLanguageModel(model),
+            model: getOpenRouterModel(openrouter, model),
             instructions: systemPrompt,
             output: Output.object({ schema: turnOutputSchema }),
             stopWhen: stepCountIs(3),
@@ -446,8 +447,10 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             summarizationInstructions: gameConfig?.summarizationInstructions || "",
         });
 
+        // Create OpenRouter client for summary generation (reuse if possible, but creating new is safe)
+        const openrouter = createOpenRouterClient(this.env.OPENROUTER_API_KEY);
         const summaryAgent = new ToolLoopAgent({
-            model: getLanguageModel(model),
+            model: getOpenRouterModel(openrouter, model),
             instructions: summaryPrompt,
             stopWhen: stepCountIs(1),
         });

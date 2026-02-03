@@ -13,6 +13,8 @@ import type {
     CreditTransaction,
     PurchaseResponse,
     BillingConfig,
+    UserSettings,
+    AIModel,
 } from "../types";
 
 /**
@@ -247,6 +249,28 @@ export function createApiClient(options: ApiClientOptions) {
              * Get billing config
              */
             getConfig: () => request<BillingConfig>("/api/credits/config"),
+        },
+
+        settings: {
+            /**
+             * Get current user settings
+             */
+            get: () => request<UserSettings>("/api/settings"),
+
+            /**
+             * Update user settings (auto-save model preference)
+             */
+            update: (data: { modelPreference: string }) => {
+                return request<{ success: boolean }>("/api/settings", {
+                    method: "PUT",
+                    body: JSON.stringify(data),
+                });
+            },
+
+            /**
+             * Get all available AI models with detailed info
+             */
+            getModels: () => request<{ models: AIModel[] }>("/api/settings/models"),
         },
 
     };

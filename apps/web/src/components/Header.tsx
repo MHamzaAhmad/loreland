@@ -6,6 +6,7 @@ import {
   House,
   Compass,
   Lightning,
+  Gear,
 } from '@phosphor-icons/react'
 import { AuthButton } from './AuthButton'
 import { CreditBalance } from './CreditBalance'
@@ -91,6 +92,15 @@ export default function Header() {
               <CreditBalance onBuyClick={() => setIsStoreOpen(true)} />
             </div>
             
+            {/* Settings link - only visible on desktop */}
+            <Link
+              to="/settings"
+              className="hidden md:flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+              title="Settings"
+            >
+              <Gear size={16} />
+            </Link>
+
             <div className="hidden md:block scale-90 origin-right">
               <AuthButton />
             </div>

@@ -19,7 +19,8 @@ import {
     aiTriggerSchema,
     aiLorebookSchema,
 } from "../lib/schemas";
-import { getLanguageModel, type AIEnv } from "../lib/ai-config";
+import { type AIEnv } from "../lib/ai-config";
+import { createOpenRouterClient, getOpenRouterModel } from "../lib/openrouter";
 import type { GenerationStatusAgent } from "../agents/generation-status-agent";
 
 // Workflow bindings type
@@ -61,8 +62,9 @@ export class GameGenerationWorkflow extends WorkflowEntrypoint<Env, GameGenerati
             .where(eq(userSettings.userId, userId))
             .get();
 
-        // Initialize AI service with configured provider and user preference
-        const model = getLanguageModel(userSettingsRecord?.modelPreference);
+        // Initialize AI service with OpenRouter and user preference
+        const openrouter = createOpenRouterClient(this.env.OPENROUTER_API_KEY);
+        const model = getOpenRouterModel(openrouter, userSettingsRecord?.modelPreference);
         const aiService = new AIService(model);
 
         const TOTAL_STEPS = 12;

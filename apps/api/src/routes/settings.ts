@@ -41,17 +41,25 @@ settingsRouter.get("/", async (c) => {
 });
 
 /**
- * GET /api/settings/models - Get available AI models
+ * GET /api/settings/models - Get available AI models with full details
  */
 settingsRouter.get("/models", async (c) => {
-    // Public endpoint, but we could restrict if needed
+    // Public endpoint - no authentication required to view available models
     const models = getAllModels().map(m => ({
         id: m.id,
         name: m.name,
         displayName: m.displayName,
         description: m.description,
+        provider: m.provider,
         tier: m.tier,
-        isDefault: m.isDefault
+        isDefault: m.isDefault,
+        whenToUse: m.whenToUse,
+        pros: m.pros,
+        cons: m.cons,
+        costLevel: m.costLevel,
+        costDescription: m.costDescription,
+        speed: m.speed,
+        bestFor: m.bestFor,
     }));
 
     return c.json({ models });

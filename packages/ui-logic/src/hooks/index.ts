@@ -28,5 +28,9 @@ export {
     useBillingConfig,
     creditKeys,
 } from "./useCredits";
-
-
+export {
+    useUserSettings,
+    useUpdateUserSettings,
+    useAvailableModels,
+    settingsKeys,
+} from "./useSettings";
