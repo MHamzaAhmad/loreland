@@ -1,17 +1,21 @@
 import { Agent } from "agents";
-import { drizzle } from "drizzle-orm/durable-sqlite";
+import { drizzle as drizzleSqlite } from "drizzle-orm/durable-sqlite";
 import { migrate } from "drizzle-orm/durable-sqlite/migrator";
+import { drizzle } from "drizzle-orm/d1";
 import { eq, desc, sql } from "drizzle-orm";
 import { ToolLoopAgent, Output, stepCountIs } from "ai";
 
 // Import schemas and migrations from db package
 import * as schema from "@packages/db/schema/agent";
+import * as d1Schema from "@packages/db/schema/d1";
 import migrations from "@packages/db/migrations/agent";
 
 // Local imports
 import { loadPrompt } from "./prompt-loader";
 import { turnOutputSchema } from "./schemas";
 import { createOpenRouterClient, getOpenRouterModel } from "../lib/openrouter";
+import { CreditsService } from "../services/credits";
+import { buildTurnCost } from "../lib/turn-cost";
 import type { GameSessionState, FullGameConfig, AgentDB } from "./types";
 
 // ============================================================================
@@ -25,7 +29,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         super(ctx, env);
 
         // Initialize Drizzle with durable-sqlite driver
-        this.db = drizzle(ctx.storage, { schema });
+        this.db = drizzleSqlite(ctx.storage, { schema });
 
         // Run migrations on agent wake-up
         ctx.blockConcurrencyWhile(async () => {
@@ -40,7 +44,9 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         sessionId: string,
         gameConfig: FullGameConfig,
         characterId: string,
-        model: string = "nova-flash"
+        model: string = "nova-flash",
+        playerId: string,
+        creatorId: string
     ) {
         // Store game config in SQLite
         await this.db.insert(schema.gameSession).values({
@@ -86,10 +92,39 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             gameId: gameConfig.id,
             characterId,
             currentTurn: -1,
+            playerId,
+            creatorId,
         });
 
         // Use firstPrompt as the opening action and process like any other turn
         return this.processUserTurn(gameConfig.firstPrompt || "Begin the adventure.");
+    }
+
+    /**
+     * Get D1 database connection for credits service
+     */
+    private getD1DB() {
+        return drizzle(this.env.DB, { schema: d1Schema });
+    }
+
+    /**
+     * Check if player has enough credits to play
+     */
+    private async checkCredits(): Promise<{
+        hasEnough: boolean;
+        balance: number;
+        required: number;
+    }> {
+        const d1Db = this.getD1DB();
+        const creditsService = new CreditsService(d1Db, this.env);
+        const balance = await creditsService.getBalance(this.state.playerId);
+        const config = creditsService.getConfig();
+
+        return {
+            hasEnough: balance >= config.minBalance.toPlay,
+            balance,
+            required: config.minBalance.toPlay,
+        };
     }
 
     /**
@@ -101,6 +136,19 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
 
             switch (data.type) {
                 case "turn":
+                    // Check credits before processing
+                    const creditsCheck = await this.checkCredits();
+                    if (!creditsCheck.hasEnough) {
+                        connection.send(JSON.stringify({
+                            type: "error",
+                            message: `Insufficient credits. You have ${creditsCheck.balance} credits. Need ${creditsCheck.required}.`,
+                            code: "INSUFFICIENT_CREDITS",
+                            currentBalance: creditsCheck.balance,
+                            required: creditsCheck.required,
+                        }));
+                        break;
+                    }
+
                     const response = await this.processUserTurn(data.message);
                     connection.send(JSON.stringify({
                         type: "response",
@@ -331,6 +379,18 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             throw new Error("Failed to generate turn response");
         }
 
+        // Extract cost from OpenRouter via providerMetadata
+        // Cost is in costDetails.upstream_inference_cost when usage.cost is 0
+        const providerMetadata = (result as any).providerMetadata?.openrouter;
+        
+        // Try multiple possible paths for cost data
+        // Note: AI SDK converts snake_case to camelCase in providerMetadata
+        const aiCostUSD = providerMetadata?.usage?.cost 
+            || providerMetadata?.usage?.costDetails?.upstreamInferenceCost  // camelCase from AI SDK
+            || providerMetadata?.usage?.costDetails?.upstream_inference_cost  // snake_case fallback
+            || (result as any).totalUsage?.raw?.cost_details?.upstream_inference_cost
+            || 0;
+
         // Apply state changes from AI response
         const triggersActivated: string[] = [];
         if (output.stateChanges) {
@@ -410,6 +470,27 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             this.ctx.waitUntil(this.generateSummary(model, gameConfig));
         }
 
+        // Calculate turn cost and deduct credits
+        const d1Db = this.getD1DB();
+        const creditsService = new CreditsService(d1Db, this.env);
+        const config = creditsService.getConfig();
+        const turnCost = buildTurnCost(aiCostUSD, true, config); // true = image generated
+
+        // Deduct credits with creator revenue share
+        const deductResult = await creditsService.deductWithCreatorShare(
+            this.state.playerId,
+            this.state.creatorId,
+            this.state.gameId,
+            turnCost,
+            {
+                sessionId: this.state.sessionId,
+                turnNumber: newTurnNumber,
+            }
+        );
+
+        // Get updated balance
+        const newBalance = await creditsService.getBalance(this.state.playerId);
+
         return {
             text: output.narrative,
             suggestedActions: output.suggestedActions,
@@ -418,6 +499,9 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             gameStatus: output.gameStatus,
             outcome: output.outcome?.success,
             triggersActivated,
+            turnCost: turnCost.totalCredits,
+            newBalance,
+            creatorEarnings: deductResult.creatorEarnings,
         };
     }
 

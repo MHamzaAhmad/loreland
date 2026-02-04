@@ -31,6 +31,10 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     // Track which turns have images loading
     const [imageLoadingTurns, setImageLoadingTurns] = useState<Set<number>>(new Set());
 
+    // Credit tracking
+    const [turnCost, setTurnCost] = useState<number | null>(null);
+    const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+
     // Use refs for callbacks to avoid re-connecting when they change
     const callbacksRef = useRef({ onConnect, onDisconnect, onError });
     useEffect(() => {
@@ -56,6 +60,8 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 });
                 setSuggestedActions(response.suggestedActions);
                 setCharacterState(response.characterState);
+                setTurnCost(response.turnCost);
+                setCurrentBalance(response.newBalance);
 
                 // Add *previous* turn to history if we just advanced
                 const prevTurn = stateRef.current.currentTurnData;
@@ -187,12 +193,14 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     return {
         isConnected,
         isTyping,
-        currentTurnData, // Replaces 'messages' list
+        currentTurnData,
         characterState,
         suggestedActions,
         history,
         sendTurn,
         rewindToTurn,
         isImageLoading: currentTurnData ? imageLoadingTurns.has(currentTurnData.turnNumber) : false,
+        turnCost,
+        currentBalance,
     };
 }

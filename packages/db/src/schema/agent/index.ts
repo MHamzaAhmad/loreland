@@ -14,3 +14,6 @@ export * from "./images";
 
 // Debug/tracking
 export * from "./runs";
+
+// Character state for UI
+export * from "./character-state";

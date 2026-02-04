@@ -12,6 +12,8 @@ export interface GameSessionState {
     gameId: string;
     characterId: string;
     currentTurn: number;
+    playerId: string;
+    creatorId: string;
 }
 
 /**

@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { useGameSession, useApiClient } from "@packages/ui-logic";
+import { useGameSession, useApiClient, useCreditBalance } from "@packages/ui-logic";
 import { GameInterface } from "@/components/play/GameInterface";
+import { CreditStore } from "@/components/CreditStore";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/games/$id/play/$sessionId")({
@@ -24,17 +25,15 @@ function ActiveGameRoute() {
     const api = useApiClient();
     const [wsUrl, setWsUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-
-    // Initial fetch to get the session config/verify ownership and get WS URL
-    // Actually, we can usually construct the WS URL if we know the pattern, 
-    // BUT the backend endpoint `GET /play/start` (or similar) validates and returns the specific WS path.
-    // The previous implementation used `resumeQuery` calling `api.play.start(gameId, sessionId)` to get the URL.
+    const [isStoreOpen, setIsStoreOpen] = useState(false);
+    
+    const { data: creditData } = useCreditBalance();
+    const isLowBalance = (creditData?.balance ?? 0) < (creditData?.minimums.toPlay ?? 10);
 
     useEffect(() => {
         let mounted = true;
         async function initSession() {
             try {
-                // We call start to "resume" and get the valid WS URL
                 const res = await api.play.start(gameId, sessionId);
                 if (mounted) {
                     setWsUrl(buildWebSocketUrl(res.wsUrl));
@@ -51,7 +50,6 @@ function ActiveGameRoute() {
 
     const handleError = useCallback((e: unknown) => {
         console.error("WebSocket error:", e);
-        // Optionally set global error state here if WS fails fatally
     }, []);
 
     const session = useGameSession({
@@ -81,16 +79,27 @@ function ActiveGameRoute() {
     }
 
     return (
-        <GameInterface
-            gameId={gameId}
-            turnData={session.currentTurnData}
-            characterState={session.characterState}
-            suggestedActions={session.suggestedActions}
-            history={session.history}
-            isTyping={session.isTyping}
-            isConnected={session.isConnected}
-            onSendTurn={session.sendTurn}
-            onRewind={session.rewindToTurn}
-        />
+        <>
+            <GameInterface
+                gameId={gameId}
+                turnData={session.currentTurnData}
+                characterState={session.characterState}
+                suggestedActions={session.suggestedActions}
+                history={session.history}
+                isTyping={session.isTyping}
+                isConnected={session.isConnected}
+                onSendTurn={session.sendTurn}
+                onRewind={session.rewindToTurn}
+                turnCost={session.turnCost}
+                currentBalance={session.currentBalance ?? creditData?.balance ?? null}
+                onBuyCredits={() => setIsStoreOpen(true)}
+                isLowBalance={isLowBalance}
+            />
+            
+            <CreditStore 
+                isOpen={isStoreOpen} 
+                onClose={() => setIsStoreOpen(false)} 
+            />
+        </>
     );
 }

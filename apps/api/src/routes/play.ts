@@ -121,7 +121,7 @@ playRouter.post("/:gameId/play/start", async (c) => {
         const agent = c.env.PLAY_AGENT.get(agentId);
 
         // Call startGame on the agent with the user's preferred model
-        await agent.startGame(session.id, gameConfig, body.characterId, modelToUse);
+        await agent.startGame(session.id, gameConfig, body.characterId, modelToUse, user.id, gameConfig.userId);
     }
 
     return c.json({

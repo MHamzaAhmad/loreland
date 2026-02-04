@@ -2,8 +2,10 @@ import { StoryFeed } from "./StoryFeed";
 import { ActionConsole } from "./ActionConsole";
 import { CharacterHUD } from "./CharacterHUD";
 import { type CharacterStateSnapshot } from "@packages/ui-logic";
+import { CreditDisplay } from "@/components/CreditDisplay";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { Coin } from "@phosphor-icons/react";
 
 interface GameInterfaceProps {
     gameId: string;
@@ -20,6 +22,11 @@ interface GameInterfaceProps {
     isConnected: boolean;
     onSendTurn: (text: string) => void;
     onRewind?: (turnNumber: number) => void;
+    // Credit info
+    turnCost?: number | null;
+    currentBalance?: number | null;
+    onBuyCredits: () => void;
+    isLowBalance?: boolean;
 }
 
 export function GameInterface({
@@ -31,7 +38,11 @@ export function GameInterface({
     isTyping,
     isConnected,
     onSendTurn,
-    onRewind
+    onRewind,
+    turnCost,
+    currentBalance,
+    onBuyCredits,
+    isLowBalance,
 }: GameInterfaceProps) {
 
     return (
@@ -43,10 +54,31 @@ export function GameInterface({
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                     <span className="text-sm font-serif font-medium">Return to World</span>
                 </Link>
-                <div className="font-serif font-bold text-lg text-foreground/80 tracking-tight">
-                    Active Session
+                
+                {/* Center: Turn number with cost badge */}
+                <div className="flex flex-col items-center">
+                    <div className="font-serif font-bold text-lg text-foreground/80 tracking-tight">
+                        Turn {turnData?.turnNumber || 0}
+                    </div>
+                    {turnCost !== null && turnCost !== undefined && turnCost > 0 && (
+                        <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                            <Coin className="w-3 h-3" weight="fill" />
+                            <span>-{turnCost}</span>
+                        </div>
+                    )}
                 </div>
-                <div className="w-[100px]" /> {/* Spacer for centering */}
+                
+                {/* Right: Credit balance */}
+                <div className="flex items-center gap-2">
+                    {currentBalance !== null && currentBalance !== undefined && (
+                        <CreditDisplay
+                            balance={currentBalance}
+                            isLow={isLowBalance}
+                            onBuyClick={onBuyCredits}
+                            showAddButton={true}
+                        />
+                    )}
+                </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden">
