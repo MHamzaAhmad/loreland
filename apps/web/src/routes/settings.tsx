@@ -6,17 +6,16 @@ import {
 	useAvailableModels,
 	type AIModel,
 } from "@packages/ui-logic";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import {
 	ArrowLeft,
 	Check,
 	Clock,
-	Coins,
-	Cpu,
 	Info,
+	BookOpen,
+	Sparkle,
+	Lightning,
+	Brain,
 } from "@phosphor-icons/react";
 
 export const Route = createFileRoute("/settings")({
@@ -29,15 +28,14 @@ function SettingsPage() {
 	const { data: modelsData, isLoading: modelsLoading } = useAvailableModels();
 	const updateSettings = useUpdateUserSettings();
 	const [selectedModel, setSelectedModel] = useState<string | null>(null);
+	const [expandedModel, setExpandedModel] = useState<string | null>(null);
 
-	// Redirect to login if not authenticated
 	useEffect(() => {
 		if (!settingsLoading && !settings) {
 			navigate({ to: "/" });
 		}
 	}, [settings, settingsLoading, navigate]);
 
-	// Track local selection state for immediate UI feedback
 	useEffect(() => {
 		if (settings?.modelPreference) {
 			setSelectedModel(settings.modelPreference);
@@ -46,8 +44,8 @@ function SettingsPage() {
 
 	if (settingsLoading || modelsLoading) {
 		return (
-			<div className="min-h-screen bg-background flex items-center justify-center">
-				<Spinner size="lg" />
+			<div className="min-h-screen bg-[#fcfbf9] flex items-center justify-center">
+				<div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
 			</div>
 		);
 	}
@@ -61,188 +59,230 @@ function SettingsPage() {
 
 	const handleModelSelect = (modelId: string) => {
 		if (modelId === currentModelId) return;
-		
 		setSelectedModel(modelId);
 		updateSettings.mutate({ modelPreference: modelId });
 	};
 
+	const handleStorytellingToggle = () => {
+		const newValue = !settings.storytellingMode;
+		updateSettings.mutate({ storytellingMode: newValue });
+	};
+
+	const toggleModelDetails = (modelId: string, e: React.MouseEvent) => {
+		e.stopPropagation();
+		setExpandedModel(expandedModel === modelId ? null : modelId);
+	};
+
 	return (
-		<div className="min-h-screen bg-background">
-			{/* Compact Header */}
-			<header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-				<div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+		<div className="min-h-screen bg-[#fcfbf9]">
+			{/* Header */}
+			<header className="border-b border-dashed border-primary/20 bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+				<div className="max-w-xl mx-auto px-4 h-12 flex items-center justify-between">
 					<button 
 						onClick={() => navigate({ to: "/" })}
-						className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group"
+						className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors group"
 					>
-						<ArrowLeft size={16} weight="bold" className="group-hover:-translate-x-0.5 transition-transform" />
-						<span className="text-sm font-medium">Back</span>
+						<ArrowLeft size={14} weight="bold" className="group-hover:-translate-x-0.5 transition-transform" />
+						<span className="text-xs font-medium">Back</span>
 					</button>
-
-					<h1 className="text-sm font-semibold text-foreground">Settings</h1>
-
-					<div className="w-16" />
+					<h1 className="text-xs font-semibold text-foreground">Settings</h1>
+					<div className="w-10" />
 				</div>
 			</header>
 
 			{/* Main Content */}
-			<main className="max-w-3xl mx-auto px-6 py-12">
+			<main className="max-w-xl mx-auto px-4 py-8">
 				<div className="space-y-8">
+					{/* Page Title */}
+					<div className="text-center">
+						<h1 className="text-lg font-semibold text-foreground">Preferences</h1>
+					</div>
+
 					{/* AI Model Section */}
-					<div className="space-y-4">
+					<section className="space-y-3">
 						<div className="flex items-center gap-2">
-							<Cpu size={18} className="text-muted-foreground" />
-							<h2 className="text-lg font-semibold">AI Model</h2>
+							<Brain className="w-4 h-4 text-primary" weight="fill" />
+							<h2 className="text-sm font-semibold text-foreground">AI Model</h2>
 						</div>
-						
-						<p className="text-sm text-muted-foreground">
-							Choose which AI powers your game sessions. This affects response quality, speed, and cost.
-						</p>
 
 						{/* Current Selection */}
 						{currentModel && (
-							<div className="flex items-center gap-2 text-sm">
-								<span className="text-muted-foreground">Currently active:</span>
-								<span className="font-medium text-foreground">{currentModel.name}</span>
-								<span className="text-xs px-2 py-0.5 rounded-full bg-[var(--pastel-blue)] text-[var(--pastel-blue-fg)]">
-									active
+							<div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-border/40 text-xs">
+								<div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+								<span className="text-muted-foreground">Active:</span>
+								<span className="font-medium">{currentModel.name}</span>
+								<span className="text-muted-foreground ml-auto flex items-center gap-1">
+									<Clock size={10} />
+									{currentModel.speed}
 								</span>
 							</div>
 						)}
 
 						{/* Model List */}
-						<div className="space-y-3">
+						<div className="space-y-1.5">
 							{modelsData.models.map((model: AIModel) => (
-								<ModelCard
+								<ModelRow
 									key={model.id}
 									model={model}
 									isSelected={model.id === currentModelId}
 									isUpdating={updateSettings.isPending && selectedModel === model.id}
+									isExpanded={expandedModel === model.id}
 									onSelect={() => handleModelSelect(model.id)}
+									onToggleDetails={(e) => toggleModelDetails(model.id, e)}
 								/>
 							))}
 						</div>
-					</div>
+					</section>
+
+					{/* Divider */}
+					<div className="border-t border-dashed border-primary/20" />
+
+					{/* Storytelling Mode Section */}
+					<section className="space-y-3">
+						<div className="flex items-center gap-2">
+							<BookOpen className="w-4 h-4 text-amber-600" weight="fill" />
+							<h2 className="text-sm font-semibold text-foreground">Storytelling Mode</h2>
+						</div>
+
+						{/* Toggle Row */}
+						<div
+							onClick={handleStorytellingToggle}
+							className={cn(
+								"flex items-center justify-between px-3 py-2.5 rounded-lg border cursor-pointer transition-colors",
+								settings.storytellingMode
+									? "border-amber-500/30 bg-amber-50/30"
+									: "border-border/60 hover:border-foreground/20 bg-white"
+							)}
+						>
+							<div className="flex items-center gap-2">
+								<div className={cn(
+									"w-8 h-4 rounded-full transition-colors relative",
+									settings.storytellingMode ? "bg-amber-500" : "bg-muted"
+								)}>
+									<div className={cn(
+										"absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+										settings.storytellingMode ? "left-4.5" : "left-0.5"
+									)} />
+								</div>
+								<span className="text-xs font-medium">
+									{settings.storytellingMode ? "On" : "Off"}
+								</span>
+							</div>
+							{updateSettings.isPending && (
+								<div className="w-3 h-3 border border-primary/30 border-t-primary rounded-full animate-spin" />
+							)}
+						</div>
+
+						{settings.storytellingMode && (
+							<p className="text-[10px] text-amber-600 flex items-center gap-1 px-1">
+								<Sparkle size={10} weight="fill" />
+								See all game states during play
+							</p>
+						)}
+					</section>
 				</div>
 			</main>
 		</div>
 	);
 }
 
-interface ModelCardProps {
+interface ModelRowProps {
 	model: AIModel;
 	isSelected: boolean;
 	isUpdating: boolean;
+	isExpanded: boolean;
 	onSelect: () => void;
+	onToggleDetails: (e: React.MouseEvent) => void;
 }
 
-function ModelCard({ model, isSelected, isUpdating, onSelect }: ModelCardProps) {
-	const [showDetails, setShowDetails] = useState(false);
+function ModelRow({ model, isSelected, isUpdating, isExpanded, onSelect, onToggleDetails }: ModelRowProps) {
+	const getModelIcon = () => {
+		if (model.speed === "instant" || model.speed === "fast") {
+			return <Lightning size={14} weight="fill" className="text-amber-500" />;
+		}
+		if (model.tier === "premium") {
+			return <Sparkle size={14} weight="fill" className="text-purple-500" />;
+		}
+		return <Brain size={14} weight="fill" className="text-blue-500" />;
+	};
 
-	// Cost indicator dots
-	const costDots = Array(5).fill(0).map((_, i) => (
-		<div
-			key={i}
-			className={cn(
-				"w-1.5 h-1.5 rounded-full",
-				i < model.costLevel ? "bg-foreground/60" : "bg-border"
-			)}
-		/>
-	));
+	const getCostDot = () => {
+		if (model.costLevel <= 2) return <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />;
+		if (model.costLevel <= 3) return <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />;
+		return <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />;
+	};
 
 	return (
-		<Card
+		<div
 			className={cn(
-				"border transition-all duration-200 cursor-pointer",
+				"border rounded-lg overflow-hidden transition-colors",
 				isSelected
-					? "border-foreground/40 bg-secondary/50"
-					: "border-border/60 hover:border-foreground/20 hover:bg-secondary/30"
+					? "border-primary/40 bg-primary/5"
+					: "border-border/60 hover:border-foreground/20 bg-white",
+				isUpdating && "opacity-60"
 			)}
-			onClick={isUpdating ? undefined : onSelect}
 		>
-			<CardContent className="p-4">
-				<div className="flex items-start gap-4">
-					{/* Selection indicator */}
-					<div className="mt-0.5">
-						{isUpdating ? (
-							<Spinner size="sm" />
-						) : isSelected ? (
-							<div className="w-4 h-4 rounded-full bg-foreground flex items-center justify-center">
-								<Check size={10} weight="bold" className="text-background" />
-							</div>
-						) : (
-							<div className="w-4 h-4 rounded-full border-2 border-border hover:border-foreground/30 transition-colors" />
-						)}
-					</div>
-
-					{/* Main content */}
-					<div className="flex-1 min-w-0">
-						<div className="flex items-start justify-between gap-3">
-							<div>
-								<h3 className="font-medium text-foreground">{model.name}</h3>
-								<p className="text-sm text-muted-foreground mt-0.5">{model.description}</p>
-							</div>
-							
-							{/* Info toggle */}
-							<Button
-								variant="ghost"
-								size="sm"
-								className="h-7 w-7 p-0 shrink-0"
-								onClick={(e) => {
-									e.stopPropagation();
-									setShowDetails(!showDetails);
-								}}
-							>
-								<Info size={14} className="text-muted-foreground" />
-							</Button>
+			{/* Main Row */}
+			<div 
+				className="px-3 py-2 flex items-center gap-2 cursor-pointer"
+				onClick={isUpdating ? undefined : onSelect}
+			>
+				{/* Selection */}
+				<div className="shrink-0">
+					{isUpdating ? (
+						<div className="w-4 h-4 border border-primary/30 border-t-primary rounded-full animate-spin" />
+					) : isSelected ? (
+						<div className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+							<Check size={8} weight="bold" className="text-primary-foreground" />
 						</div>
+					) : (
+						<div className="w-4 h-4 rounded-full border border-border" />
+					)}
+				</div>
 
-						{/* Quick stats */}
-						<div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-							<div className="flex items-center gap-1.5">
-								<Clock size={12} />
-								<span className="capitalize">{model.speed}</span>
-							</div>
-							<div className="flex items-center gap-1.5">
-								<Coins size={12} />
-								<div className="flex gap-0.5">{costDots}</div>
-							</div>
-						</div>
+				{/* Icon */}
+				<div className="shrink-0 w-6 h-6 rounded-md bg-secondary flex items-center justify-center">
+					{getModelIcon()}
+				</div>
 
-						{/* Expanded details */}
-						{showDetails && (
-							<div className="mt-4 pt-4 border-t border-border/40 space-y-3">
-								<p className="text-sm text-muted-foreground">{model.whenToUse}</p>
-								
-								<div className="grid grid-cols-2 gap-4">
-									<div>
-										<p className="text-xs font-medium text-foreground mb-2">Strengths</p>
-										<ul className="space-y-1">
-											{model.pros.slice(0, 2).map((pro, i) => (
-												<li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
-													<span className="text-emerald-600">+</span>
-													{pro}
-												</li>
-											))}
-										</ul>
-									</div>
-									<div>
-										<p className="text-xs font-medium text-foreground mb-2">Considerations</p>
-										<ul className="space-y-1">
-											{model.cons.slice(0, 2).map((con, i) => (
-												<li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
-													<span className="text-rose-500">-</span>
-													{con}
-												</li>
-											))}
-										</ul>
-									</div>
-								</div>
-							</div>
+				{/* Name */}
+				<div className="flex-1 min-w-0">
+					<div className="flex items-center gap-1.5">
+						<span className="text-xs font-medium truncate">{model.name}</span>
+						{model.isDefault && (
+							<span className="text-[9px] px-1 py-0 rounded bg-primary/10 text-primary">Def</span>
 						)}
 					</div>
 				</div>
-			</CardContent>
-		</Card>
+
+				{/* Stats */}
+				<div className="hidden sm:flex items-center gap-2 shrink-0">
+					<span className="text-[10px] text-muted-foreground capitalize">{model.speed}</span>
+					{getCostDot()}
+				</div>
+
+				{/* Info */}
+				<button
+					className="shrink-0 p-1 hover:bg-secondary rounded transition-colors"
+					onClick={onToggleDetails}
+				>
+					<Info size={12} className={cn(isExpanded ? "text-primary" : "text-muted-foreground")} />
+				</button>
+			</div>
+
+			{/* Expanded */}
+			{isExpanded && (
+				<div className="px-3 pb-2 pt-0 border-t border-border/30">
+					<div className="pt-2 pl-6 space-y-2">
+						<p className="text-[10px] text-muted-foreground leading-relaxed">{model.whenToUse}</p>
+						
+						<div className="flex sm:hidden items-center gap-2 text-[10px] text-muted-foreground">
+							<span className="capitalize">{model.speed}</span>
+							{getCostDot()}
+						</div>
+					</div>
+				</div>
+			)}
+		</div>
 	);
 }

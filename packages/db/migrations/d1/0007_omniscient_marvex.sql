@@ -1,0 +1,1 @@
+ALTER TABLE `user_settings` ADD `storytelling_mode` integer DEFAULT false;

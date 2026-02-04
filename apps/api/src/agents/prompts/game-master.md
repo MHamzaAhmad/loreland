@@ -84,7 +84,7 @@ When writing the scenePrompt, follow this visual style:
 ## Output
 
 Provide structured output:
-- **narrative**: What happens (2-5 sentences)
+- **narrative**: What happens
 - **stateChanges**: State updates (name → value)
 - **suggestedActions**: 3 follow-up actions
 - **scenePrompt**: Visual scene description for image generation. Focus on: environment details, lighting, mood, character positioning, key visual elements. Describe what the SCENE looks like, not actions.

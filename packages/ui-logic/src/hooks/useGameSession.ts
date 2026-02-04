@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { GameClient } from "../game/GameClient";
-import type { WebSocketResponse, CharacterStateSnapshot } from "../game/types";
+import type { WebSocketResponse, CharacterStateSnapshot, GameStateItem } from "../game/types";
 
 export interface UseGameSessionProps {
     url: string;
@@ -24,6 +24,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
 
     const [characterState, setCharacterState] = useState<CharacterStateSnapshot | null>(null);
     const [suggestedActions, setSuggestedActions] = useState<string[]>([]);
+    const [allStates, setAllStates] = useState<GameStateItem[]>([]);
 
     // History handling
     const [history, setHistory] = useState<{ turnNumber: number; summary: string }[]>([]);
@@ -62,6 +63,9 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 setCharacterState(response.characterState);
                 setTurnCost(response.turnCost);
                 setCurrentBalance(response.newBalance);
+                if (response.allStates) {
+                    setAllStates(response.allStates);
+                }
 
                 // Add *previous* turn to history if we just advanced
                 const prevTurn = stateRef.current.currentTurnData;
@@ -77,6 +81,9 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                     sceneImageKey: response.recentTurns?.[response.recentTurns.length - 1]?.sceneImageKey,
                 });
                 setCharacterState(response.characterState || null);
+                if (response.allStates) {
+                    setAllStates(response.allStates);
+                }
                 if (response.recentTurns && response.recentTurns.length > 0) {
                     const lastTurn = response.recentTurns[response.recentTurns.length - 1];
                     setSuggestedActions(lastTurn.suggestedActions || []);
@@ -182,7 +189,8 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ turnNumber })
             }).then(res => res.json()).then(data => {
-                if (data.success && clientRef.current) {
+                const result = data as { success?: boolean };
+                if (result.success && clientRef.current) {
                     // Refresh state
                     clientRef.current.send("get_state");
                 }
@@ -202,5 +210,6 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
         isImageLoading: currentTurnData ? imageLoadingTurns.has(currentTurnData.turnNumber) : false,
         turnCost,
         currentBalance,
+        allStates,
     };
 }

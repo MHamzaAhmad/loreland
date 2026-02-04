@@ -50,6 +50,13 @@
       "when": 1770037599729,
       "tag": "0006_last_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1770219503512,
+      "tag": "0007_omniscient_marvex",
+      "breakpoints": true
     }
   ]
 }

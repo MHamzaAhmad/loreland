@@ -306,7 +306,7 @@ export const aiLorebooksSchema = z.array(aiLorebookSchema);
 // ============================================================================
 
 export const turnResponseSchema = z.object({
-    narrative: z.string().describe("Vivid description of what happens (2-5 sentences)"),
+    narrative: z.string().describe("Vivid description of what happens. Follow the game's turn instructions for length and style."),
     stateChanges: z.record(z.string()).optional().describe("State name -> new value"),
     suggestedActions: z.array(z.string()).describe("3 contextually appropriate next actions"),
     scenePrompt: z.string().describe("Visual description for image generation"),
@@ -316,7 +316,7 @@ export const turnResponseSchema = z.object({
 export type TurnResponse = z.infer<typeof turnResponseSchema>;
 
 export const openingResponseSchema = z.object({
-    narrative: z.string().describe("Opening narrative (3-5 immersive sentences)"),
+    narrative: z.string().describe("Opening narrative. Follow the game's turn instructions for length and style."),
     immediateGoal: z.string().describe("What the player should focus on first"),
     suggestedActions: z.array(z.string()).describe("3 starter actions"),
     scenePrompt: z.string().describe("Visual description for opening image"),

@@ -296,6 +296,7 @@ export interface BillingConfig {
  */
 export interface UserSettings {
     modelPreference: string | null;
+    storytellingMode: boolean;
 }
 
 /**

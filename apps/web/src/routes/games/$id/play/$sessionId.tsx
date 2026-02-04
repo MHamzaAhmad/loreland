@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { useGameSession, useApiClient, useCreditBalance } from "@packages/ui-logic";
+import { useGameSession, useApiClient, useCreditBalance, useUserSettings } from "@packages/ui-logic";
 import { GameInterface } from "@/components/play/GameInterface";
+import { StatesPanel } from "@/components/play/StatesPanel";
 import { CreditStore } from "@/components/CreditStore";
 import { Loader2 } from "lucide-react";
 
@@ -26,9 +27,12 @@ function ActiveGameRoute() {
     const [wsUrl, setWsUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isStoreOpen, setIsStoreOpen] = useState(false);
+    const [showStatesPanel, setShowStatesPanel] = useState(false);
     
     const { data: creditData } = useCreditBalance();
+    const { data: userSettings } = useUserSettings();
     const isLowBalance = (creditData?.balance ?? 0) < (creditData?.minimums.toPlay ?? 10);
+    const storytellingMode = userSettings?.storytellingMode ?? false;
 
     useEffect(() => {
         let mounted = true;
@@ -95,10 +99,18 @@ function ActiveGameRoute() {
                 onBuyCredits={() => setIsStoreOpen(true)}
                 isLowBalance={isLowBalance}
             />
-            
-            <CreditStore 
-                isOpen={isStoreOpen} 
-                onClose={() => setIsStoreOpen(false)} 
+
+            {storytellingMode && (
+                <StatesPanel
+                    states={session.allStates}
+                    isVisible={showStatesPanel}
+                    onToggle={() => setShowStatesPanel(!showStatesPanel)}
+                />
+            )}
+
+            <CreditStore
+                isOpen={isStoreOpen}
+                onClose={() => setIsStoreOpen(false)}
             />
         </>
     );

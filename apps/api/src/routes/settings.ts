@@ -18,6 +18,7 @@ const updateSettingsSchema = z.object({
     modelPreference: z.string().refine((val) => allowedModels.includes(val), {
         message: "Invalid model preference",
     }).optional(),
+    storytellingMode: z.boolean().optional(),
 });
 
 /**
@@ -37,6 +38,7 @@ settingsRouter.get("/", async (c) => {
 
     return c.json({
         modelPreference: settings?.modelPreference ?? null,
+        storytellingMode: settings?.storytellingMode ?? false,
     });
 });
 
@@ -74,7 +76,7 @@ settingsRouter.put("/", zValidator("json", updateSettingsSchema), async (c) => {
         return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const { modelPreference } = c.req.valid("json");
+    const { modelPreference, storytellingMode } = c.req.valid("json");
     const db = drizzle(c.env.DB);
 
     // Check if settings exist
@@ -86,7 +88,8 @@ settingsRouter.put("/", zValidator("json", updateSettingsSchema), async (c) => {
     if (existing) {
         await db.update(userSettings)
             .set({
-                modelPreference: modelPreference ?? null,
+                modelPreference: modelPreference ?? existing.modelPreference ?? null,
+                storytellingMode: storytellingMode ?? existing.storytellingMode ?? false,
             })
             .where(eq(userSettings.id, existing.id));
     } else {
@@ -94,10 +97,11 @@ settingsRouter.put("/", zValidator("json", updateSettingsSchema), async (c) => {
             id: crypto.randomUUID(),
             userId: user.id,
             modelPreference: modelPreference ?? null,
+            storytellingMode: storytellingMode ?? false,
         });
     }
 
-    return c.json({ success: true, modelPreference });
+    return c.json({ success: true, modelPreference, storytellingMode });
 });
 
 export { settingsRouter };

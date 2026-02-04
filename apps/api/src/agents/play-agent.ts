@@ -195,6 +195,28 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     }
 
     /**
+     * Get all states with full metadata for storytelling mode
+     */
+    private async getAllStatesForStorytelling(): Promise<Array<{
+        id: string;
+        name: string;
+        value: string;
+        dataType: "text" | "number" | "boolean";
+        visibility: "visible" | "hidden" | "conditional";
+        description?: string | null;
+    }>> {
+        const stateRows = await this.db.select().from(schema.sessionStates);
+        return stateRows.map(s => ({
+            id: s.id,
+            name: s.name,
+            value: s.value,
+            dataType: s.dataType || "text",
+            visibility: s.visibility || "visible",
+            description: s.displayCondition || null,
+        }));
+    }
+
+    /**
      * Get all states including hidden ones (for trigger evaluation)
      */
     private async getAllStates(): Promise<Record<string, { value: string; dataType: string }>> {
@@ -436,6 +458,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
 
         // Get updated states for snapshot
         const updatedStates = await this.getStatesForPrompt();
+        const allStatesForStorytelling = await this.getAllStatesForStorytelling();
 
         // Save turn
         const [insertedTurn] = await this.db.insert(schema.turns).values({
@@ -502,6 +525,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             turnCost: turnCost.totalCredits,
             newBalance,
             creatorEarnings: deductResult.creatorEarnings,
+            allStates: allStatesForStorytelling,
         };
     }
 
@@ -601,6 +625,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
     async getGameState() {
         const session = await this.db.select().from(schema.gameSession).limit(1);
         const states = await this.getStatesForPrompt();
+        const allStatesForStorytelling = await this.getAllStatesForStorytelling();
         const recentTurns = await this.db.select()
             .from(schema.turns)
             .orderBy(desc(schema.turns.turnNumber))
@@ -611,6 +636,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             states,
             recentTurns: recentTurns.reverse(),
             model: session[0]?.model,
+            allStates: allStatesForStorytelling,
         };
     }
 

@@ -23,9 +23,18 @@ export type WebSocketMessage =
     | { type: "get_state" }
     | { type: "get_turns" };
 
+export interface GameStateItem {
+    id: string;
+    name: string;
+    value: string;
+    dataType: "text" | "number" | "boolean";
+    visibility: "visible" | "hidden" | "conditional";
+    description?: string | null;
+}
+
 export type WebSocketResponse =
-    | { type: "response"; text: string; suggestedActions: string[]; characterState: CharacterStateSnapshot; turnNumber: number; sceneImageKey?: string; gameStatus?: "continue" | "victory" | "defeat"; outcome?: string; turnCost: number; newBalance: number; creatorEarnings?: number }
-    | { type: "state"; currentTurn: number; characterState: CharacterStateSnapshot | null; recentTurns: Turn[]; model?: string }
+    | { type: "response"; text: string; suggestedActions: string[]; characterState: CharacterStateSnapshot; turnNumber: number; sceneImageKey?: string; gameStatus?: "continue" | "victory" | "defeat"; outcome?: string; turnCost: number; newBalance: number; creatorEarnings?: number; allStates?: GameStateItem[] }
+    | { type: "state"; currentTurn: number; characterState: CharacterStateSnapshot | null; recentTurns: Turn[]; model?: string; allStates?: GameStateItem[] }
     | { type: "turns"; turns: Turn[] }
     | { type: "error"; message: string; code?: "INSUFFICIENT_CREDITS"; currentBalance?: number; required?: number }
     | { type: "turn_image_generating"; turnNumber: number }

@@ -37,7 +37,7 @@ export type Outcome = z.infer<typeof outcomeSchema>;
  */
 export const turnOutputSchema = z.object({
     narrative: z.string()
-        .describe("Vivid narrative describing what happens (2-5 sentences). Describe the scene, the action, and the result."),
+        .describe("Vivid narrative describing what happens. Describe the scene, the action, and the result. Follow the game's turn instructions for length and style."),
     suggestedActions: z.array(z.string())
         .describe("Three possible follow-up actions the player could take"),
     outcome: outcomeSchema

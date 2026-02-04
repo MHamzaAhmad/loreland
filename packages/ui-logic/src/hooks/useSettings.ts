@@ -30,7 +30,7 @@ export function useUpdateUserSettings() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (data: { modelPreference: string }) => api.settings.update(data),
+		mutationFn: (data: { modelPreference?: string; storytellingMode?: boolean }) => api.settings.update(data),
 		onSuccess: () => {
 			// Invalidate and refetch user settings after update
 			queryClient.invalidateQueries({ queryKey: settingsKeys.user() });

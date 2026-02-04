@@ -8,6 +8,7 @@ export const userSettings = sqliteTable("user_settings", {
         .notNull()
         .references(() => users.id, { onDelete: "cascade" }),
     modelPreference: text("model_preference"), // e.g., "gemini-1.5-pro"
+    storytellingMode: integer("storytelling_mode", { mode: "boolean" }).default(false), // Show all states in UI
     createdAt: integer("created_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),

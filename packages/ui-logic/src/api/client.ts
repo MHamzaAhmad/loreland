@@ -260,7 +260,7 @@ export function createApiClient(options: ApiClientOptions) {
             /**
              * Update user settings (auto-save model preference)
              */
-            update: (data: { modelPreference: string }) => {
+            update: (data: { modelPreference?: string; storytellingMode?: boolean }) => {
                 return request<{ success: boolean }>("/api/settings", {
                     method: "PUT",
                     body: JSON.stringify(data),
