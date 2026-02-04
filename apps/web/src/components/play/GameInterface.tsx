@@ -27,6 +27,8 @@ interface GameInterfaceProps {
     currentBalance?: number | null;
     onBuyCredits: () => void;
     isLowBalance?: boolean;
+    // States panel
+    onToggleStatesPanel?: () => void;
 }
 
 export function GameInterface({
@@ -43,6 +45,7 @@ export function GameInterface({
     currentBalance,
     onBuyCredits,
     isLowBalance,
+    onToggleStatesPanel,
 }: GameInterfaceProps) {
 
     return (
@@ -88,6 +91,7 @@ export function GameInterface({
                         turnData={turnData}
                         isTyping={isTyping}
                         characterState={characterState}
+                        onToggleStatesPanel={onToggleStatesPanel}
                     />
 
                     {/* Input Area - Overlay on top of the turn display at the bottom */}

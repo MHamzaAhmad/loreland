@@ -13,6 +13,7 @@ export const sessionStates = sqliteTable("session_states", {
     dataType: text("data_type", { enum: ["text", "number", "boolean"] }).default("text"),
     visibility: text("visibility", { enum: ["visible", "hidden", "conditional"] }).default("visible"),
     displayCondition: text("display_condition"),
+    description: text("description"),
     updatedAt: integer("updated_at").notNull().default(sql`(unixepoch())`),
 });
 

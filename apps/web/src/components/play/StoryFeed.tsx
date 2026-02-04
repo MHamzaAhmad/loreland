@@ -1,6 +1,5 @@
 import Markdown from "react-markdown";
-import { useState } from "react";
-import { Terminal, Heart, Brain } from "lucide-react";
+import { ListDashes, Heart } from "@phosphor-icons/react";
 import { getImageUrl } from "@packages/ui-logic";
 import type { CharacterStateSnapshot } from "@packages/ui-logic";
 
@@ -13,11 +12,11 @@ interface TurnDisplayProps {
         agentThought?: string;
     } | null;
     characterState: CharacterStateSnapshot | null;
+    showStatesPanel?: boolean;
+    onToggleStatesPanel?: () => void;
 }
 
-export function TurnDisplay({ turnData, isTyping, characterState }: TurnDisplayProps) {
-    const [showDebug, setShowDebug] = useState(false);
-
+export function TurnDisplay({ turnData, isTyping, characterState, onToggleStatesPanel }: TurnDisplayProps) {
     if (!turnData || !turnData.narrative) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/40 gap-4 animate-pulse">
@@ -29,31 +28,30 @@ export function TurnDisplay({ turnData, isTyping, characterState }: TurnDisplayP
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden relative bg-[#fcfbf9]">
-            {/* Background Texture/Pattern could go here */}
-
             {/* Content Layer */}
             <div className="relative z-10 flex-1 flex flex-col p-4 md:p-12 pb-32 md:pb-40 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10">
-
                 <div className="max-w-3xl mx-auto w-full space-y-8">
                     {/* Header Info */}
                     <div className="flex items-center justify-between opacity-40 hover:opacity-100 transition-opacity">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                             Turn {turnData.turnNumber}
                         </div>
-                        <button
-                            onClick={() => setShowDebug(!showDebug)}
-                            className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
-                        >
-                            <Terminal className="w-3 h-3" />
-                            Debug
-                        </button>
+                        {onToggleStatesPanel && (
+                            <button
+                                onClick={onToggleStatesPanel}
+                                className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+                            >
+                                <ListDashes className="w-3 h-3" weight="duotone" />
+                                States
+                            </button>
+                        )}
                     </div>
 
                     {/* Vitals Panel (Mobile/Integrated) */}
                     {characterState && (
                         <div className="flex gap-4 md:hidden">
                             <div className="flex items-center gap-2 text-primary font-bold text-xs border border-primary/20 bg-primary/5 px-2 py-1 rounded-full">
-                                <Heart className="w-3 h-3" /> {characterState.health}%
+                                <Heart className="w-3 h-3" weight="fill" /> {characterState.health}%
                             </div>
                         </div>
                     )}
@@ -67,16 +65,6 @@ export function TurnDisplay({ turnData, isTyping, characterState }: TurnDisplayP
                                 className="w-full h-full object-cover"
                             />
                             <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-xl pointer-events-none" />
-                        </div>
-                    )}
-
-                    {/* Agent Thought / Debug View */}
-                    {showDebug && turnData.agentThought && (
-                        <div className="mb-6 p-4 rounded-xl bg-secondary/50 border border-dashed border-border text-xs font-mono text-muted-foreground animate-in slide-in-from-top-2">
-                            <div className="flex items-center gap-2 mb-2 text-primary uppercase tracking-widest font-bold text-[10px]">
-                                <Brain className="w-3 h-3" /> AI Reasoning
-                            </div>
-                            {turnData.agentThought}
                         </div>
                     )}
 
@@ -101,5 +89,5 @@ export function TurnDisplay({ turnData, isTyping, characterState }: TurnDisplayP
     );
 }
 
-// Re-export as StoryFeed to keep imports working without changing parent file yet
+// Re-export as StoryFeed to keep imports working
 export { TurnDisplay as StoryFeed };

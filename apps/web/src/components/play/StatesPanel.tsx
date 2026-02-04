@@ -11,43 +11,20 @@ import {
   X
 } from "@phosphor-icons/react";
 import type { GameStateItem } from "@packages/ui-logic";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 interface StatesPanelProps {
   states: GameStateItem[];
-  isVisible: boolean;
-  onToggle: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function StatesPanel({ states, isVisible, onToggle }: StatesPanelProps) {
-  const [expandedStates, setExpandedStates] = useState<Set<string>>(new Set());
+export function StatesPanel({ states, isOpen, onClose }: StatesPanelProps) {
+  const [expandedStateId, setExpandedStateId] = useState<string | null>(null);
 
-  const toggleStateExpand = (stateId: string) => {
-    setExpandedStates(prev => {
-      const next = new Set(prev);
-      if (next.has(stateId)) {
-        next.delete(stateId);
-      } else {
-        next.add(stateId);
-      }
-      return next;
-    });
-  };
-
-  if (!isVisible) {
-    return (
-      <button
-        onClick={onToggle}
-        className="fixed right-4 top-20 z-40 p-2 rounded-lg bg-white border border-border shadow-md hover:shadow-lg transition-all hover:bg-secondary/30"
-        title="Show states"
-      >
-        <div className="flex items-center gap-1.5">
-          <ListDashes className="w-4 h-4 text-muted-foreground" weight="duotone" />
-          <span className="text-xs font-medium text-muted-foreground">States</span>
-        </div>
-      </button>
-    );
-  }
+  const toggleStateExpand = useCallback((stateId: string) => {
+    setExpandedStateId(prev => prev === stateId ? null : stateId);
+  }, []);
 
   // Group states by visibility
   const visibleStates = states.filter(s => s.visibility === "visible");
@@ -55,74 +32,95 @@ export function StatesPanel({ states, isVisible, onToggle }: StatesPanelProps) {
   const conditionalStates = states.filter(s => s.visibility === "conditional");
 
   return (
-    <div className="fixed right-4 top-20 z-40 w-96 max-h-[80vh] bg-white rounded-xl border border-border shadow-xl overflow-hidden flex flex-col">
-      {/* Header */}
-      <div className="p-3 border-b border-border bg-secondary/30 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <ListDashes className="w-4 h-4 text-primary" weight="duotone" />
-          <h3 className="font-semibold text-sm">States</h3>
-          <span className="text-xs text-muted-foreground">({states.length})</span>
-        </div>
-        <button
-          onClick={onToggle}
-          className="p-1.5 rounded-md hover:bg-secondary transition-colors"
-          title="Hide panel"
-        >
-          <X className="w-3.5 h-3.5 text-muted-foreground" weight="bold" />
-        </button>
-      </div>
-
-      {/* States List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {states.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            No states available
-          </div>
-        ) : (
-          <>
-            {/* Visible States */}
-            {visibleStates.length > 0 && (
-              <StateGroup 
-                title="Visible" 
-                icon={<Eye className="w-3 h-3" />}
-                states={visibleStates}
-                expandedStates={expandedStates}
-                onToggleExpand={toggleStateExpand}
-              />
-            )}
-
-            {/* Conditional States */}
-            {conditionalStates.length > 0 && (
-              <StateGroup 
-                title="Conditional" 
-                icon={<ToggleLeft className="w-3 h-3" />}
-                states={conditionalStates}
-                expandedStates={expandedStates}
-                onToggleExpand={toggleStateExpand}
-              />
-            )}
-
-            {/* Hidden States */}
-            {hiddenStates.length > 0 && (
-              <StateGroup 
-                title="Hidden" 
-                icon={<EyeSlash className="w-3 h-3" />}
-                states={hiddenStates}
-                expandedStates={expandedStates}
-                onToggleExpand={toggleStateExpand}
-              />
-            )}
-          </>
+    <>
+      {/* Backdrop - Mobile only */}
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-background/60 backdrop-blur-sm md:hidden transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
-      </div>
+        onClick={onClose}
+      />
 
-      {/* Footer */}
-      <div className="p-2 border-t border-border bg-secondary/20 shrink-0">
-        <p className="text-[10px] text-muted-foreground text-center">
-          Storytelling Mode
-        </p>
+      {/* Panel - Mobile: Full-screen slide-out, Desktop: Fixed side panel */}
+      <div
+        className={cn(
+          "fixed z-50 bg-background border-l border-border shadow-2xl transition-transform duration-300 ease-in-out",
+          // Mobile: Full width with margin, slides from right
+          "inset-y-0 right-0 w-full md:w-96 md:top-20 md:bottom-4 md:right-4 md:h-auto",
+          "md:rounded-xl md:border md:shadow-xl",
+          isOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30 shrink-0">
+          <div className="flex items-center gap-2">
+            <ListDashes className="w-5 h-5 text-primary" weight="duotone" />
+            <h3 className="font-semibold text-base">States</h3>
+            <span className="text-sm text-muted-foreground">({states.length})</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+            aria-label="Close states panel"
+          >
+            <X className="w-5 h-5 text-muted-foreground" weight="bold" />
+          </button>
+        </div>
+
+        {/* States List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          {states.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <ListDashes className="w-12 h-12 mx-auto mb-3 opacity-20" weight="duotone" />
+              <p className="text-sm">No states available</p>
+            </div>
+          ) : (
+            <>
+              {/* Visible States */}
+              {visibleStates.length > 0 && (
+                <StateGroup 
+                  title="Visible" 
+                  icon={<Eye className="w-3.5 h-3.5" />}
+                  states={visibleStates}
+                  expandedStateId={expandedStateId}
+                  onToggleExpand={toggleStateExpand}
+                />
+              )}
+
+              {/* Conditional States */}
+              {conditionalStates.length > 0 && (
+                <StateGroup 
+                  title="Conditional" 
+                  icon={<ToggleLeft className="w-3.5 h-3.5" />}
+                  states={conditionalStates}
+                  expandedStateId={expandedStateId}
+                  onToggleExpand={toggleStateExpand}
+                />
+              )}
+
+              {/* Hidden States */}
+              {hiddenStates.length > 0 && (
+                <StateGroup 
+                  title="Hidden" 
+                  icon={<EyeSlash className="w-3.5 h-3.5" />}
+                  states={hiddenStates}
+                  expandedStateId={expandedStateId}
+                  onToggleExpand={toggleStateExpand}
+                />
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-border bg-secondary/20 shrink-0">
+          <p className="text-xs text-muted-foreground text-center">
+            Storytelling Mode
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -130,24 +128,24 @@ interface StateGroupProps {
   title: string;
   icon: React.ReactNode;
   states: GameStateItem[];
-  expandedStates: Set<string>;
+  expandedStateId: string | null;
   onToggleExpand: (stateId: string) => void;
 }
 
-function StateGroup({ title, icon, states, expandedStates, onToggleExpand }: StateGroupProps) {
+function StateGroup({ title, icon, states, expandedStateId, onToggleExpand }: StateGroupProps) {
   return (
-    <div className="space-y-1.5">
-      <h4 className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 px-1">
+    <div className="space-y-2">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 px-1">
         {icon}
         {title}
-        <span className="text-[9px]">({states.length})</span>
+        <span className="text-[10px] font-normal">({states.length})</span>
       </h4>
-      <div className="space-y-1">
+      <div className="space-y-2">
         {states.map(state => (
           <StateItem 
             key={state.id} 
             state={state} 
-            isExpanded={expandedStates.has(state.id)}
+            isExpanded={expandedStateId === state.id}
             onToggleExpand={() => onToggleExpand(state.id)}
           />
         ))}
@@ -166,11 +164,11 @@ function StateItem({ state, isExpanded, onToggleExpand }: StateItemProps) {
   const getIcon = () => {
     switch (state.dataType) {
       case "number":
-        return <Hash className="w-3 h-3 text-blue-500" weight="duotone" />;
+        return <Hash className="w-4 h-4 text-blue-500" weight="duotone" />;
       case "boolean":
-        return <ToggleLeft className="w-3 h-3 text-purple-500" weight="duotone" />;
+        return <ToggleLeft className="w-4 h-4 text-purple-500" weight="duotone" />;
       default:
-        return <TextT className="w-3 h-3 text-amber-500" weight="duotone" />;
+        return <TextT className="w-4 h-4 text-amber-500" weight="duotone" />;
     }
   };
 
@@ -181,49 +179,44 @@ function StateItem({ state, isExpanded, onToggleExpand }: StateItemProps) {
     return state.value;
   };
 
-  const isValueLong = state.value.length > 30 || (state.description && state.description.length > 0);
+  const hasDescription = state.description && state.description.length > 0;
 
   return (
-    <div className={cn(
-      "rounded-lg border transition-all overflow-hidden",
-      isExpanded 
-        ? "border-primary/30 bg-primary/5" 
-        : "border-border/60 bg-secondary/20 hover:border-border hover:bg-secondary/40"
-    )}>
-      {/* Main Row */}
+    <div 
+      className={cn(
+        "rounded-xl border transition-all duration-200 overflow-hidden",
+        isExpanded 
+          ? "border-primary/30 bg-primary/5 shadow-sm" 
+          : "border-border/60 bg-secondary/30 hover:border-border hover:bg-secondary/50"
+      )}
+    >
+      {/* Header - Always visible */}
       <div 
-        className="flex items-start gap-2 p-2 cursor-pointer"
-        onClick={isValueLong ? onToggleExpand : undefined}
+        className="flex items-center gap-3 p-3 cursor-pointer"
+        onClick={onToggleExpand}
       >
-        {/* Expand Icon (if expandable) */}
-        {isValueLong ? (
-          <div className="shrink-0 mt-0.5 text-muted-foreground">
-            {isExpanded ? (
-              <CaretDown className="w-3 h-3" weight="bold" />
-            ) : (
-              <CaretRight className="w-3 h-3" weight="bold" />
-            )}
-          </div>
-        ) : (
-          <div className="shrink-0 mt-0.5">
-            {getIcon()}
-          </div>
-        )}
+        {/* Expand/Collapse Icon */}
+        <div className="shrink-0 text-muted-foreground">
+          {isExpanded ? (
+            <CaretDown className="w-4 h-4" weight="bold" />
+          ) : (
+            <CaretRight className="w-4 h-4" weight="bold" />
+          )}
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Name */}
-          <div className="flex items-center gap-1.5">
-            {!isValueLong && getIcon()}
-            <span className="text-xs font-medium text-foreground">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-foreground truncate">
               {state.name}
             </span>
           </div>
           
-          {/* Value (truncated if not expanded) */}
+          {/* Value Preview */}
           <div className={cn(
-            "mt-0.5 text-xs",
-            isExpanded ? "text-foreground whitespace-pre-wrap break-all" : "text-muted-foreground truncate"
+            "mt-0.5 text-sm",
+            isExpanded ? "text-foreground" : "text-muted-foreground truncate"
           )}>
             {getValueDisplay()}
           </div>
@@ -231,7 +224,7 @@ function StateItem({ state, isExpanded, onToggleExpand }: StateItemProps) {
 
         {/* Type Badge */}
         <span className={cn(
-          "shrink-0 text-[9px] px-1.5 py-0.5 rounded font-medium uppercase",
+          "shrink-0 text-[10px] px-2 py-1 rounded-full font-semibold uppercase tracking-wide",
           state.dataType === "boolean" && state.value.toLowerCase() === "true"
             ? "bg-emerald-100 text-emerald-700"
             : state.dataType === "boolean" && state.value.toLowerCase() === "false"
@@ -246,37 +239,48 @@ function StateItem({ state, isExpanded, onToggleExpand }: StateItemProps) {
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="px-2 pb-2 pt-0 border-t border-border/30">
-          <div className="pl-5 pt-2 space-y-2">
-            {/* Full Value */}
-            <div>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Value</p>
-              <p className="text-xs text-foreground whitespace-pre-wrap break-all font-mono bg-secondary/50 p-2 rounded">
-                {state.value}
+        <div className="px-3 pb-3 border-t border-border/40 animate-in slide-in-from-top-2 duration-200">
+          <div className="pt-3 space-y-4">
+            {/* Description Section - Always show label, conditionally show content */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Description
               </p>
-            </div>
-
-            {/* Description (if exists) */}
-            {state.description && (
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1">Description</p>
-                <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+              {hasDescription ? (
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   {state.description}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="text-sm text-muted-foreground/50 italic">No description available</p>
+              )}
+            </div>
 
-            {/* Metadata */}
-            <div className="flex items-center gap-3 pt-1">
-              <div className="flex items-center gap-1">
-                {getIcon()}
-                <span className="text-[9px] text-muted-foreground capitalize">{state.dataType}</span>
+            {/* Full Value Section */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Value
+              </p>
+              <div className="relative">
+                <pre className={cn(
+                  "text-xs font-mono bg-secondary/70 p-3 rounded-lg break-all whitespace-pre-wrap",
+                  state.value.length > 200 && "max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20"
+                )}>
+                  {state.value}
+                </pre>
               </div>
-              <div className="flex items-center gap-1">
-                {state.visibility === "visible" && <Eye className="w-3 h-3 text-muted-foreground" />}
-                {state.visibility === "hidden" && <EyeSlash className="w-3 h-3 text-muted-foreground" />}
-                {state.visibility === "conditional" && <ToggleLeft className="w-3 h-3 text-muted-foreground" />}
-                <span className="text-[9px] text-muted-foreground capitalize">{state.visibility}</span>
+            </div>
+
+            {/* Metadata Row */}
+            <div className="flex items-center gap-4 pt-2 border-t border-border/30">
+              <div className="flex items-center gap-1.5">
+                {getIcon()}
+                <span className="text-[10px] text-muted-foreground capitalize">{state.dataType}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {state.visibility === "visible" && <Eye className="w-3.5 h-3.5 text-muted-foreground" />}
+                {state.visibility === "hidden" && <EyeSlash className="w-3.5 h-3.5 text-muted-foreground" />}
+                {state.visibility === "conditional" && <ToggleLeft className="w-3.5 h-3.5 text-muted-foreground" />}
+                <span className="text-[10px] text-muted-foreground capitalize">{state.visibility}</span>
               </div>
             </div>
           </div>

@@ -67,6 +67,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
                     dataType: (state.dataType as "text" | "number" | "boolean") || "text",
                     visibility: (state.visibility as "visible" | "hidden" | "conditional") || "visible",
                     displayCondition: state.displayCondition || null,
+                    description: state.description || null,
                 });
             }
         }
@@ -212,7 +213,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             value: s.value,
             dataType: s.dataType || "text",
             visibility: s.visibility || "visible",
-            description: s.displayCondition || null,
+            description: s.description || null,
         }));
     }
 

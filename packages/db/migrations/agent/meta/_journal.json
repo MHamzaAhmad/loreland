@@ -36,6 +36,13 @@
       "when": 1769585171453,
       "tag": "0004_wild_moira_mactaggert",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1770221225467,
+      "tag": "0005_striped_darkstar",
+      "breakpoints": true
     }
   ]
 }

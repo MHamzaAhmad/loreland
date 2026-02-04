@@ -98,13 +98,14 @@ function ActiveGameRoute() {
                 currentBalance={session.currentBalance ?? creditData?.balance ?? null}
                 onBuyCredits={() => setIsStoreOpen(true)}
                 isLowBalance={isLowBalance}
+                onToggleStatesPanel={() => setShowStatesPanel(!showStatesPanel)}
             />
 
             {storytellingMode && (
                 <StatesPanel
                     states={session.allStates}
-                    isVisible={showStatesPanel}
-                    onToggle={() => setShowStatesPanel(!showStatesPanel)}
+                    isOpen={showStatesPanel}
+                    onClose={() => setShowStatesPanel(false)}
                 />
             )}
 
