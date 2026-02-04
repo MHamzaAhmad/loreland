@@ -7,7 +7,11 @@ import { z } from "zod";
 export const createCharacterSchema = z.object({
     name: z.string().min(1).max(100),
     description: z.string().min(1).max(2000),
-    portrait: z.string().url().optional(),
+    portrait: z.union([
+        z.string(),
+        z.null(),
+        z.undefined()
+    ]).optional(),
     position: z.number().int().optional(),
 });
 
@@ -23,11 +27,11 @@ export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>;
 
 export const createNpcSchema = z.object({
     name: z.string().min(1).max(100),
-    detail: z.string().max(2000).optional(),
-    oneLiner: z.string().max(200).optional(),
-    appearance: z.string().max(500).optional(),
-    location: z.string().max(200).optional(),
-    secretInfo: z.string().max(1000).optional(),
+    detail: z.union([z.string().max(2000), z.null(), z.undefined()]).optional(),
+    oneLiner: z.union([z.string().max(200), z.null(), z.undefined()]).optional(),
+    appearance: z.union([z.string().max(500), z.null(), z.undefined()]).optional(),
+    location: z.union([z.string().max(200), z.null(), z.undefined()]).optional(),
+    secretInfo: z.union([z.string().max(1000), z.null(), z.undefined()]).optional(),
     position: z.number().int().optional(),
 });
 
@@ -44,11 +48,11 @@ export type UpdateNpcInput = z.infer<typeof updateNpcSchema>;
 export const stateSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1).max(100),
-    description: z.string().max(500).optional(),
+    description: z.union([z.string().max(500), z.null(), z.undefined()]).optional(),
     dataType: z.enum(["text", "number", "boolean"]).optional(),
     visibility: z.enum(["visible", "hidden", "conditional"]).optional(),
-    displayCondition: z.string().max(500).optional(),
-    initialValue: z.string().optional(),
+    displayCondition: z.union([z.string().max(500), z.null(), z.undefined()]).optional(),
+    initialValue: z.union([z.string(), z.null(), z.undefined()]).optional(),
     position: z.number().int().optional(),
 });
 
@@ -57,7 +61,7 @@ export const triggerSchema = z.object({
     name: z.string().min(1).max(100),
     condition: z.string().min(1).max(1000),
     effect: z.string().min(1).max(1000),
-    triggerOnTurn: z.number().int().optional(),
+    triggerOnTurn: z.union([z.number().int(), z.null(), z.undefined()]).optional(),
     oneShot: z.boolean().optional(),
     position: z.number().int().optional(),
 });
@@ -103,25 +107,54 @@ export const createGameSchema = z.object({
 export type CreateGameInput = z.infer<typeof createGameSchema>;
 
 /**
- * Schema for updating a game
+ * Recursively strip empty strings from an object and convert to undefined
  */
-export const updateGameSchema = createGameSchema.partial().extend({
-    // Image settings
-    imageModel: z.string().max(100).optional(),
-    previewImage: z.string().url().optional(),
-    fullSizePreviewImage: z.string().url().optional(),
+function stripEmptyStrings(obj: unknown): unknown {
+    if (obj === '') return undefined;
+    if (Array.isArray(obj)) return obj.map(stripEmptyStrings);
+    if (typeof obj === 'object' && obj !== null) {
+        return Object.fromEntries(
+            Object.entries(obj).map(([key, value]) => [key, stripEmptyStrings(value)])
+        );
+    }
+    return obj;
+}
 
-    // Settings
-    public: z.boolean().optional(),
-    favorite: z.boolean().optional(),
+/**
+ * Schema for updating a game
+ * Handles partial updates with proper validation for optional fields
+ */
+export const updateGameSchema = z.preprocess(
+    // Strip empty strings recursively from all nested objects
+    (data) => stripEmptyStrings(data),
+    createGameSchema.partial().extend({
+        // Image settings - allow null/undefined or valid URLs
+        imageModel: z.string().max(100).optional().nullable(),
+        previewImage: z.union([
+            z.string().url(),
+            z.literal(''),
+            z.null(),
+            z.undefined()
+        ]).optional(),
+        fullSizePreviewImage: z.union([
+            z.string().url(),
+            z.literal(''),
+            z.null(),
+            z.undefined()
+        ]).optional(),
 
-    // Nested updates
-    characters: z.array(updateCharacterSchema.extend({ id: z.string().optional() })).optional(),
-    npcs: z.array(updateNpcSchema.extend({ id: z.string().optional() })).optional(),
-    lorebookEntries: z.array(lorebookSchema).optional(),
-    states: z.array(stateSchema).optional(),
-    triggers: z.array(triggerSchema).optional(),
-});
+        // Settings
+        public: z.boolean().optional(),
+        favorite: z.boolean().optional(),
+
+        // Nested updates
+        characters: z.array(updateCharacterSchema.extend({ id: z.string().optional() })).optional(),
+        npcs: z.array(updateNpcSchema.extend({ id: z.string().optional() })).optional(),
+        lorebookEntries: z.array(lorebookSchema).optional(),
+        states: z.array(stateSchema).optional(),
+        triggers: z.array(triggerSchema).optional(),
+    })
+);
 
 export type UpdateGameInput = z.infer<typeof updateGameSchema>;
 

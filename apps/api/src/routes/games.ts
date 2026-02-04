@@ -191,7 +191,13 @@ gamesRouter.put("/:id", zValidator("json", updateGameSchema), async (c) => {
                 message: "Games forked from other creators cannot be made public to protect original creator revenue."
             }, 403);
         }
-        throw error;
+        // Log unexpected errors for debugging
+        console.error("Game update failed:", error);
+        return c.json({
+            error: "Failed to update game",
+            code: "UPDATE_FAILED",
+            message: error instanceof Error ? error.message : "Unknown error occurred"
+        }, 500);
     }
     if (!game) {
         return c.json({ error: "Game not found" }, 404);
