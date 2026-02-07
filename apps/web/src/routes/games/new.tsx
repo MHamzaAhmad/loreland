@@ -99,7 +99,7 @@ function CreateGame() {
                             onClick={handleGenerate}
                             disabled={!prompt.trim() || generateMutation.isPending}
                             size="lg"
-                            className="w-full h-12 rounded-xl font-medium bg-foreground text-background hover:bg-foreground/90"
+                            className="w-full h-12 rounded-xl font-medium"
                         >
                             {generateMutation.isPending ? (
                                 <div className="flex items-center gap-2">

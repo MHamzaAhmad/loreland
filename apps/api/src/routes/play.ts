@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { listSessionsQuerySchema } from "../lib/schemas";
-import { eq, and, desc } from "drizzle-orm";
-import { playSessions, userSettings } from "@packages/db/schema/d1";
+import { eq, and, desc, inArray } from "drizzle-orm";
+import { playSessions, userSettings, characters } from "@packages/db/schema/d1";
 import type { AppEnv } from "../lib/context";
 import { GamesService } from "../services/games";
 
@@ -22,20 +22,60 @@ playRouter.get("/:gameId/sessions", zValidator("query", listSessionsQuerySchema)
     }
 
     const db = c.get("db");
+
+    // Get sessions with character names via join
     const sessions = await db
-        .select()
+        .select({
+            id: playSessions.id,
+            gameId: playSessions.gameId,
+            userId: playSessions.userId,
+            characterId: playSessions.characterId,
+            characterName: playSessions.characterName,
+            model: playSessions.model,
+            currentTurn: playSessions.currentTurn,
+            status: playSessions.status,
+            lastPlayedAt: playSessions.lastPlayedAt,
+            createdAt: playSessions.createdAt,
+        })
         .from(playSessions)
         .where(and(eq(playSessions.gameId, gameId), eq(playSessions.userId, user.id)))
         .orderBy(desc(playSessions.lastPlayedAt))
         .limit(query.limit)
         .offset(query.offset);
 
+    // Get all character IDs from sessions that have null characterName
+    const characterIds = sessions
+        .filter(s => !s.characterName)
+        .map(s => s.characterId);
+
+    // Fetch character names for those IDs
+    let characterMap = new Map<string, string>();
+    if (characterIds.length > 0) {
+        const chars = await db
+            .select({ characterId: characters.characterId, name: characters.name })
+            .from(characters)
+            .where(and(
+                eq(characters.gameId, gameId),
+                inArray(characters.characterId, characterIds)
+            ));
+
+        chars.forEach(char => {
+            characterMap.set(char.characterId, char.name);
+        });
+    }
+
+    // Enrich sessions with character names
+    const enrichedSessions = sessions.map(session => ({
+        ...session,
+        characterName: session.characterName || characterMap.get(session.characterId) || null
+    }));
+
     return c.json({
-        sessions,
+        sessions: enrichedSessions,
         pagination: {
             limit: query.limit,
             offset: query.offset,
-            count: sessions.length
+            count: enrichedSessions.length
         }
     });
 });
@@ -96,13 +136,13 @@ playRouter.post("/:gameId/play/start", async (c) => {
             return c.json({ error: "Game not found" }, 404);
         }
 
-        const character = gameConfig.characters.find(c => c.id === body.characterId);
+        const character = gameConfig.characters.find(c => c.characterId === body.characterId);
 
         // Fetch user's model preference from settings
         const userSettingsRecord = await db.query.userSettings.findFirst({
             where: eq(userSettings.userId, user.id)
         });
-        
+
         // Use user's preferred model or fall back to default
         const modelToUse = userSettingsRecord?.modelPreference || "nova-flash";
 

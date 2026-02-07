@@ -64,7 +64,7 @@ function Home() {
               </Button>
             </Link>
             <Link to="/games/new">
-              <Button size="sm" className="h-9 px-3 text-sm gap-1.5 bg-foreground text-background hover:bg-foreground/90">
+              <Button size="sm" className="h-9 px-3 text-sm gap-1.5">
                 <Plus size={16} weight="bold" />
                 <span className="hidden sm:inline">Create</span>
               </Button>

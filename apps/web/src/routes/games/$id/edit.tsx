@@ -169,7 +169,7 @@ function EditGame() {
                             <button
                                 onClick={handleSave}
                                 disabled={updateGame.isPending}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-foreground text-background hover:bg-foreground/90 rounded-full font-medium transition-all shadow-md disabled:opacity-50"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full font-medium transition-all shadow-md disabled:opacity-50"
                             >
                                 {updateGame.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FloppyDisk size={18} weight="fill" />}
                                 <span>{updateGame.isPending ? 'Saving...' : 'Save Changes'}</span>
