@@ -27,7 +27,7 @@
 		{
 			"binding": "DB",
 			"database_name": "loreland",
-			"database_id": "784c37bf-a823-4dcf-8560-0ff5283e8a0b",
+			"database_id": "700c66d7-cd17-4bc7-b376-c57cdc57aeb8",
 			"migrations_dir": "../../packages/db/migrations/d1"
 		}
 	],
@@ -74,7 +74,7 @@
 	"kv_namespaces": [
 		{
 			"binding": "CACHE",
-			"id": "d2d68b3ef9e04482aa0963a234b3ef8f"
+			"id": "df80e917afd84255a6e970a36ffee15e"
 		}
 	],
 	/**
