@@ -3,9 +3,8 @@ import { useState } from 'react'
 import { useAuth } from '@packages/ui-logic'
 import { signUpWithEmail, signInWithEmail } from '../../lib/auth-client'
 import { Button } from '../../components/ui/8bit/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/8bit/card'
-import { Input } from '../../components/ui/8bit/input'
-import { ArrowLeft, Mail, Lock, UserCircle } from 'lucide-react'
+import { ArrowLeft, Envelope, Lock, UserCircle, LinkSimple } from '@phosphor-icons/react'
+import { Loader2 } from 'lucide-react'
 
 export const Route = createFileRoute('/auth/link')({
     component: LinkAccount,
@@ -44,104 +43,151 @@ function LinkAccount() {
     }
 
     return (
-        <div className="min-h-screen p-4 md:p-8 flex items-center justify-center">
-            <div className="w-full max-w-md space-y-6">
-                {/* Back link */}
-                <Link to="/" className="inline-flex items-center gap-2 text-xs text-[var(--8bit-muted-foreground)] hover:text-[var(--8bit-foreground)]">
-                    <ArrowLeft className="h-4 w-4" />
-                    BACK TO GAMES
-                </Link>
+        <div className="min-h-screen bg-background">
+            {/* Compact Header */}
+            <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+                <div className="max-w-4xl mx-auto px-6 h-14 flex items-center gap-4">
+                    <Link
+                        to="/"
+                        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <ArrowLeft size={16} />
+                        <span className="text-sm font-medium">Back</span>
+                    </Link>
+                    <div className="h-4 w-px bg-border/60" />
+                    <h1 className="text-sm font-semibold text-foreground">
+                        {mode === 'signup' ? 'Create Account' : 'Sign In'}
+                    </h1>
+                </div>
+            </header>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg text-center">
-                            {mode === 'signup' ? 'CREATE ACCOUNT' : 'SIGN IN'}
-                        </CardTitle>
-                        <CardDescription className="text-center">
-                            Link your games to a permanent account
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {mode === 'signup' && (
-                                <div className="space-y-2">
-                                    <label className="text-[10px] uppercase">Name</label>
-                                    <div className="relative">
-                                        <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--8bit-muted-foreground)]" />
-                                        <Input
-                                            type="text"
-                                            placeholder="Your name"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            className="pl-10 text-xs"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                            )}
+            {/* Main Content */}
+            <main className="max-w-md mx-auto px-6 py-12">
+                {/* Page Header */}
+                <div className="mb-8 text-center">
+                    <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-secondary flex items-center justify-center">
+                        <LinkSimple size={24} className="text-foreground" weight="duotone" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-foreground mb-2">
+                        {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                        {mode === 'signup'
+                            ? 'Link your worlds and credits to a permanent account'
+                            : 'Sign in to access your worlds and credits'}
+                    </p>
+                </div>
 
+                {/* Form Card */}
+                <div className="p-6 rounded-xl border border-border/50 bg-card">
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {mode === 'signup' && (
                             <div className="space-y-2">
-                                <label className="text-[10px] uppercase">Email</label>
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Name
+                                </label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--8bit-muted-foreground)]" />
-                                    <Input
-                                        type="email"
-                                        placeholder="you@example.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-10 text-xs"
+                                    <UserCircle
+                                        size={18}
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                                        weight="duotone"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Your name"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        className="w-full h-10 pl-10 pr-4 text-sm bg-secondary/50 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground/40 transition-colors"
                                         required
                                     />
                                 </div>
                             </div>
+                        )}
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase">Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--8bit-muted-foreground)]" />
-                                    <Input
-                                        type="password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-10 text-xs"
-                                        required
-                                        minLength={8}
-                                    />
-                                </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Email
+                            </label>
+                            <div className="relative">
+                                <Envelope
+                                    size={18}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                                    weight="duotone"
+                                />
+                                <input
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full h-10 pl-10 pr-4 text-sm bg-secondary/50 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground/40 transition-colors"
+                                    required
+                                />
                             </div>
+                        </div>
 
-                            {error && (
-                                <p className="text-[10px] text-[var(--8bit-destructive)] text-center">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <Lock
+                                    size={18}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                                    weight="duotone"
+                                />
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full h-10 pl-10 pr-4 text-sm bg-secondary/50 border border-border/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground/40 transition-colors"
+                                    required
+                                    minLength={8}
+                                />
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                                <p className="text-xs text-destructive text-center">
                                     {error}
                                 </p>
-                            )}
+                            </div>
+                        )}
 
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                <span className="text-xs">
-                                    {isLoading
-                                        ? 'LOADING...'
-                                        : mode === 'signup'
-                                            ? 'CREATE & LINK'
-                                            : 'SIGN IN & LINK'}
+                        <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                            {isLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <span className="text-sm font-medium">
+                                    {mode === 'signup' ? 'Create & Link Account' : 'Sign In & Link'}
                                 </span>
-                            </Button>
-                        </form>
+                            )}
+                        </Button>
+                    </form>
 
-                        <div className="mt-4 text-center">
-                            <button
-                                type="button"
-                                onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
-                                className="text-[10px] text-[var(--8bit-muted-foreground)] hover:text-[var(--8bit-foreground)]"
-                            >
-                                {mode === 'signup'
-                                    ? 'Already have an account? Sign in'
-                                    : "Don't have an account? Create one"}
-                            </button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    <div className="mt-6 pt-6 border-t border-border/50 text-center">
+                        <button
+                            type="button"
+                            onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
+                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            {mode === 'signup'
+                                ? 'Already have an account? Sign in'
+                                : "Don't have an account? Create one"}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Info Note */}
+                <div className="mt-6 p-4 rounded-lg bg-secondary/30 border border-dashed border-border/50">
+                    <p className="text-xs text-muted-foreground text-center leading-relaxed">
+                        Your guest worlds and remaining credits will be automatically
+                        transferred to your permanent account.
+                    </p>
+                </div>
+            </main>
         </div>
     )
 }
+

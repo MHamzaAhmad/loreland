@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { injectDeps, injectSession, type AppEnv } from "./lib/context";
+import { setRequestFingerprint } from "./lib/auth.options";
 import { gamesRouter } from "./routes/games";
 import { generateRouter } from "./routes/generate";
 import { searchRouter } from "./routes/search";
@@ -27,7 +28,7 @@ app.use(
   "/api/*",
   cors({
     origin: ["http://localhost:3000", "https://web.hamzabuzz88.workers.dev"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Device-Fingerprint"],
     allowMethods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
     exposeHeaders: ["Content-Length"],
     maxAge: 600,
@@ -36,7 +37,10 @@ app.use(
 );
 
 // Auth handler - uses injected auth from context
+// Extract fingerprint header for abuse prevention
 app.on(["POST", "GET"], "/api/auth/*", (c) => {
+  const fingerprint = c.req.header("X-Device-Fingerprint");
+  setRequestFingerprint(fingerprint);
   return c.get("auth").handler(c.req.raw);
 });
 

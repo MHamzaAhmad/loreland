@@ -20,3 +20,4 @@ export * from "./user-settings";
 
 // Billing
 export * from "./credits";
+export * from "./device-fingerprints";

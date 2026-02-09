@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { anonymousClient } from "better-auth/client/plugins";
+import { getFingerprint } from "./fingerprint-provider";
 
 /**
  * Better Auth client for web
@@ -16,9 +17,15 @@ export const authClient = createAuthClient({
 /**
  * Sign in anonymously
  * Creates a guest session without requiring any credentials
+ * Sends device fingerprint for abuse prevention
  */
 export async function signInAnonymously() {
-    return authClient.signIn.anonymous();
+    const { visitorId } = await getFingerprint();
+    return authClient.signIn.anonymous({
+        fetchOptions: {
+            headers: { "X-Device-Fingerprint": visitorId }
+        }
+    });
 }
 
 /**
