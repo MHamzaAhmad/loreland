@@ -36,12 +36,12 @@ function MyGames() {
         <div className="min-h-screen bg-background">
             {/* Compact Header */}
             <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 shrink-0">
+                <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                         <Link to="/" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors group">
                             <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
                         </Link>
-                        <h1 className="text-sm font-semibold text-foreground">My Worlds</h1>
+                        <h1 className="text-sm font-semibold text-foreground hidden sm:block">My Worlds</h1>
                     </div>
 
                     {/* Search */}
@@ -58,15 +58,15 @@ function MyGames() {
                         </div>
                     </form>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                         <Link to="/">
-                            <Button variant="ghost" size="sm" className="h-9 px-3 text-sm gap-1.5">
+                            <Button variant="ghost" size="sm" className="h-9 w-9 sm:w-auto sm:px-3 text-sm gap-1.5 p-0 sm:p-2">
                                 <Globe size={16} />
                                 <span className="hidden sm:inline">Gallery</span>
                             </Button>
                         </Link>
                         <Link to="/games/new">
-                            <Button size="sm" className="h-9 px-3 text-sm gap-1.5">
+                            <Button size="sm" className="h-9 w-9 sm:w-auto sm:px-3 text-sm gap-1.5 p-0 sm:p-2">
                                 <Plus size={16} weight="bold" />
                                 <span className="hidden sm:inline">Create</span>
                             </Button>
@@ -76,7 +76,7 @@ function MyGames() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-6 py-8">
+            <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
                 {/* Loading State */}
                 {isLoading && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -126,7 +126,7 @@ function MyGames() {
                 {/* Games Grid */}
                 {games.length > 0 && (
                     <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                             {games.map((game) => (
                                 <GameCard key={game.id} game={game} />
                             ))}

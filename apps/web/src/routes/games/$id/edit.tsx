@@ -183,41 +183,44 @@ function EditGame() {
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-4 md:px-8 -mt-6 relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Sidebar Tabs */}
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-8 -mt-6 relative z-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
+                    {/* Sidebar Tabs - Horizontal scroll on mobile, vertical on desktop */}
                     <div className="lg:col-span-3 space-y-2">
-                        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-2 border border-dashed border-border/60">
-                            {tabs.map(tab => {
-                                const Icon = tab.icon
-                                const isActive = activeTab === tab.id
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={cn(
-                                            "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all rounded-xl text-left mb-1",
-                                            isActive
-                                                ? "bg-white shadow-sm text-foreground border border-border/50"
-                                                : "text-muted-foreground hover:bg-white/50 hover:text-foreground"
-                                        )}
-                                    >
-                                        <Icon size={18} weight={isActive ? "fill" : "regular"} className={cn(isActive ? "text-foreground" : "text-muted-foreground")} />
-                                        {tab.label}
-                                    </button>
-                                )
-                            })}
+                        <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-2 border border-dashed border-border/60 overflow-x-auto lg:overflow-visible">
+                            <div className="flex lg:flex-col gap-1 min-w-max lg:min-w-0">
+                                {tabs.map(tab => {
+                                    const Icon = tab.icon
+                                    const isActive = activeTab === tab.id
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={cn(
+                                                "flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium transition-all rounded-xl text-left whitespace-nowrap",
+                                                isActive
+                                                    ? "bg-white shadow-sm text-foreground border border-border/50"
+                                                    : "text-muted-foreground hover:bg-white/50 hover:text-foreground"
+                                            )}
+                                        >
+                                            <Icon size={16} weight={isActive ? "fill" : "regular"} className={cn(isActive ? "text-foreground" : "text-muted-foreground")} />
+                                            <span className="hidden sm:inline">{tab.label}</span>
+                                            <span className="sm:hidden">{tab.label.slice(0, 3)}</span>
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
 
                     {/* Content Area */}
                     <div className="lg:col-span-9">
-                        <div className="bg-white rounded-3xl border border-dashed border-border/60 p-8 shadow-sm min-h-[500px] relative">
+                        <div className="bg-white rounded-2xl sm:rounded-3xl border border-dashed border-border/60 p-4 sm:p-8 shadow-sm min-h-[500px] relative">
                             {activeTab === 'general' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex items-center gap-2 text-muted-foreground border-b border-dashed border-border pb-4">
                                         <Gear size={20} />
-                                        <h2 className="font-serif text-lg font-semibold text-foreground">Core Parameters</h2>
+                                        <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Core Parameters</h2>
                                     </div>
 
                                     <FormGroup label="World Title">
@@ -243,10 +246,10 @@ function EditGame() {
                             )}
 
                             {activeTab === 'narrative' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex items-center gap-2 text-muted-foreground border-b border-dashed border-border pb-4">
                                         <Scroll size={20} />
-                                        <h2 className="font-serif text-lg font-semibold text-foreground">Narrative Settings</h2>
+                                        <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Narrative Settings</h2>
                                     </div>
 
                                     <FormGroup label="Author Style" hint="The narrative voice and writing style of the AI">
@@ -384,10 +387,10 @@ function EditGame() {
                             )}
 
                             {activeTab === 'images' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex items-center gap-2 text-muted-foreground border-b border-dashed border-border pb-4">
                                         <ImageSquare size={20} />
-                                        <h2 className="font-serif text-lg font-semibold text-foreground">Image Settings</h2>
+                                        <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">Image Settings</h2>
                                     </div>
 
                                     <FormGroup label="Image Style" hint="Style prompt for generated images">
@@ -432,10 +435,10 @@ function EditGame() {
                             )}
 
                             {activeTab === 'settings' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="flex items-center gap-2 text-muted-foreground border-b border-dashed border-border pb-4">
                                         <Gear size={20} />
-                                        <h2 className="font-serif text-lg font-semibold text-foreground">World Settings</h2>
+                                        <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">World Settings</h2>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -579,11 +582,11 @@ function ListEditor({ items, setItems, title, itemName, icon: Icon, fields, newI
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center border-b border-dashed border-border pb-4">
                 <div className="flex items-center gap-2 text-muted-foreground">
                     {Icon && <Icon size={20} />}
-                    <span className="font-serif text-lg font-semibold text-foreground">{title}</span>
+                    <span className="font-serif text-base sm:text-lg font-semibold text-foreground">{title}</span>
                 </div>
                 <button
                     onClick={add}
@@ -593,7 +596,7 @@ function ListEditor({ items, setItems, title, itemName, icon: Icon, fields, newI
                 </button>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-4 sm:gap-6">
                 {items.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 border-2 border-dashed border-border/50 rounded-2xl bg-secondary/5 text-muted-foreground/50 gap-3">
                         <Article size={32} weight="light" />

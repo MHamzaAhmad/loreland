@@ -14,9 +14,11 @@ interface TurnDisplayProps {
     characterState: CharacterStateSnapshot | null;
     showStatesPanel?: boolean;
     onToggleStatesPanel?: () => void;
+    history?: { turnNumber: number; summary: string }[];
+    onRewind?: (turnNumber: number) => void;
 }
 
-export function TurnDisplay({ turnData, isTyping, characterState, onToggleStatesPanel }: TurnDisplayProps) {
+export function TurnDisplay({ turnData, isTyping, characterState, onToggleStatesPanel, history = [], onRewind }: TurnDisplayProps) {
     if (!turnData || !turnData.narrative) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/40 gap-4 animate-pulse">
@@ -81,6 +83,41 @@ export function TurnDisplay({ turnData, isTyping, characterState, onToggleStates
                                 <span className="w-1.5 h-1.5 bg-current rounded-full animate-bounce" />
                             </div>
                             <span className="font-serif italic text-sm">Writing...</span>
+                        </div>
+                    )}
+
+                    {/* Mobile History - Only shown on small screens when sidebar is hidden */}
+                    {history.length > 0 && (
+                        <div className="lg:hidden mt-8 pt-8 border-t border-dashed border-border/50">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
+                                Game History
+                            </h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20">
+                                {[...history].reverse().slice(0, 5).map((entry) => (
+                                    <div
+                                        key={entry.turnNumber}
+                                        className="group relative p-3 rounded-lg hover:bg-secondary/50 border border-transparent hover:border-border/50 transition-all cursor-pointer"
+                                        onClick={() => onRewind?.(entry.turnNumber)}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+                                                Turn {entry.turnNumber}
+                                            </span>
+                                            <span className="opacity-0 group-hover:opacity-100 text-[10px] text-primary font-medium">
+                                                Restore
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground line-clamp-2 font-serif leading-relaxed">
+                                            {entry.summary}
+                                        </div>
+                                    </div>
+                                ))}
+                                {history.length > 5 && (
+                                    <p className="text-xs text-muted-foreground/50 text-center py-2">
+                                        +{history.length - 5} more turns
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

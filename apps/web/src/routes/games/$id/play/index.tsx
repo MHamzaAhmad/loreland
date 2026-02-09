@@ -61,24 +61,24 @@ function SessionListScreen() {
         <div className="min-h-screen bg-background">
             {/* Compact Header */}
             <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-                <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                <div className="max-w-4xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                         <Link 
                             to="/games/$id" 
                             params={{ id: gameId }}
-                            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                            className="flex items-center gap-1 sm:gap-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
                         >
                             <ArrowLeft size={16} />
                             <span className="text-sm font-medium hidden sm:inline">Back</span>
                         </Link>
-                        <div className="h-4 w-px bg-border/60" />
-                        <h1 className="text-sm font-semibold text-foreground truncate max-w-[200px] sm:max-w-xs">
+                        <div className="h-4 w-px bg-border/60 shrink-0" />
+                        <h1 className="text-sm font-semibold text-foreground truncate max-w-[120px] sm:max-w-xs">
                             {game?.title || "Game Sessions"}
                         </h1>
                     </div>
 
                     <Link to="/games/$id/play/new" params={{ id: gameId }}>
-                        <Button size="sm" className="h-8 px-3 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Button size="sm" className="h-8 px-2 sm:px-3 text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
                             <Plus size={14} weight="bold" />
                             <span className="hidden sm:inline">New Session</span>
                         </Button>
@@ -87,14 +87,14 @@ function SessionListScreen() {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-4xl mx-auto px-6 py-8">
+            <main className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
                 {/* Page Title */}
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                     <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <GameController size={16} />
                         <span className="text-xs font-medium uppercase tracking-wider">Sessions</span>
                     </div>
-                    <h2 className="text-2xl font-semibold text-foreground">Your Adventures</h2>
+                    <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Your Adventures</h2>
                     <p className="text-sm text-muted-foreground mt-1">
                         Resume a saved game or start a new journey.
                     </p>

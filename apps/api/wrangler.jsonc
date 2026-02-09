@@ -17,7 +17,8 @@
 	 * Environment variables for AI provider configuration
 	 */
 	"vars": {
-		"DEFAULT_MODEL": "nova-flash"
+		"DEFAULT_MODEL": "nova-flash",
+		"XSOLLA_SANDBOX": "true"
 		// OPENROUTER_API_KEY should be set via wrangler secrets
 	},
 	/**
@@ -112,12 +113,7 @@
 		{
 			"tag": "v1",
 			"new_sqlite_classes": [
-				"PlayAgent"
-			]
-		},
-		{
-			"tag": "v1",
-			"new_sqlite_classes": [
+				"PlayAgent",
 				"GenerationStatusAgent"
 			]
 		}

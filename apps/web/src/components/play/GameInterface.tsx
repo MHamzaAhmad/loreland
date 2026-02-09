@@ -92,10 +92,12 @@ export function GameInterface({
                         isTyping={isTyping}
                         characterState={characterState}
                         onToggleStatesPanel={onToggleStatesPanel}
+                        history={history}
+                        onRewind={onRewind}
                     />
 
                     {/* Input Area - Overlay on top of the turn display at the bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#fcfbf9] via-[#fcfbf9]/95 to-transparent z-20 pt-12">
+                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-[#fcfbf9] via-[#fcfbf9]/95 to-transparent z-20 pt-8 sm:pt-12">
                         <ActionConsole
                             onSendTurn={onSendTurn}
                             suggestedActions={suggestedActions}
@@ -105,8 +107,8 @@ export function GameInterface({
                     </div>
                 </main>
 
-                {/* Sidebar (HUD) */}
-                <aside className="hidden md:flex flex-col w-80 border-l border-dashed border-primary/20 bg-[#fcfbf9] p-6 gap-6 z-20">
+                {/* Sidebar (HUD) - Desktop only */}
+                <aside className="hidden lg:flex flex-col w-80 border-l border-dashed border-primary/20 bg-[#fcfbf9] p-6 gap-6 z-20">
                     <CharacterHUD characterState={characterState} />
 
                     {/* Mission Log */}
