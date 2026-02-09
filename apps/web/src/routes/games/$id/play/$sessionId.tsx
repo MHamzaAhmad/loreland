@@ -28,7 +28,7 @@ function ActiveGameRoute() {
     const [error, setError] = useState<string | null>(null);
     const [isStoreOpen, setIsStoreOpen] = useState(false);
     const [showStatesPanel, setShowStatesPanel] = useState(false);
-    
+
     const { data: creditData } = useCreditBalance();
     const { data: userSettings } = useUserSettings();
     const isLowBalance = (creditData?.balance ?? 0) < (creditData?.minimums.toPlay ?? 10);
@@ -99,6 +99,7 @@ function ActiveGameRoute() {
                 onBuyCredits={() => setIsStoreOpen(true)}
                 isLowBalance={isLowBalance}
                 onToggleStatesPanel={() => setShowStatesPanel(!showStatesPanel)}
+                storytellingMode={storytellingMode}
             />
 
             {storytellingMode && (

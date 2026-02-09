@@ -16,9 +16,10 @@ interface TurnDisplayProps {
     onToggleStatesPanel?: () => void;
     history?: { turnNumber: number; summary: string }[];
     onRewind?: (turnNumber: number) => void;
+    storytellingMode?: boolean;
 }
 
-export function TurnDisplay({ turnData, isTyping, characterState, onToggleStatesPanel, history = [], onRewind }: TurnDisplayProps) {
+export function TurnDisplay({ turnData, isTyping, characterState, onToggleStatesPanel, history = [], onRewind, storytellingMode }: TurnDisplayProps) {
     if (!turnData || !turnData.narrative) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/40 gap-4 animate-pulse">
@@ -31,14 +32,14 @@ export function TurnDisplay({ turnData, isTyping, characterState, onToggleStates
     return (
         <div className="flex-1 flex flex-col overflow-hidden relative bg-[#fcfbf9]">
             {/* Content Layer */}
-            <div className="relative z-10 flex-1 flex flex-col p-4 md:p-12 pb-32 md:pb-40 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10">
+            <div className="relative z-10 flex-1 flex flex-col p-4 md:p-12 pb-4 md:pb-8 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10">
                 <div className="max-w-3xl mx-auto w-full space-y-8">
                     {/* Header Info */}
                     <div className="flex items-center justify-between opacity-40 hover:opacity-100 transition-opacity">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
                             Turn {turnData.turnNumber}
                         </div>
-                        {onToggleStatesPanel && (
+                        {storytellingMode && onToggleStatesPanel && (
                             <button
                                 onClick={onToggleStatesPanel}
                                 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"

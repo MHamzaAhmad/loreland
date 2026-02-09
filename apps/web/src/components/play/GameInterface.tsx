@@ -3,7 +3,7 @@ import { ActionConsole } from "./ActionConsole";
 import { CharacterHUD } from "./CharacterHUD";
 import { type CharacterStateSnapshot } from "@packages/ui-logic";
 import { CreditDisplay } from "@/components/CreditDisplay";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Coin } from "@phosphor-icons/react";
 
@@ -29,6 +29,8 @@ interface GameInterfaceProps {
     isLowBalance?: boolean;
     // States panel
     onToggleStatesPanel?: () => void;
+    // Storytelling mode
+    storytellingMode?: boolean;
 }
 
 export function GameInterface({
@@ -46,6 +48,7 @@ export function GameInterface({
     onBuyCredits,
     isLowBalance,
     onToggleStatesPanel,
+    storytellingMode,
 }: GameInterfaceProps) {
 
     return (
@@ -57,7 +60,7 @@ export function GameInterface({
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                     <span className="text-sm font-serif font-medium">Return to World</span>
                 </Link>
-                
+
                 {/* Center: Turn number with cost badge */}
                 <div className="flex flex-col items-center">
                     <div className="font-serif font-bold text-lg text-foreground/80 tracking-tight">
@@ -70,8 +73,8 @@ export function GameInterface({
                         </div>
                     )}
                 </div>
-                
-                {/* Right: Credit balance */}
+
+                {/* Right: Credit balance and Settings */}
                 <div className="flex items-center gap-2">
                     {currentBalance !== null && currentBalance !== undefined && (
                         <CreditDisplay
@@ -81,6 +84,13 @@ export function GameInterface({
                             showAddButton={true}
                         />
                     )}
+                    <Link
+                        to="/settings"
+                        className="p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                        title="Settings"
+                    >
+                        <Settings className="w-4 h-4" />
+                    </Link>
                 </div>
             </header>
 
@@ -94,10 +104,11 @@ export function GameInterface({
                         onToggleStatesPanel={onToggleStatesPanel}
                         history={history}
                         onRewind={onRewind}
+                        storytellingMode={storytellingMode}
                     />
 
-                    {/* Input Area - Overlay on top of the turn display at the bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-[#fcfbf9] via-[#fcfbf9]/95 to-transparent z-20 pt-8 sm:pt-12">
+                    {/* Input Area - Distinct Footer Section */}
+                    <div className="z-20 bg-[#fcfbf9]/80 backdrop-blur-md border-t border-dashed border-primary/20 p-3 sm:p-4">
                         <ActionConsole
                             onSendTurn={onSendTurn}
                             suggestedActions={suggestedActions}

@@ -87,12 +87,12 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             }
         }
 
-        // Set initial state (currentTurn -1 so first processUserTurn increments to 0)
+        // Set initial state (currentTurn 0 so first processUserTurn increments to 1)
         this.setState({
             sessionId,
             gameId: gameConfig.id,
             characterId,
-            currentTurn: -1,
+            currentTurn: 0,
             playerId,
             creatorId,
         });

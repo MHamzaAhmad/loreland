@@ -34,20 +34,19 @@ export function ActionConsole({ onSendTurn, suggestedActions, isTyping, isConnec
     }, [isTyping, suggestedActions]);
 
     return (
-        <div className="relative z-20 max-w-3xl mx-auto space-y-4">
-
-            {/* Suggested Actions */}
+        <div className="relative z-20 max-w-3xl mx-auto space-y-2">
+            {/* Suggested Actions - Above input, centered wrap */}
             {suggestedActions.length > 0 && !isTyping && (
-                <div className="flex flex-wrap gap-2 justify-center animate-in slide-in-from-bottom-2 fade-in">
+                <div className="flex flex-wrap gap-1.5 justify-center">
                     {suggestedActions.map((action, idx) => (
                         <button
                             key={idx}
                             onClick={() => handleSuggestion(action)}
                             disabled={isTyping || !isConnected}
-                            className="group px-4 py-2 bg-white hover:bg-primary hover:text-white border border-border/60 hover:border-primary shadow-sm hover:shadow-md text-sm text-foreground transition-all duration-200 rounded-full font-medium"
+                            className="group px-2.5 py-1 sm:px-3 sm:py-1.5 bg-white hover:bg-primary hover:text-white border border-border/50 hover:border-primary text-xs sm:text-sm text-foreground transition-all duration-200 rounded-full font-medium shadow-sm"
                         >
-                            <span className="flex items-center gap-2">
-                                <Sparkles className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+                            <span className="flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5 opacity-50 group-hover:opacity-100" />
                                 {action}
                             </span>
                         </button>
@@ -55,6 +54,7 @@ export function ActionConsole({ onSendTurn, suggestedActions, isTyping, isConnec
                 </div>
             )}
 
+            {/* Input Form */}
             <form onSubmit={handleSubmit} className="relative flex gap-2">
                 <div className="relative flex-1">
                     <input
@@ -64,7 +64,7 @@ export function ActionConsole({ onSendTurn, suggestedActions, isTyping, isConnec
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={isConnected ? "What do you do next?" : "Connecting..."}
                         disabled={!isConnected || isTyping}
-                        className="w-full bg-white border border-border/60 focus:border-primary text-foreground px-6 py-4 pr-12 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/20 text-lg shadow-sm disabled:opacity-50 transition-all font-serif placeholder:font-sans placeholder:text-muted-foreground/60"
+                        className="w-full bg-white border border-border/60 focus:border-primary text-foreground px-4 py-2 sm:px-5 sm:py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm sm:text-base shadow-sm disabled:opacity-50 transition-all font-serif placeholder:font-sans placeholder:text-muted-foreground/60"
                     />
                 </div>
 
@@ -72,25 +72,15 @@ export function ActionConsole({ onSendTurn, suggestedActions, isTyping, isConnec
                     type="submit"
                     disabled={!input.trim() || !isConnected || isTyping}
                     className={cn(
-                        "w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-sm",
+                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all shadow-sm shrink-0",
                         !input.trim() || !isConnected || isTyping
                             ? "bg-secondary text-muted-foreground cursor-not-allowed"
                             : "bg-primary text-primary-foreground hover:scale-105 hover:shadow-md"
                     )}
                 >
-                    <Send className="w-5 h-5 ml-0.5" />
+                    <Send className="w-4 h-4" />
                 </button>
             </form>
-
-            {/* Connection Status Indicator */}
-            <div className="flex justify-center">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/50 border border-border/20 backdrop-blur-sm">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", isConnected ? "bg-green-500" : "bg-red-500")} />
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                        {isConnected ? "Connected" : "Offline"}
-                    </span>
-                </div>
-            </div>
         </div>
     );
 }
