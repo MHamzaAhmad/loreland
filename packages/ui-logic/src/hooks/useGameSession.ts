@@ -17,6 +17,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     // Core State: structured turn data instead of chat list
     const [currentTurnData, setCurrentTurnData] = useState<{
         turnNumber: number;
+        turnTitle?: string;
         narrative: string;
         sceneImageKey?: string;
         agentThought?: string;
@@ -27,7 +28,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
     const [allStates, setAllStates] = useState<GameStateItem[]>([]);
 
     // History handling
-    const [history, setHistory] = useState<{ turnNumber: number; summary: string }[]>([]);
+    const [history, setHistory] = useState<{ turnNumber: number; turnTitle?: string; summary: string }[]>([]);
 
     // Track which turns have images loading
     const [imageLoadingTurns, setImageLoadingTurns] = useState<Set<number>>(new Set());
@@ -54,6 +55,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 setIsTyping(false);
                 setCurrentTurnData({
                     turnNumber: response.turnNumber,
+                    turnTitle: response.turnTitle,
                     narrative: response.text,
                     sceneImageKey: response.sceneImageKey,
                     // @ts-ignore
@@ -70,13 +72,14 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                 // Add *previous* turn to history if we just advanced
                 const prevTurn = stateRef.current.currentTurnData;
                 if (prevTurn && prevTurn.turnNumber < response.turnNumber) {
-                    setHistory(prev => [...prev, { turnNumber: prevTurn.turnNumber, summary: "Turn completed" }]);
+                    setHistory(prev => [...prev, { turnNumber: prevTurn.turnNumber, turnTitle: prevTurn.turnTitle, summary: "Turn completed" }]);
                 }
                 break;
 
             case "state":
                 setCurrentTurnData({
                     turnNumber: response.currentTurn,
+                    turnTitle: response.recentTurns?.[response.recentTurns.length - 1]?.turnTitle,
                     narrative: response.recentTurns?.[response.recentTurns.length - 1]?.assistantResponse || "",
                     sceneImageKey: response.recentTurns?.[response.recentTurns.length - 1]?.sceneImageKey,
                 });
@@ -88,7 +91,7 @@ export function useGameSession({ url, onConnect, onDisconnect, onError }: UseGam
                     const lastTurn = response.recentTurns[response.recentTurns.length - 1];
                     setSuggestedActions(lastTurn.suggestedActions || []);
 
-                    setHistory(response.recentTurns.slice(0, -1).map(t => ({ turnNumber: t.turnNumber, summary: "Turn completed" })));
+                    setHistory(response.recentTurns.slice(0, -1).map(t => ({ turnNumber: t.turnNumber, turnTitle: t.turnTitle, summary: "Turn completed" })));
                 } else {
                     setSuggestedActions([]);
                 }

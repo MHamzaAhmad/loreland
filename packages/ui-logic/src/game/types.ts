@@ -10,6 +10,7 @@ export interface GameState {
 
 export interface Turn {
     turnNumber: number;
+    turnTitle?: string;
     userMessage: string;
     assistantResponse: string;
     suggestedActions: string[];
@@ -33,7 +34,7 @@ export interface GameStateItem {
 }
 
 export type WebSocketResponse =
-    | { type: "response"; text: string; suggestedActions: string[]; characterState: CharacterStateSnapshot; turnNumber: number; sceneImageKey?: string; gameStatus?: "continue" | "victory" | "defeat"; outcome?: string; turnCost: number; newBalance: number; creatorEarnings?: number; allStates?: GameStateItem[] }
+    | { type: "response"; text: string; turnTitle?: string; suggestedActions: string[]; characterState: CharacterStateSnapshot; turnNumber: number; sceneImageKey?: string; gameStatus?: "continue" | "victory" | "defeat"; outcome?: string; turnCost: number; newBalance: number; creatorEarnings?: number; allStates?: GameStateItem[] }
     | { type: "state"; currentTurn: number; characterState: CharacterStateSnapshot | null; recentTurns: Turn[]; model?: string; allStates?: GameStateItem[] }
     | { type: "turns"; turns: Turn[] }
     | { type: "error"; message: string; code?: "INSUFFICIENT_CREDITS"; currentBalance?: number; required?: number }

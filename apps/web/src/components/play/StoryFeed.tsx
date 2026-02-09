@@ -7,6 +7,7 @@ interface TurnDisplayProps {
     isTyping: boolean;
     turnData: {
         turnNumber: number;
+        turnTitle?: string;
         narrative: string;
         sceneImageKey?: string;
         agentThought?: string;
@@ -14,7 +15,7 @@ interface TurnDisplayProps {
     characterState: CharacterStateSnapshot | null;
     showStatesPanel?: boolean;
     onToggleStatesPanel?: () => void;
-    history?: { turnNumber: number; summary: string }[];
+    history?: { turnNumber: number; turnTitle?: string; summary: string }[];
     onRewind?: (turnNumber: number) => void;
     storytellingMode?: boolean;
 }
@@ -34,12 +35,9 @@ export function TurnDisplay({ turnData, isTyping, characterState, onToggleStates
             {/* Content Layer */}
             <div className="relative z-10 flex-1 flex flex-col p-4 md:p-12 pb-4 md:pb-8 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/10">
                 <div className="max-w-3xl mx-auto w-full space-y-8">
-                    {/* Header Info */}
-                    <div className="flex items-center justify-between opacity-40 hover:opacity-100 transition-opacity">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                            Turn {turnData.turnNumber}
-                        </div>
-                        {storytellingMode && onToggleStatesPanel && (
+                    {/* Header Info - Only show States button in storytelling mode */}
+                    {storytellingMode && onToggleStatesPanel && (
+                        <div className="flex items-center justify-end opacity-40 hover:opacity-100 transition-opacity">
                             <button
                                 onClick={onToggleStatesPanel}
                                 className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
@@ -47,8 +45,8 @@ export function TurnDisplay({ turnData, isTyping, characterState, onToggleStates
                                 <ListDashes className="w-3 h-3" weight="duotone" />
                                 States
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Vitals Panel (Mobile/Integrated) */}
                     {characterState && (
@@ -101,9 +99,14 @@ export function TurnDisplay({ turnData, isTyping, characterState, onToggleStates
                                         onClick={() => onRewind?.(entry.turnNumber)}
                                     >
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                                                Turn {entry.turnNumber}
-                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-serif font-medium text-foreground/80">
+                                                    {entry.turnTitle || `Turn ${entry.turnNumber}`}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground/60">
+                                                    Turn {entry.turnNumber}
+                                                </span>
+                                            </div>
                                             <span className="opacity-0 group-hover:opacity-100 text-[10px] text-primary font-medium">
                                                 Restore
                                             </span>

@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 export const turns = sqliteTable("turns", {
     id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
     turnNumber: integer("turn_number").notNull(),
+    turnTitle: text("turn_title"),
 
     // Player input and AI response
     userMessage: text("user_message").notNull(),

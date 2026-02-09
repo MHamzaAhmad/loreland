@@ -36,6 +36,8 @@ export type Outcome = z.infer<typeof outcomeSchema>;
  * Complete structured output for a turn
  */
 export const turnOutputSchema = z.object({
+    turnTitle: z.string()
+        .describe("A short 2-4 word title summarizing this turn's key event or moment. Examples: 'The Dragon Awakens', 'Narrow Escape', 'Treasure Found'."),
     narrative: z.string()
         .describe("Vivid narrative describing what happens. Describe the scene, the action, and the result. Follow the game's turn instructions for length and style."),
     suggestedActions: z.array(z.string())

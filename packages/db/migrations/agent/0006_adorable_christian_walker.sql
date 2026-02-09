@@ -1,0 +1,1 @@
+ALTER TABLE `turns` ADD `turn_title` text;

@@ -11,13 +11,14 @@ interface GameInterfaceProps {
     gameId: string;
     turnData: {
         turnNumber: number;
+        turnTitle?: string;
         narrative: string;
         sceneImageKey?: string;
         agentThought?: string;
     } | null;
     characterState: CharacterStateSnapshot | null;
     suggestedActions: string[];
-    history: { turnNumber: number; summary: string }[];
+    history: { turnNumber: number; turnTitle?: string; summary: string }[];
     isTyping: boolean;
     isConnected: boolean;
     onSendTurn: (text: string) => void;
@@ -61,17 +62,20 @@ export function GameInterface({
                     <span className="text-sm font-serif font-medium">Return to World</span>
                 </Link>
 
-                {/* Center: Turn number with cost badge */}
+                {/* Center: Turn title with turn number below */}
                 <div className="flex flex-col items-center">
                     <div className="font-serif font-bold text-lg text-foreground/80 tracking-tight">
-                        Turn {turnData?.turnNumber || 0}
+                        {turnData?.turnTitle || `Turn ${turnData?.turnNumber || 0}`}
                     </div>
-                    {turnCost !== null && turnCost !== undefined && turnCost > 0 && (
-                        <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                            <Coin className="w-3 h-3" weight="fill" />
-                            <span>-{turnCost}</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Turn {turnData?.turnNumber || 0}</span>
+                        {turnCost !== null && turnCost !== undefined && turnCost > 0 && (
+                            <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                <Coin className="w-3 h-3" weight="fill" />
+                                <span>-{turnCost}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Right: Credit balance and Settings */}
@@ -140,9 +144,14 @@ export function GameInterface({
                                         onClick={() => onRewind?.(entry.turnNumber)}
                                     >
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
-                                                Turn {entry.turnNumber}
-                                            </span>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-serif font-medium text-foreground/80">
+                                                    {entry.turnTitle || `Turn ${entry.turnNumber}`}
+                                                </span>
+                                                <span className="text-[10px] text-muted-foreground/60">
+                                                    Turn {entry.turnNumber}
+                                                </span>
+                                            </div>
                                             <span className="opacity-0 group-hover:opacity-100 text-[10px] text-primary font-medium">
                                                 Restore
                                             </span>

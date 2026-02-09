@@ -43,6 +43,13 @@
       "when": 1770221225467,
       "tag": "0005_striped_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1770647612012,
+      "tag": "0006_adorable_christian_walker",
+      "breakpoints": true
     }
   ]
 }

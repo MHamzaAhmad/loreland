@@ -405,10 +405,10 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         // Extract cost from OpenRouter via providerMetadata
         // Cost is in costDetails.upstream_inference_cost when usage.cost is 0
         const providerMetadata = (result as any).providerMetadata?.openrouter;
-        
+
         // Try multiple possible paths for cost data
         // Note: AI SDK converts snake_case to camelCase in providerMetadata
-        const aiCostUSD = providerMetadata?.usage?.cost 
+        const aiCostUSD = providerMetadata?.usage?.cost
             || providerMetadata?.usage?.costDetails?.upstreamInferenceCost  // camelCase from AI SDK
             || providerMetadata?.usage?.costDetails?.upstream_inference_cost  // snake_case fallback
             || (result as any).totalUsage?.raw?.cost_details?.upstream_inference_cost
@@ -464,6 +464,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         // Save turn
         const [insertedTurn] = await this.db.insert(schema.turns).values({
             turnNumber: newTurnNumber,
+            turnTitle: output.turnTitle,
             userMessage,
             assistantResponse: output.narrative,
             agentThought: output.outcome ? `[${output.outcome.success.toUpperCase()}] ${output.outcome.reasoning}` : null,
@@ -517,6 +518,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
 
         return {
             text: output.narrative,
+            turnTitle: output.turnTitle,
             suggestedActions: output.suggestedActions,
             states: updatedStates,
             turnNumber: newTurnNumber,

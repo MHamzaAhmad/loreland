@@ -84,6 +84,7 @@ When writing the scenePrompt, follow this visual style:
 ## Output
 
 Provide structured output:
+- **turnTitle**: Short 2-4 word title for this turn (e.g., "Forest Ambush", "Hidden Door")
 - **narrative**: What happens
 - **stateChanges**: State updates (name → value)
 - **suggestedActions**: 3 follow-up actions
