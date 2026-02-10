@@ -1,0 +1,1 @@
+ALTER TABLE `device_fingerprints` ADD `is_active_anonymous` integer DEFAULT false;

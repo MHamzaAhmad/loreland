@@ -1,10 +1,12 @@
 import type { BetterAuthOptions } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
 import { anonymous } from "better-auth/plugins"
 import { eq } from "drizzle-orm";
-import { games, userCredits, deviceFingerprints } from "@packages/db/schema/d1";
+import { games, userCredits, deviceFingerprints, users } from "@packages/db/schema/d1";
 import * as schema from "@packages/db/schema/d1";
 import { CreditsService } from "../services/credits";
+import { FingerprintService } from "../services/fingerprint";
 
 /**
  * Configuration for creating auth options
@@ -127,10 +129,10 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
                         );
                     }
 
-                    // 3. Transfer device fingerprint ownership
+                    // 3. Transfer device fingerprint ownership and clear anonymous flag
                     await config.db
                         .update(deviceFingerprints)
-                        .set({ userId: newId })
+                        .set({ userId: newId, isActiveAnonymous: false })
                         .where(eq(deviceFingerprints.userId, anonId));
                 },
             }),
@@ -144,6 +146,58 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
                 enabled: true,
                 maxAge: 60 * 5, // 5 minutes
             },
+        },
+
+        // Before hooks - intercept anonymous sign-in to restore existing users
+        hooks: {
+            before: createAuthMiddleware(async (ctx) => {
+                // Only intercept anonymous sign-in
+                if (ctx.path !== "/sign-in/anonymous") {
+                    return;
+                }
+
+                const fingerprint = ctx.headers?.get("x-device-fingerprint");
+                if (!fingerprint) {
+                    return; // No fingerprint, continue default flow
+                }
+
+                // Check for existing anonymous user
+                const fingerprintService = new FingerprintService(config.db);
+                const existingUserId = await fingerprintService.getActiveAnonymousUser(fingerprint);
+
+                if (existingUserId) {
+                    console.log(`Restoring anonymous user ${existingUserId} for fingerprint ${fingerprint}`);
+
+                    // Create session for existing user
+                    const session = await ctx.context.internalAdapter.createSession(
+                        existingUserId,
+                        undefined, // expiresAt - use default
+                    );
+
+                    // Get user data
+                    const user = await config.db
+                        .select()
+                        .from(users)
+                        .where(eq(users.id, existingUserId))
+                        .get();
+
+                    // Set session cookie
+                    await ctx.setSignedCookie(
+                        ctx.context.authCookies.sessionToken.name,
+                        session.token,
+                        ctx.context.secret,
+                        ctx.context.authCookies.sessionToken.options
+                    );
+
+                    // Return early with session - skip creating new user
+                    return ctx.json({
+                        session,
+                        user
+                    });
+                }
+
+                // No existing user, continue to default anonymous flow
+            }),
         },
 
         // Database hooks
@@ -180,10 +234,18 @@ export function getAuthOptions(config: AuthDatabaseConfig): BetterAuthOptions {
 
                             // Record fingerprint if available
                             if (fingerprint) {
+                                const isAnon = (user as unknown as { isAnonymous?: boolean }).isAnonymous ?? false;
                                 await config.db.insert(deviceFingerprints).values({
                                     fingerprint,
                                     userId: user.id,
                                     claimedCredits: true,
+                                    isActiveAnonymous: isAnon,
+                                }).onConflictDoUpdate({
+                                    target: deviceFingerprints.fingerprint,
+                                    set: {
+                                        userId: user.id,
+                                        isActiveAnonymous: isAnon,
+                                    },
                                 });
                             }
                         }

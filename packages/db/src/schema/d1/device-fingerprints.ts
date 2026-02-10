@@ -14,6 +14,8 @@ export const deviceFingerprints = sqliteTable("device_fingerprints", {
     ipAddress: text("ip_address"),
     userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
     claimedCredits: integer("claimed_credits", { mode: "boolean" }).default(true).notNull(),
+    /** Indicates this fingerprint has an active anonymous user that should be restored */
+    isActiveAnonymous: integer("is_active_anonymous", { mode: "boolean" }).default(false),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),
