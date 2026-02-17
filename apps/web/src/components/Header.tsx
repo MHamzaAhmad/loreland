@@ -1,4 +1,4 @@
-import { Link, useLocation } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
   List,
@@ -11,16 +11,19 @@ import {
 import { AuthButton } from './AuthButton'
 import { CreditBalance } from './CreditBalance'
 import { MobileCreditButton } from './MobileCreditButton'
-import { CreditStore } from './CreditStore'
 import { cn } from '@/lib/utils'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isStoreOpen, setIsStoreOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
 
   const toggleMenu = () => {
     setIsOpen(!isOpen)
+  }
+
+  const handleBuyCredits = () => {
+    navigate({ to: '/buy-credits', search: { redirect: undefined } })
   }
 
   const navItems = [
@@ -89,7 +92,7 @@ export default function Header() {
           <div className="flex items-center gap-3">
             {/* Desktop: Credit balance in header */}
             <div className="hidden md:block">
-              <CreditBalance onBuyClick={() => setIsStoreOpen(true)} />
+              <CreditBalance onBuyClick={handleBuyCredits} />
             </div>
             
             {/* Settings link - only visible on desktop */}
@@ -117,14 +120,8 @@ export default function Header() {
       
       {/* Mobile: Floating credit button */}
       <div className="md:hidden">
-        <MobileCreditButton onClick={() => setIsStoreOpen(true)} />
+        <MobileCreditButton onClick={handleBuyCredits} />
       </div>
-      
-      {/* Credit Store Modal */}
-      <CreditStore 
-        isOpen={isStoreOpen} 
-        onClose={() => setIsStoreOpen(false)} 
-      />
 
       {/* Mobile Drawer */}
       <div className={cn(

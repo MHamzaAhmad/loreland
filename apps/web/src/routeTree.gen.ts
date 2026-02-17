@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as BuyCreditsRouteImport } from './routes/buy-credits'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesNewRouteImport } from './routes/games/new'
 import { Route as GamesMineRouteImport } from './routes/games/mine'
@@ -23,6 +24,11 @@ import { Route as GamesIdPlaySessionIdRouteImport } from './routes/games/$id/pla
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuyCreditsRoute = BuyCreditsRouteImport.update({
+  id: '/buy-credits',
+  path: '/buy-credits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -73,6 +79,7 @@ const GamesIdPlaySessionIdRoute = GamesIdPlaySessionIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buy-credits': typeof BuyCreditsRoute
   '/settings': typeof SettingsRoute
   '/auth/link': typeof AuthLinkRoute
   '/games/mine': typeof GamesMineRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buy-credits': typeof BuyCreditsRoute
   '/settings': typeof SettingsRoute
   '/auth/link': typeof AuthLinkRoute
   '/games/mine': typeof GamesMineRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buy-credits': typeof BuyCreditsRoute
   '/settings': typeof SettingsRoute
   '/auth/link': typeof AuthLinkRoute
   '/games/mine': typeof GamesMineRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/buy-credits'
     | '/settings'
     | '/auth/link'
     | '/games/mine'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/buy-credits'
     | '/settings'
     | '/auth/link'
     | '/games/mine'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/buy-credits'
     | '/settings'
     | '/auth/link'
     | '/games/mine'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuyCreditsRoute: typeof BuyCreditsRoute
   SettingsRoute: typeof SettingsRoute
   AuthLinkRoute: typeof AuthLinkRoute
   GamesMineRoute: typeof GamesMineRoute
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buy-credits': {
+      id: '/buy-credits'
+      path: '/buy-credits'
+      fullPath: '/buy-credits'
+      preLoaderRoute: typeof BuyCreditsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -237,6 +257,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuyCreditsRoute: BuyCreditsRoute,
   SettingsRoute: SettingsRoute,
   AuthLinkRoute: AuthLinkRoute,
   GamesMineRoute: GamesMineRoute,

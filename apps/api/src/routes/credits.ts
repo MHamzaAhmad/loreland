@@ -94,6 +94,15 @@ creditsRouter.post("/purchase", async (c) => {
         return c.json({ error: "Unauthorized" }, 401);
     }
 
+    const session = c.get("session");
+    const isAnonymous = (session as { isAnonymous?: boolean } | null)?.isAnonymous ?? false;
+    if (isAnonymous) {
+        return c.json({ 
+            error: "Please sign in to purchase credits",
+            code: "ANONYMOUS_USER" 
+        }, 403);
+    }
+
     let body: { productId?: string };
     try {
         body = await c.req.json();

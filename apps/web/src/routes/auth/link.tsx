@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAuth } from '@packages/ui-logic'
 import { signUpWithEmail, signInWithEmail } from '../../lib/auth-client'
@@ -8,10 +8,14 @@ import { Loader2 } from 'lucide-react'
 
 export const Route = createFileRoute('/auth/link')({
     component: LinkAccount,
+    validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
+        redirect: search.redirect as string | undefined,
+    }),
 })
 
 function LinkAccount() {
     const navigate = useNavigate()
+    const search = useSearch({ from: '/auth/link' })
     const { invalidateUser } = useAuth()
 
     const [mode, setMode] = useState<'signin' | 'signup'>('signup')
@@ -20,6 +24,16 @@ function LinkAccount() {
     const [name, setName] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    const handleSuccess = async () => {
+        invalidateUser()
+        
+        if (search.redirect) {
+            navigate({ to: search.redirect })
+        } else {
+            navigate({ to: '/' })
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -33,12 +47,19 @@ function LinkAccount() {
                 await signInWithEmail(email, password)
             }
 
-            invalidateUser()
-            navigate({ to: '/' })
+            await handleSuccess()
         } catch (err: any) {
             setError(err.message || 'Something went wrong')
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const handleBack = () => {
+        if (search.redirect) {
+            navigate({ to: '/' })
+        } else {
+            navigate({ to: '/' })
         }
     }
 
@@ -47,13 +68,13 @@ function LinkAccount() {
             {/* Compact Header */}
             <header className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
                 <div className="max-w-4xl mx-auto px-6 h-14 flex items-center gap-4">
-                    <Link
-                        to="/"
+                    <button
+                        onClick={handleBack}
                         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
                     >
                         <ArrowLeft size={16} />
                         <span className="text-sm font-medium">Back</span>
-                    </Link>
+                    </button>
                     <div className="h-4 w-px bg-border/60" />
                     <h1 className="text-sm font-semibold text-foreground">
                         {mode === 'signup' ? 'Create Account' : 'Sign In'}
@@ -76,6 +97,11 @@ function LinkAccount() {
                             ? 'Link your worlds and credits to a permanent account'
                             : 'Sign in to access your worlds and credits'}
                     </p>
+                    {search.redirect === '/buy-credits' && (
+                        <p className="text-xs text-amber-600 mt-2">
+                            Sign in required to purchase credits
+                        </p>
+                    )}
                 </div>
 
                 {/* Form Card */}
@@ -190,4 +216,3 @@ function LinkAccount() {
         </div>
     )
 }
-
