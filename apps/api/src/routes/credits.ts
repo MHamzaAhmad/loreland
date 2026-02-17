@@ -134,12 +134,14 @@ creditsRouter.post("/purchase", async (c) => {
             }, 400);
         }
 
+        const origin = c.req.header('Origin') || new URL(c.req.url).origin;
         const { checkoutUrl, checkoutId } = await polar.createCheckout(
             productId,
             {
                 externalCustomerId: user.id,
                 customerEmail: user.email,
                 customerName: user.name || undefined,
+                successUrl: `${origin}/buy-credits/success`,
             }
         );
 

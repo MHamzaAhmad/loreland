@@ -14,6 +14,7 @@ import { Route as BuyCreditsRouteImport } from './routes/buy-credits'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GamesNewRouteImport } from './routes/games/new'
 import { Route as GamesMineRouteImport } from './routes/games/mine'
+import { Route as BuyCreditsSuccessRouteImport } from './routes/buy-credits/success'
 import { Route as AuthLinkRouteImport } from './routes/auth/link'
 import { Route as GamesIdIndexRouteImport } from './routes/games/$id/index'
 import { Route as GamesIdEditRouteImport } from './routes/games/$id/edit'
@@ -45,6 +46,11 @@ const GamesMineRoute = GamesMineRouteImport.update({
   id: '/games/mine',
   path: '/games/mine',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BuyCreditsSuccessRoute = BuyCreditsSuccessRouteImport.update({
+  id: '/success',
+  path: '/success',
+  getParentRoute: () => BuyCreditsRoute,
 } as any)
 const AuthLinkRoute = AuthLinkRouteImport.update({
   id: '/auth/link',
@@ -79,9 +85,10 @@ const GamesIdPlaySessionIdRoute = GamesIdPlaySessionIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/buy-credits': typeof BuyCreditsRoute
+  '/buy-credits': typeof BuyCreditsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/auth/link': typeof AuthLinkRoute
+  '/buy-credits/success': typeof BuyCreditsSuccessRoute
   '/games/mine': typeof GamesMineRoute
   '/games/new': typeof GamesNewRoute
   '/games/$id/edit': typeof GamesIdEditRoute
@@ -92,9 +99,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/buy-credits': typeof BuyCreditsRoute
+  '/buy-credits': typeof BuyCreditsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/auth/link': typeof AuthLinkRoute
+  '/buy-credits/success': typeof BuyCreditsSuccessRoute
   '/games/mine': typeof GamesMineRoute
   '/games/new': typeof GamesNewRoute
   '/games/$id/edit': typeof GamesIdEditRoute
@@ -106,9 +114,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/buy-credits': typeof BuyCreditsRoute
+  '/buy-credits': typeof BuyCreditsRouteWithChildren
   '/settings': typeof SettingsRoute
   '/auth/link': typeof AuthLinkRoute
+  '/buy-credits/success': typeof BuyCreditsSuccessRoute
   '/games/mine': typeof GamesMineRoute
   '/games/new': typeof GamesNewRoute
   '/games/$id/edit': typeof GamesIdEditRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/buy-credits'
     | '/settings'
     | '/auth/link'
+    | '/buy-credits/success'
     | '/games/mine'
     | '/games/new'
     | '/games/$id/edit'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/buy-credits'
     | '/settings'
     | '/auth/link'
+    | '/buy-credits/success'
     | '/games/mine'
     | '/games/new'
     | '/games/$id/edit'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/buy-credits'
     | '/settings'
     | '/auth/link'
+    | '/buy-credits/success'
     | '/games/mine'
     | '/games/new'
     | '/games/$id/edit'
@@ -161,7 +173,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BuyCreditsRoute: typeof BuyCreditsRoute
+  BuyCreditsRoute: typeof BuyCreditsRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   AuthLinkRoute: typeof AuthLinkRoute
   GamesMineRoute: typeof GamesMineRoute
@@ -210,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesMineRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/buy-credits/success': {
+      id: '/buy-credits/success'
+      path: '/success'
+      fullPath: '/buy-credits/success'
+      preLoaderRoute: typeof BuyCreditsSuccessRouteImport
+      parentRoute: typeof BuyCreditsRoute
+    }
     '/auth/link': {
       id: '/auth/link'
       path: '/auth/link'
@@ -255,9 +274,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BuyCreditsRouteChildren {
+  BuyCreditsSuccessRoute: typeof BuyCreditsSuccessRoute
+}
+
+const BuyCreditsRouteChildren: BuyCreditsRouteChildren = {
+  BuyCreditsSuccessRoute: BuyCreditsSuccessRoute,
+}
+
+const BuyCreditsRouteWithChildren = BuyCreditsRoute._addFileChildren(
+  BuyCreditsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BuyCreditsRoute: BuyCreditsRoute,
+  BuyCreditsRoute: BuyCreditsRouteWithChildren,
   SettingsRoute: SettingsRoute,
   AuthLinkRoute: AuthLinkRoute,
   GamesMineRoute: GamesMineRoute,

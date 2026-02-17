@@ -6,6 +6,8 @@ import { Button } from '../../components/ui/8bit/button'
 import { ArrowLeft, Envelope, Lock, UserCircle, LinkSimple } from '@phosphor-icons/react'
 import { Loader2 } from 'lucide-react'
 
+const FRONTEND_URL = typeof window !== 'undefined' ? window.location.origin : ''
+
 export const Route = createFileRoute('/auth/link')({
     component: LinkAccount,
     validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
@@ -41,9 +43,9 @@ function LinkAccount() {
         setIsGoogleLoading(true)
 
         try {
-            await signInWithGoogle()
-            // Note: Google sign-in redirects, so handleSuccess will be called on return
-            // But we should invalidate after the redirect completes
+            const callbackPath = search.redirect || '/'
+            const callbackURL = `${FRONTEND_URL}${callbackPath}`
+            await signInWithGoogle(callbackURL)
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Google sign-in failed')
             setIsGoogleLoading(false)
