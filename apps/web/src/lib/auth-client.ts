@@ -52,6 +52,16 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 /**
+ * Sign in with Google
+ * Links to anonymous account if currently logged in as guest
+ */
+export async function signInWithGoogle() {
+    return authClient.signIn.social({
+        provider: "google",
+    });
+}
+
+/**
  * Sign out current user
  */
 export async function signOut() {
