@@ -131,7 +131,7 @@ playRouter.post("/:gameId/play/start", async (c) => {
         }
 
         // Get game config to get character name
-        const gameConfig = await gamesService.getFull(gameId, user.id);
+        const gameConfig = await gamesService.getFull(gameId, user.id, true);
         if (!gameConfig) {
             return c.json({ error: "Game not found" }, 404);
         }
