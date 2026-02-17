@@ -32,9 +32,8 @@ export function usePurchaseCredits() {
     const queryClient = useQueryClient();
     
     return useMutation({
-        mutationFn: (sku: string) => api.credits.purchase(sku),
+        mutationFn: (productId: string) => api.credits.purchase(productId),
         onSuccess: () => {
-            // Invalidate balance after purchase
             queryClient.invalidateQueries({ queryKey: creditKeys.balance() });
             queryClient.invalidateQueries({ queryKey: creditKeys.transactions() });
         },

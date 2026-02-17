@@ -12,12 +12,23 @@ declare namespace Cloudflare {
 		GEMINI_API_KEY: string;
 		AI_GATEWAY_API_KEY: string;
 		BETTER_AUTH_SECRET: string;
-		XSOLLA_MERCHANT_ID: string;
-		XSOLLA_PROJECT_ID: string;
-		XSOLLA_API_KEY: string;
-		XSOLLA_WEBHOOK_SECRET: string;
-		XSOLLA_SANDBOX: string;
+		POLAR_ACCESS_TOKEN: string;
+		POLAR_ORGANIZATION_ID?: string;
+		POLAR_WEBHOOK_SECRET: string;
+		POLAR_SANDBOX?: string;
 		OPENROUTER_API_KEY: string;
+		INTERNAL_SECRET: string;
+		GOOGLE_CLIENT_ID?: string;
+		GOOGLE_CLIENT_SECRET?: string;
+		CREDIT_RATE?: string;
+		CREDIT_MARGIN?: string;
+		MIN_CREDITS?: string;
+		IMAGE_COST_PREVIEW?: string;
+		IMAGE_COST_PORTRAIT?: string;
+		IMAGE_COST_SCENE?: string;
+		MIN_BALANCE_PLAY?: string;
+		MIN_BALANCE_GENERATE?: string;
+		CREATOR_REVENUE_SHARE?: string;
 		PLAY_AGENT: DurableObjectNamespace<import("./src/index").PlayAgent>;
 		GENERATION_STATUS: DurableObjectNamespace<import("./src/index").GenerationStatusAgent>;
 		IMAGES: R2Bucket;
@@ -32,7 +43,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DEFAULT_MODEL" | "GEMINI_API_KEY" | "AI_GATEWAY_API_KEY" | "BETTER_AUTH_SECRET" | "XSOLLA_MERCHANT_ID" | "XSOLLA_PROJECT_ID" | "XSOLLA_API_KEY" | "XSOLLA_WEBHOOK_SECRET" | "XSOLLA_SANDBOX" | "OPENROUTER_API_KEY">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DEFAULT_MODEL" | "GEMINI_API_KEY" | "AI_GATEWAY_API_KEY" | "BETTER_AUTH_SECRET" | "POLAR_ACCESS_TOKEN" | "POLAR_WEBHOOK_SECRET" | "OPENROUTER_API_KEY">> {}
 }
 declare module "*.sql" {
 	const value: string;

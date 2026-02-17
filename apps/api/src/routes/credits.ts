@@ -1,23 +1,10 @@
-/**
- * Credits API Routes
- * 
- * User-facing endpoints for credit balance, transaction history,
- * and Xsolla Pay Station credit pack purchases.
- * 
- * Packages are fetched dynamically from Xsolla Store API with caching.
- */
-
 import { Hono } from "hono";
 import type { AppEnv } from "../lib/context";
 import { CreditsService } from "../services/credits";
-import { XsollaPayStationService, type CreditPackage } from "../services/xsolla-paystation";
+import { PolarService, type CreditPackage } from "../services/polar";
 
 export const creditsRouter = new Hono<AppEnv>();
 
-/**
- * GET /api/credits
- * Get current user's credit balance and usage summary
- */
 creditsRouter.get("/", async (c) => {
     const user = c.get("user");
     if (!user) {
@@ -42,10 +29,6 @@ creditsRouter.get("/", async (c) => {
     });
 });
 
-/**
- * GET /api/credits/transactions
- * Get user's recent credit transactions
- */
 creditsRouter.get("/transactions", async (c) => {
     const user = c.get("user");
     if (!user) {
@@ -70,32 +53,25 @@ creditsRouter.get("/transactions", async (c) => {
     });
 });
 
-/**
- * GET /api/credits/packages
- * Get available credit packages for purchase (fetched from Xsolla)
- */
 creditsRouter.get("/packages", async (c) => {
     const user = c.get("user");
     if (!user) {
         return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const locale = c.req.query("locale") || "en";
-
-    const xsolla = new XsollaPayStationService({
-        XSOLLA_MERCHANT_ID: c.env.XSOLLA_MERCHANT_ID,
-        XSOLLA_PROJECT_ID: c.env.XSOLLA_PROJECT_ID,
-        XSOLLA_API_KEY: c.env.XSOLLA_API_KEY,
-        XSOLLA_SANDBOX: c.env.XSOLLA_SANDBOX,
+    const polar = new PolarService({
+        POLAR_ACCESS_TOKEN: c.env.POLAR_ACCESS_TOKEN,
+        POLAR_ORGANIZATION_ID: c.env.POLAR_ORGANIZATION_ID,
+        POLAR_SANDBOX: c.env.POLAR_SANDBOX,
         CACHE: c.env.CACHE,
     });
 
     try {
-        const packages = await xsolla.getPackages(locale);
+        const packages = await polar.getProducts();
 
         return c.json({
             packages: packages.map((pkg: CreditPackage) => ({
-                sku: pkg.sku,
+                id: pkg.id,
                 name: pkg.name,
                 description: pkg.description,
                 credits: pkg.credits,
@@ -112,76 +88,66 @@ creditsRouter.get("/packages", async (c) => {
     }
 });
 
-/**
- * POST /api/credits/purchase
- * Initiate credit pack purchase via Xsolla Pay Station
- * 
- * Request body: { "package": "credits-pro-10000" }
- * Response: { "payment_url": "https://secure.xsolla.com/..." }
- */
 creditsRouter.post("/purchase", async (c) => {
     const user = c.get("user");
     if (!user) {
         return c.json({ error: "Unauthorized" }, 401);
     }
 
-    let body: { package?: string };
+    let body: { productId?: string };
     try {
         body = await c.req.json();
     } catch {
         return c.json({ error: "Invalid JSON body" }, 400);
     }
 
-    const { package: packageSku } = body;
+    const { productId } = body;
 
-    if (!packageSku) {
-        return c.json({ error: "Missing package SKU" }, 400);
+    if (!productId) {
+        return c.json({ error: "Missing productId" }, 400);
     }
 
     try {
-        const xsolla = new XsollaPayStationService({
-            XSOLLA_MERCHANT_ID: c.env.XSOLLA_MERCHANT_ID,
-            XSOLLA_PROJECT_ID: c.env.XSOLLA_PROJECT_ID,
-            XSOLLA_API_KEY: c.env.XSOLLA_API_KEY,
-            XSOLLA_SANDBOX: c.env.XSOLLA_SANDBOX,
+        const polar = new PolarService({
+            POLAR_ACCESS_TOKEN: c.env.POLAR_ACCESS_TOKEN,
+            POLAR_ORGANIZATION_ID: c.env.POLAR_ORGANIZATION_ID,
+            POLAR_SANDBOX: c.env.POLAR_SANDBOX,
             CACHE: c.env.CACHE,
         });
 
-        // Validate SKU and get package details
-        const packages = await xsolla.getPackages();
-        const selectedPackage = packages.find(pkg => pkg.sku === packageSku);
-        
+        const selectedPackage = await polar.getProduct(productId);
+
         if (!selectedPackage) {
-            return c.json({ 
-                error: "Invalid package",
-                availablePackages: packages.map(p => p.sku),
+            const packages = await polar.getProducts();
+            return c.json({
+                error: "Invalid product",
+                availableProducts: packages.map(p => p.id),
             }, 400);
         }
 
-        const { payment_url } = await xsolla.generateToken(
-            user.id,
-            user.email,
-            packageSku,
-            1
+        const { checkoutUrl, checkoutId } = await polar.createCheckout(
+            productId,
+            {
+                externalCustomerId: user.id,
+                customerEmail: user.email,
+                customerName: user.name || undefined,
+            }
         );
 
-        return c.json({ 
-            payment_url,
-            package: packageSku,
+        return c.json({
+            checkout_url: checkoutUrl,
+            checkout_id: checkoutId,
+            product_id: productId,
             credits: selectedPackage.credits,
             price: selectedPackage.price,
             currency: selectedPackage.currency,
         });
     } catch (error) {
-        console.error("Failed to generate Xsolla payment token:", error);
+        console.error("Failed to create Polar checkout:", error);
         return c.json({ error: "Failed to initiate purchase" }, 500);
     }
 });
 
-/**
- * GET /api/credits/config
- * Get billing configuration (for UI display)
- */
 creditsRouter.get("/config", async (c) => {
     const user = c.get("user");
     if (!user) {

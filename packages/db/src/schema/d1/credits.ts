@@ -76,23 +76,22 @@ export const creatorEarnings = sqliteTable("creator_earnings", {
 ]);
 
 /**
- * Xsolla Webhooks
+ * Polar Webhooks
  * 
- * Tracks processed webhook events from Xsolla Pay Station.
+ * Tracks processed webhook events from Polar.sh.
  * Prevents double-processing of the same payment event.
  */
-export const xsollaWebhooks = sqliteTable("xsolla_webhooks", {
+export const polarWebhooks = sqliteTable("polar_webhooks", {
     eventId: text("event_id").primaryKey(),
     eventType: text("event_type").notNull(),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    sku: text("sku").notNull(),
-    quantity: integer("quantity").notNull().default(1),
+    customerId: text("customer_id"),
+    productId: text("product_id"),
     amount: real("amount"),
     currency: text("currency"),
     processedAt: integer("processed_at", { mode: "timestamp_ms" })
         .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
         .notNull(),
 }, (table) => [
-    index("xsolla_webhooks_user_idx").on(table.userId),
-    index("xsolla_webhooks_type_idx").on(table.eventType),
+    index("polar_webhooks_customer_idx").on(table.customerId),
+    index("polar_webhooks_type_idx").on(table.eventType),
 ]);

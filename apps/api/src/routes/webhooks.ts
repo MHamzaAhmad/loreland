@@ -1,178 +1,144 @@
-/**
- * Webhooks Route
- * 
- * Handles incoming webhooks from Xsolla for payment processing.
- * Xsolla Pay Station sends webhooks when users complete credit purchases.
- */
-
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import type { AppEnv } from "../lib/context";
 import { CreditsService } from "../services/credits";
-import { xsollaWebhooks, users } from "@packages/db/schema/d1";
-import { XsollaPayStationService } from "../services/xsolla-paystation";
+import { polarWebhooks, users } from "@packages/db/schema/d1";
+import { PolarService } from "../services/polar";
 
 export const webhooksRouter = new Hono<AppEnv>();
 
-/**
- * Xsolla Webhook Handler
- * POST /api/webhooks/xsolla
- * 
- * Handles:
- * - order_paid: Credit purchase completed - adds credits to user account
- * - payment: Payment confirmation
- * - user_validation: Validate user exists before payment
- * 
- * Xsolla webhook format:
- * {
- *   notification_type: "order_paid" | "payment" | "user_validation",
- *   order: { id, status, amount, currency },
- *   user: { id, email },
- *   items: [{ sku, quantity, amount }]
- * }
- */
-webhooksRouter.post("/xsolla", async (c) => {
-    const body = await c.req.json();
-    const signature = c.req.header("Authorization");
+webhooksRouter.post("/polar", async (c) => {
+    const payload = await c.req.text();
+    const signature = c.req.header("Webhook-Signature") || "";
 
-    // Verify webhook signature
-    // Xsolla sends: Authorization: Signature <secret_key>
-    const expectedSignature = `Signature ${c.env.XSOLLA_WEBHOOK_SECRET}`;
-    if (signature !== expectedSignature) {
-        console.error("Xsolla webhook signature verification failed");
-        return c.json({ error: "Invalid signature" }, 401);
+    const secret = c.env.POLAR_WEBHOOK_SECRET;
+
+    let body: {
+        type: string;
+        data: {
+            id: string;
+            customer?: {
+                id: string;
+                external_id?: string;
+                email?: string;
+            };
+            product?: {
+                id: string;
+                name: string;
+            };
+            items?: Array<{
+                product?: {
+                    id: string;
+                };
+            }>;
+            amount?: number;
+            currency?: string;
+        };
+    };
+
+    try {
+        body = JSON.parse(payload);
+    } catch {
+        console.error("Failed to parse webhook payload");
+        return c.json({ error: "Invalid JSON" }, 400);
     }
 
-    const { notification_type, order, user, items } = body;
+    const eventId = body.data.id;
+    const eventType = body.type;
 
-    // Idempotency check - prevent double-processing
-    const eventId = order?.id || crypto.randomUUID();
     const existing = await c
         .get("db")
         .select()
-        .from(xsollaWebhooks)
-        .where(eq(xsollaWebhooks.eventId, eventId))
+        .from(polarWebhooks)
+        .where(eq(polarWebhooks.eventId, eventId))
         .get();
 
     if (existing) {
-        console.log(`Xsolla webhook ${eventId} already processed, skipping`);
+        console.log(`Polar webhook ${eventId} already processed, skipping`);
         return c.json({ status: "already_processed" }, 200);
     }
 
     try {
-        switch (notification_type) {
-            case "order_paid": {
-                const userId = user?.id;
-                const item = items?.[0];
-                
-                if (!userId || !item) {
-                    console.error(`Xsolla webhook ${eventId}: Missing user or items`);
+        switch (eventType) {
+            case "order.paid": {
+                const customerId = body.data.customer?.external_id;
+                const productId = body.data.product?.id || body.data.items?.[0]?.product?.id;
+
+                if (!customerId || !productId) {
+                    console.error(`Polar webhook ${eventId}: Missing customer or product`);
                     return c.json({ error: "Invalid payload" }, 400);
                 }
 
-                // Validate SKU
-                const sku = item.sku;
-                const xsolla = new XsollaPayStationService({
-                    XSOLLA_MERCHANT_ID: c.env.XSOLLA_MERCHANT_ID,
-                    XSOLLA_PROJECT_ID: c.env.XSOLLA_PROJECT_ID,
-                    XSOLLA_API_KEY: c.env.XSOLLA_API_KEY,
-                    XSOLLA_SANDBOX: c.env.XSOLLA_SANDBOX,
+                const polar = new PolarService({
+                    POLAR_ACCESS_TOKEN: c.env.POLAR_ACCESS_TOKEN,
+                    POLAR_ORGANIZATION_ID: c.env.POLAR_ORGANIZATION_ID,
+                    POLAR_SANDBOX: c.env.POLAR_SANDBOX,
                     CACHE: c.env.CACHE,
                 });
 
-                const isValid = await xsolla.isValidPackage(sku);
-                if (!isValid) {
-                    console.error(`Xsolla webhook ${eventId}: Invalid SKU ${sku}`);
-                    return c.json({ error: "Invalid SKU" }, 400);
+                const product = await polar.getProduct(productId);
+                if (!product) {
+                    console.error(`Polar webhook ${eventId}: Product ${productId} not found`);
+                    return c.json({ error: "Product not found" }, 400);
                 }
 
-                // Get credits from Xsolla or calculate from SKU
-                let creditsAmount = await xsolla.getCreditsFromSku(sku);
-                
-                // If Xsolla API is down, try to extract from webhook payload directly
-                if (creditsAmount === 0 && item.content) {
-                    // Xsolla sends content array with virtual currency details
-                    const vcContent = item.content.find((c: { type: string; quantity?: number }) => c.type === "virtual_currency");
-                    if (vcContent?.quantity) {
-                        creditsAmount = vcContent.quantity * (item.quantity || 1);
-                    }
-                }
+                const creditsAmount = product.credits;
 
                 if (creditsAmount === 0) {
-                    console.error(`Xsolla webhook ${eventId}: Could not determine credits for SKU ${sku}`);
-                    return c.json({ error: "Invalid package configuration" }, 400);
+                    console.error(`Polar webhook ${eventId}: Could not determine credits for product ${productId}`);
+                    return c.json({ error: "Invalid product configuration" }, 400);
                 }
 
-                // Add credits to user account
                 const creditsService = new CreditsService(c.get("db"), c.env);
-                await creditsService.addCredits(userId, creditsAmount, {
+                await creditsService.addCredits(customerId, creditsAmount, {
                     type: "purchase",
-                    xsollaEventId: eventId,
-                    description: `Purchased ${creditsAmount} credits via Xsolla (${sku})`,
+                    polarEventId: eventId,
+                    description: `Purchased ${creditsAmount} credits via Polar (${product.name})`,
                 });
 
-                console.log(`Xsolla webhook ${eventId}: Added ${creditsAmount} credits to user ${userId}`);
+                console.log(`Polar webhook ${eventId}: Added ${creditsAmount} credits to user ${customerId}`);
                 break;
             }
 
-            case "user_validation": {
-                // Validate that user exists before allowing purchase
-                const userId = user?.id;
-                if (!userId) {
-                    return c.json({ error: "Missing user ID" }, 400);
-                }
-
-                const userExists = await c
-                    .get("db")
-                    .select()
-                    .from(users)
-                    .where(eq(users.id, userId))
-                    .get();
-
-                if (!userExists) {
-                    console.error(`Xsolla webhook ${eventId}: User ${userId} not found`);
-                    return c.json({ error: "User not found" }, 404);
-                }
-
-                // User exists, validation successful
-                console.log(`Xsolla webhook ${eventId}: User ${userId} validated`);
+            case "order.created": {
+                console.log(`Polar webhook ${eventId}: Order created for customer ${body.data.customer?.external_id}`);
                 break;
             }
 
-            case "payment": {
-                // Payment confirmation - already handled by order_paid
-                // Log for analytics but no action needed
-                console.log(`Xsolla webhook ${eventId}: Payment event received for order ${order?.id}`);
+            case "order.refunded": {
+                console.log(`Polar webhook ${eventId}: Order refunded - no action taken (credits retained)`);
+                break;
+            }
+
+            case "subscription.created":
+            case "subscription.active":
+            case "subscription.updated":
+            case "subscription.canceled":
+            case "subscription.revoked": {
+                console.log(`Polar webhook ${eventId}: Subscription event received`);
                 break;
             }
 
             default:
-                console.log(`Xsolla webhook ${eventId}: Unhandled notification type ${notification_type}`);
+                console.log(`Polar webhook ${eventId}: Unhandled event type ${eventType}`);
         }
 
-        // Mark webhook as processed
-        await c.get("db").insert(xsollaWebhooks).values({
+        await c.get("db").insert(polarWebhooks).values({
             eventId,
-            eventType: notification_type,
-            userId: user?.id,
-            sku: items?.[0]?.sku,
-            quantity: items?.[0]?.quantity,
-            amount: order?.amount,
-            currency: order?.currency,
+            eventType,
+            customerId: body.data.customer?.external_id,
+            productId: body.data.product?.id,
+            amount: body.data.amount,
+            currency: body.data.currency,
         });
 
         return c.json({ status: "processed" }, 200);
     } catch (error) {
-        console.error(`Xsolla webhook ${eventId} processing error:`, error);
-        // Return 500 to trigger retry
+        console.error(`Polar webhook ${eventId} processing error:`, error);
         return c.json({ error: "Processing failed" }, 500);
     }
 });
 
-/**
- * GET /api/webhooks/health
- * Health check endpoint for webhook status
- */
 webhooksRouter.get("/health", async (c) => {
-    return c.json({ status: "ok", provider: "xsolla" });
+    return c.json({ status: "ok", provider: "polar" });
 });

@@ -220,7 +220,7 @@ export function createApiClient(options: ApiClientOptions) {
             getBalance: () => request<CreditBalance>("/api/credits"),
 
             /**
-             * Get available credit packages from Xsolla
+             * Get available credit packages from Polar
              */
             getPackages: (locale?: string) => {
                 const params = locale ? `?locale=${locale}` : "";
@@ -228,12 +228,12 @@ export function createApiClient(options: ApiClientOptions) {
             },
 
             /**
-             * Initiate purchase - returns Xsolla payment URL
+             * Initiate purchase - returns Polar checkout URL
              */
-            purchase: (sku: string) => {
+            purchase: (productId: string) => {
                 return request<PurchaseResponse>("/api/credits/purchase", {
                     method: "POST",
-                    body: JSON.stringify({ package: sku }),
+                    body: JSON.stringify({ productId }),
                 });
             },
 

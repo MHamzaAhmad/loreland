@@ -71,6 +71,13 @@
       "when": 1770654994990,
       "tag": "0009_lyrical_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1771333897771,
+      "tag": "0010_overconfident_mongoose",
+      "breakpoints": true
     }
   ]
 }

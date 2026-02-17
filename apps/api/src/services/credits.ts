@@ -4,8 +4,8 @@
  * Handles all credit operations with atomic transactions to prevent race conditions.
  * Uses D1 SQL for atomic balance updates.
  * 
- * Xsolla Integration:
- * - Credits are purchased via Xsolla Pay Station (virtual currency packages)
+ * Polar Integration:
+ * - Credits are purchased via Polar.sh (products with meter_credit benefits)
  * - All gameplay uses prepaid credits (no usage-based billing)
  * - Creator earnings are tracked separately for future cash-out
  */
@@ -34,7 +34,7 @@ export interface CreditMetadata {
         imageType?: string;
         creatorShare?: number;
     };
-    xsollaEventId?: string;
+    polarEventId?: string;
     sessionId?: string;
     gameId?: string;
     turnNumber?: number;
@@ -283,7 +283,7 @@ export class CreditsService {
             operationType: metadata.operationType,
             costBreakdown: metadata.costBreakdown,
             metadata: {
-                xsollaEventId: metadata.xsollaEventId,
+                polarEventId: metadata.polarEventId,
                 sessionId: metadata.sessionId,
                 gameId: metadata.gameId,
                 turnNumber: metadata.turnNumber,
@@ -302,7 +302,7 @@ export class CreditsService {
     async addCredits(
         userId: string,
         amount: number,
-        metadata: Pick<CreditMetadata, "type" | "xsollaEventId" | "description">
+        metadata: Pick<CreditMetadata, "type" | "polarEventId" | "description">
     ): Promise<void> {
         if (amount <= 0) return;
 
@@ -323,7 +323,7 @@ export class CreditsService {
             balanceAfter: newBalance,
             type: metadata.type,
             metadata: {
-                xsollaEventId: metadata.xsollaEventId,
+                polarEventId: metadata.polarEventId,
                 description: metadata.description,
             },
         });

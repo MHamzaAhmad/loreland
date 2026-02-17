@@ -17,9 +17,9 @@
 	 * Environment variables for AI provider configuration
 	 */
 	"vars": {
-		"DEFAULT_MODEL": "nova-flash",
-		"XSOLLA_SANDBOX": "true"
+		"DEFAULT_MODEL": "nova-flash"
 		// OPENROUTER_API_KEY should be set via wrangler secrets
+		// POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET should be set via wrangler secrets
 	},
 	/**
 	 * D1 Database - Central database for users, games, etc.

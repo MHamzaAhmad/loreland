@@ -243,7 +243,7 @@ export interface CreditBalance {
 }
 
 export interface CreditPackage {
-    sku: string;
+    id: string;
     name: string;
     description?: string;
     credits: number;
@@ -271,8 +271,9 @@ export interface CreditTransaction {
 }
 
 export interface PurchaseResponse {
-    payment_url: string;
-    package: string;
+    checkout_url: string;
+    checkout_id: string;
+    product_id: string;
     credits: number;
     price: number;
     currency: string;

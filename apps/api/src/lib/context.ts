@@ -23,12 +23,11 @@ export type AppEnv = {
         BETTER_AUTH_SECRET: string;
         // OpenRouter API configuration
         OPENROUTER_API_KEY: string;
-        // Xsolla Pay Station integration
-        XSOLLA_MERCHANT_ID: string;
-        XSOLLA_PROJECT_ID: string;
-        XSOLLA_API_KEY: string; 
-        XSOLLA_WEBHOOK_SECRET: string;
-        XSOLLA_SANDBOX?: string;
+        // Polar.sh integration
+        POLAR_ACCESS_TOKEN: string;
+        POLAR_ORGANIZATION_ID?: string;
+        POLAR_WEBHOOK_SECRET: string;
+        POLAR_SANDBOX?: string;
         // Internal API auth
         INTERNAL_SECRET: string;
         // Billing config overrides
