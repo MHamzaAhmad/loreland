@@ -65,19 +65,19 @@ export class PolarService {
     async getProducts(): Promise<CreditPackage[]> {
         const cacheKey = `${CACHE_KEY_PREFIX}${this.organizationId}`;
 
-        // if (this.cache) {
-        //     try {
-        //         const cached = await this.cache.get(cacheKey);
-        //         if (cached) {
-        //             const parsed = JSON.parse(cached);
-        //             if (parsed.timestamp && Date.now() - parsed.timestamp < CACHE_TTL_SECONDS * 1000) {
-        //                 return parsed.products;
-        //             }
-        //         }
-        //     } catch (error) {
-        //         console.warn("Failed to read from cache:", error);
-        //     }
-        // }
+        if (this.cache) {
+            try {
+                const cached = await this.cache.get(cacheKey);
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (parsed.timestamp && Date.now() - parsed.timestamp < CACHE_TTL_SECONDS * 1000) {
+                        return parsed.products;
+                    }
+                }
+            } catch (error) {
+                console.warn("Failed to read from cache:", error);
+            }
+        }
 
         try {
             const pageIterator = await this.polar.products.list({
