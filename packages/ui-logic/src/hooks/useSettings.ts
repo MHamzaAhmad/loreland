@@ -1,24 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "./use-api-client";
+import { useUser } from "./use-auth";
 
-/**
- * Query key factory for settings
- */
 export const settingsKeys = {
 	all: ["settings"] as const,
 	user: () => [...settingsKeys.all, "user"] as const,
 	models: () => [...settingsKeys.all, "models"] as const,
 };
 
-/**
- * Hook to fetch current user settings
- */
 export function useUserSettings() {
+	const { data: authData } = useUser();
 	const api = useApiClient();
 
 	return useQuery({
 		queryKey: settingsKeys.user(),
 		queryFn: () => api.settings.get(),
+		enabled: authData?.authenticated === true,
 	});
 }
 

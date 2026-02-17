@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "./use-api-client";
+import { useUser } from "./use-auth";
 
 export const creditKeys = {
     all: ["credits"] as const,
@@ -10,20 +11,24 @@ export const creditKeys = {
 };
 
 export function useCreditBalance() {
+    const { data: authData } = useUser();
     const api = useApiClient();
     return useQuery({
         queryKey: creditKeys.balance(),
         queryFn: () => api.credits.getBalance(),
-        staleTime: 1000 * 60, // 1 minute
+        staleTime: 1000 * 60,
+        enabled: authData?.authenticated === true,
     });
 }
 
 export function useCreditPackages(locale?: string) {
+    const { data: authData } = useUser();
     const api = useApiClient();
     return useQuery({
         queryKey: creditKeys.packages(locale),
         queryFn: () => api.credits.getPackages(locale),
-        staleTime: 1000 * 60 * 5, // 5 minutes (cached in KV)
+        staleTime: 1000 * 60 * 5,
+        enabled: authData?.authenticated === true,
     });
 }
 
@@ -41,18 +46,22 @@ export function usePurchaseCredits() {
 }
 
 export function useCreditTransactions(limit?: number) {
+    const { data: authData } = useUser();
     const api = useApiClient();
     return useQuery({
         queryKey: creditKeys.transactions(),
         queryFn: () => api.credits.getTransactions(limit),
+        enabled: authData?.authenticated === true,
     });
 }
 
 export function useBillingConfig() {
+    const { data: authData } = useUser();
     const api = useApiClient();
     return useQuery({
         queryKey: creditKeys.config(),
         queryFn: () => api.credits.getConfig(),
-        staleTime: 1000 * 60 * 60, // 1 hour
+        staleTime: 1000 * 60 * 60,
+        enabled: authData?.authenticated === true,
     });
 }
