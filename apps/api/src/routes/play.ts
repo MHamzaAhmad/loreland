@@ -96,6 +96,7 @@ playRouter.post("/:gameId/play/start", async (c) => {
         characterId?: string;
         sessionId?: string;
         model?: string;
+        imageModel?: string;
     }>();
 
     const db = c.get("db");
@@ -145,6 +146,7 @@ playRouter.post("/:gameId/play/start", async (c) => {
 
         // Use user's preferred model or fall back to default
         const modelToUse = userSettingsRecord?.modelPreference || "nova-flash";
+        const imageModelToUse = body.imageModel || "prism-flash";
 
         const [newSession] = await db.insert(playSessions).values({
             gameId,
@@ -152,6 +154,7 @@ playRouter.post("/:gameId/play/start", async (c) => {
             characterId: body.characterId,
             characterName: character?.name,
             model: modelToUse,
+            imageModel: imageModelToUse,
         }).returning();
 
         session = newSession;
@@ -160,8 +163,8 @@ playRouter.post("/:gameId/play/start", async (c) => {
         const agentId = c.env.PLAY_AGENT.idFromName(session.id);
         const agent = c.env.PLAY_AGENT.get(agentId);
 
-        // Call startGame on the agent with the user's preferred model
-        await agent.startGame(session.id, gameConfig, body.characterId, modelToUse, user.id, gameConfig.userId);
+        // Call startGame on the agent with the user's preferred model and image model
+        await agent.startGame(session.id, gameConfig, body.characterId, modelToUse, imageModelToUse, user.id, gameConfig.userId);
     }
 
     return c.json({
@@ -171,6 +174,7 @@ playRouter.post("/:gameId/play/start", async (c) => {
         characterId: session.characterId,
         characterName: session.characterName,
         model: session.model,
+        imageModel: session.imageModel,
     });
 });
 
@@ -252,6 +256,48 @@ playRouter.put("/:gameId/play/:sessionId/model", async (c) => {
     await agent.updateModel(model);
 
     return c.json({ success: true, model });
+});
+
+/**
+ * PUT /api/games/:gameId/play/:sessionId/image-model
+ * Update the image model for a session
+ */
+playRouter.put("/:gameId/play/:sessionId/image-model", async (c) => {
+    const { sessionId } = c.req.param();
+    const user = c.get("user");
+
+    if (!user) {
+        return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const { imageModel } = await c.req.json<{ imageModel: string }>();
+
+    // Verify session ownership
+    const db = c.get("db");
+    const [session] = await db
+        .select()
+        .from(playSessions)
+        .where(and(
+            eq(playSessions.id, sessionId),
+            eq(playSessions.userId, user.id)
+        ))
+        .limit(1);
+
+    if (!session) {
+        return c.json({ error: "Session not found" }, 404);
+    }
+
+    // Update in D1
+    await db.update(playSessions)
+        .set({ imageModel })
+        .where(eq(playSessions.id, sessionId));
+
+    // Update in agent
+    const agentId = c.env.PLAY_AGENT.idFromName(sessionId);
+    const agent = c.env.PLAY_AGENT.get(agentId);
+    await agent.updateImageModel(imageModel);
+
+    return c.json({ success: true, imageModel });
 });
 
 /**

@@ -6,6 +6,7 @@ import m0003 from './0003_oval_zaran.sql';
 import m0004 from './0004_wild_moira_mactaggert.sql';
 import m0005 from './0005_striped_darkstar.sql';
 import m0006 from './0006_adorable_christian_walker.sql';
+import m0007 from './0007_remarkable_diamondback.sql';
 
   export default {
     journal,
@@ -16,7 +17,8 @@ m0002,
 m0003,
 m0004,
 m0005,
-m0006
+m0006,
+m0007
     }
   }
   

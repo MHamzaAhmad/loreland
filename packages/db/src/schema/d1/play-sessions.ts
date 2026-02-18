@@ -13,6 +13,7 @@ export const playSessions = sqliteTable("play_sessions", {
     characterId: text("character_id").notNull(),
     characterName: text("character_name"),
     model: text("model").notNull().default("gemini-2.0-flash"),
+    imageModel: text("image_model").notNull().default("prism-flash"),
     currentTurn: integer("current_turn").notNull().default(0),
     status: text("status", { enum: ["active", "completed", "abandoned"] }).default("active"),
     lastPlayedAt: integer("last_played_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),

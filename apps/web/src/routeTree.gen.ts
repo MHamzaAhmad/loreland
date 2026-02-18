@@ -21,6 +21,7 @@ import { Route as GamesIdEditRouteImport } from './routes/games/$id/edit'
 import { Route as GamesIdPlayIndexRouteImport } from './routes/games/$id/play/index'
 import { Route as GamesIdPlayNewRouteImport } from './routes/games/$id/play/new'
 import { Route as GamesIdPlaySessionIdRouteImport } from './routes/games/$id/play/$sessionId'
+import { Route as GamesIdPlaySessionIdSettingsRouteImport } from './routes/games/$id/play/$sessionId/settings'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -82,6 +83,12 @@ const GamesIdPlaySessionIdRoute = GamesIdPlaySessionIdRouteImport.update({
   path: '/games/$id/play/$sessionId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesIdPlaySessionIdSettingsRoute =
+  GamesIdPlaySessionIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => GamesIdPlaySessionIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -93,9 +100,10 @@ export interface FileRoutesByFullPath {
   '/games/new': typeof GamesNewRoute
   '/games/$id/edit': typeof GamesIdEditRoute
   '/games/$id': typeof GamesIdIndexRoute
-  '/games/$id/play/$sessionId': typeof GamesIdPlaySessionIdRoute
+  '/games/$id/play/$sessionId': typeof GamesIdPlaySessionIdRouteWithChildren
   '/games/$id/play/new': typeof GamesIdPlayNewRoute
   '/games/$id/play': typeof GamesIdPlayIndexRoute
+  '/games/$id/play/$sessionId/settings': typeof GamesIdPlaySessionIdSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,9 +115,10 @@ export interface FileRoutesByTo {
   '/games/new': typeof GamesNewRoute
   '/games/$id/edit': typeof GamesIdEditRoute
   '/games/$id': typeof GamesIdIndexRoute
-  '/games/$id/play/$sessionId': typeof GamesIdPlaySessionIdRoute
+  '/games/$id/play/$sessionId': typeof GamesIdPlaySessionIdRouteWithChildren
   '/games/$id/play/new': typeof GamesIdPlayNewRoute
   '/games/$id/play': typeof GamesIdPlayIndexRoute
+  '/games/$id/play/$sessionId/settings': typeof GamesIdPlaySessionIdSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,9 +131,10 @@ export interface FileRoutesById {
   '/games/new': typeof GamesNewRoute
   '/games/$id/edit': typeof GamesIdEditRoute
   '/games/$id/': typeof GamesIdIndexRoute
-  '/games/$id/play/$sessionId': typeof GamesIdPlaySessionIdRoute
+  '/games/$id/play/$sessionId': typeof GamesIdPlaySessionIdRouteWithChildren
   '/games/$id/play/new': typeof GamesIdPlayNewRoute
   '/games/$id/play/': typeof GamesIdPlayIndexRoute
+  '/games/$id/play/$sessionId/settings': typeof GamesIdPlaySessionIdSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/games/$id/play/$sessionId'
     | '/games/$id/play/new'
     | '/games/$id/play'
+    | '/games/$id/play/$sessionId/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/games/$id/play/$sessionId'
     | '/games/$id/play/new'
     | '/games/$id/play'
+    | '/games/$id/play/$sessionId/settings'
   id:
     | '__root__'
     | '/'
@@ -169,6 +181,7 @@ export interface FileRouteTypes {
     | '/games/$id/play/$sessionId'
     | '/games/$id/play/new'
     | '/games/$id/play/'
+    | '/games/$id/play/$sessionId/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -180,7 +193,7 @@ export interface RootRouteChildren {
   GamesNewRoute: typeof GamesNewRoute
   GamesIdEditRoute: typeof GamesIdEditRoute
   GamesIdIndexRoute: typeof GamesIdIndexRoute
-  GamesIdPlaySessionIdRoute: typeof GamesIdPlaySessionIdRoute
+  GamesIdPlaySessionIdRoute: typeof GamesIdPlaySessionIdRouteWithChildren
   GamesIdPlayNewRoute: typeof GamesIdPlayNewRoute
   GamesIdPlayIndexRoute: typeof GamesIdPlayIndexRoute
 }
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GamesIdPlaySessionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/$id/play/$sessionId/settings': {
+      id: '/games/$id/play/$sessionId/settings'
+      path: '/settings'
+      fullPath: '/games/$id/play/$sessionId/settings'
+      preLoaderRoute: typeof GamesIdPlaySessionIdSettingsRouteImport
+      parentRoute: typeof GamesIdPlaySessionIdRoute
+    }
   }
 }
 
@@ -286,6 +306,17 @@ const BuyCreditsRouteWithChildren = BuyCreditsRoute._addFileChildren(
   BuyCreditsRouteChildren,
 )
 
+interface GamesIdPlaySessionIdRouteChildren {
+  GamesIdPlaySessionIdSettingsRoute: typeof GamesIdPlaySessionIdSettingsRoute
+}
+
+const GamesIdPlaySessionIdRouteChildren: GamesIdPlaySessionIdRouteChildren = {
+  GamesIdPlaySessionIdSettingsRoute: GamesIdPlaySessionIdSettingsRoute,
+}
+
+const GamesIdPlaySessionIdRouteWithChildren =
+  GamesIdPlaySessionIdRoute._addFileChildren(GamesIdPlaySessionIdRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BuyCreditsRoute: BuyCreditsRouteWithChildren,
@@ -295,7 +326,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesNewRoute: GamesNewRoute,
   GamesIdEditRoute: GamesIdEditRoute,
   GamesIdIndexRoute: GamesIdIndexRoute,
-  GamesIdPlaySessionIdRoute: GamesIdPlaySessionIdRoute,
+  GamesIdPlaySessionIdRoute: GamesIdPlaySessionIdRouteWithChildren,
   GamesIdPlayNewRoute: GamesIdPlayNewRoute,
   GamesIdPlayIndexRoute: GamesIdPlayIndexRoute,
 }

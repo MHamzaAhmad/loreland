@@ -1,0 +1,1 @@
+ALTER TABLE `game_session` ADD `image_model` text DEFAULT 'prism-flash' NOT NULL;

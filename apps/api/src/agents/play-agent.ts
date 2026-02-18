@@ -14,6 +14,7 @@ import migrations from "@packages/db/migrations/agent";
 import { loadPrompt } from "./prompt-loader";
 import { turnOutputSchema } from "./schemas";
 import { createOpenRouterClient, getOpenRouterModel } from "../lib/openrouter";
+import { getImageModelConfig, getDefaultImageModel } from "../lib/image-models";
 import { CreditsService } from "../services/credits";
 import { buildTurnCost } from "../lib/turn-cost";
 import type { GameSessionState, FullGameConfig, AgentDB } from "./types";
@@ -45,15 +46,16 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         gameConfig: FullGameConfig,
         characterId: string,
         model: string = "nova-flash",
+        imageModel: string = "prism-flash",
         playerId: string,
         creatorId: string
     ) {
-        // Store game config in SQLite
         await this.db.insert(schema.gameSession).values({
             sessionId,
             gameId: gameConfig.id,
             characterId,
             model,
+            imageModel,
             config: gameConfig as unknown as string,
         });
 
@@ -622,6 +624,14 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         return { success: true, model };
     }
 
+    async updateImageModel(imageModel: string) {
+        await this.db.update(schema.gameSession)
+            .set({ imageModel })
+            .where(eq(schema.gameSession.id, 1));
+
+        return { success: true, imageModel };
+    }
+
     /**
      * Get current game state
      */
@@ -639,6 +649,7 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
             states,
             recentTurns: recentTurns.reverse(),
             model: session[0]?.model,
+            imageModel: session[0]?.imageModel,
             allStates: allStatesForStorytelling,
         };
     }
@@ -715,28 +726,28 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
         scenePrompt: string,
         characterDescription?: string | null
     ): Promise<string> {
-        // Get game config for imageInstructions
         const session = await this.db.select().from(schema.gameSession).limit(1);
         const gameConfig = session[0]?.config as unknown as FullGameConfig;
+        const imageModelId = session[0]?.imageModel || "prism-flash";
 
-        // Use imageInstructions from game config, with fallback
         const baseStyle = gameConfig?.imageInstructions ||
             "cinematic fantasy illustration, third-person view, dramatic composition, detailed environment, atmospheric lighting";
 
         let prompt = `${baseStyle}, ${scenePrompt}`;
 
         if (characterDescription) {
-            // Include character in the scene from third-person perspective
             prompt += `. In the scene: a figure matching this description - ${characterDescription} - shown from behind or side angle, interacting with the environment`;
         }
 
+        const imageConfig = getImageModelConfig(imageModelId);
+
         const response = await this.env.AI.run(
-            "@cf/black-forest-labs/flux-1-schnell",
+            imageConfig.actualModel as "@cf/black-forest-labs/flux-1-schnell",
             {
                 prompt,
-                width: 1024,
-                height: 576,
-                steps: 4,
+                width: imageConfig.width,
+                height: imageConfig.height,
+                steps: imageConfig.steps,
             }
         );
 

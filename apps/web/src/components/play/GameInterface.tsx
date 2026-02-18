@@ -9,6 +9,7 @@ import { Coin } from "@phosphor-icons/react";
 
 interface GameInterfaceProps {
     gameId: string;
+    sessionId: string;
     turnData: {
         turnNumber: number;
         turnTitle?: string;
@@ -36,6 +37,7 @@ interface GameInterfaceProps {
 
 export function GameInterface({
     gameId,
+    sessionId,
     turnData,
     characterState,
     suggestedActions,
@@ -89,9 +91,10 @@ export function GameInterface({
                         />
                     )}
                     <Link
-                        to="/settings"
+                        to="/games/$id/play/$sessionId/settings"
+                        params={{ id: gameId, sessionId }}
                         className="p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                        title="Settings"
+                        title="Session Settings"
                     >
                         <Settings className="w-4 h-4" />
                     </Link>

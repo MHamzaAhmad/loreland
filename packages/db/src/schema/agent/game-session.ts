@@ -10,6 +10,7 @@ export const gameSession = sqliteTable("game_session", {
     gameId: text("game_id").notNull(),
     characterId: text("character_id").notNull(),
     model: text("model").notNull().default("gemini-2.0-flash"),
+    imageModel: text("image_model").notNull().default("prism-flash"),
     config: text("config", { mode: "json" }).notNull(), // Full game config JSON
     createdAt: integer("created_at").notNull().default(sql`(unixepoch())`),
 });

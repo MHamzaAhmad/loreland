@@ -31,6 +31,7 @@ export {
     useUserSettings,
     useUpdateUserSettings,
     useAvailableModels,
+    useImageModels,
     settingsKeys,
 } from "./hooks";
 
@@ -57,6 +58,7 @@ export type {
     BillingConfig,
     UserSettings,
     AIModel,
+    ImageModel,
 } from "./types";
 
 export * from "./game/types";

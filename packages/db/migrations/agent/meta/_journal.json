@@ -50,6 +50,13 @@
       "when": 1770647612012,
       "tag": "0006_adorable_christian_walker",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1771396177271,
+      "tag": "0007_remarkable_diamondback",
+      "breakpoints": true
     }
   ]
 }

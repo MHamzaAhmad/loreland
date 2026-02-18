@@ -6,6 +6,7 @@ export const settingsKeys = {
 	all: ["settings"] as const,
 	user: () => [...settingsKeys.all, "user"] as const,
 	models: () => [...settingsKeys.all, "models"] as const,
+	imageModels: () => [...settingsKeys.all, "image-models"] as const,
 };
 
 export function useUserSettings() {
@@ -44,6 +45,16 @@ export function useAvailableModels() {
 	return useQuery({
 		queryKey: settingsKeys.models(),
 		queryFn: () => api.settings.getModels(),
-		staleTime: Infinity, // Models rarely change, cache indefinitely
+		staleTime: Infinity,
+	});
+}
+
+export function useImageModels() {
+	const api = useApiClient();
+
+	return useQuery({
+		queryKey: settingsKeys.imageModels(),
+		queryFn: () => api.settings.getImageModels(),
+		staleTime: Infinity,
 	});
 }

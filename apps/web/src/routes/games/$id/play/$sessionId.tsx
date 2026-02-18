@@ -86,6 +86,7 @@ function ActiveGameRoute() {
         <>
             <GameInterface
                 gameId={gameId}
+                sessionId={sessionId}
                 turnData={session.currentTurnData}
                 characterState={session.characterState}
                 suggestedActions={session.suggestedActions}

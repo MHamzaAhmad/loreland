@@ -32,5 +32,6 @@ export {
     useUserSettings,
     useUpdateUserSettings,
     useAvailableModels,
+    useImageModels,
     settingsKeys,
 } from "./useSettings";

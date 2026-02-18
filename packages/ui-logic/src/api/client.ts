@@ -15,6 +15,7 @@ import type {
     BillingConfig,
     UserSettings,
     AIModel,
+    ImageModel,
 } from "../types";
 
 /**
@@ -198,7 +199,7 @@ export function createApiClient(options: ApiClientOptions) {
             /**
              * Start or resume a game session
              */
-            start: (gameId: string, sessionId?: string, characterId?: string, model?: string) => {
+            start: (gameId: string, sessionId?: string, characterId?: string, model?: string, imageModel?: string) => {
                 return request<{
                     wsUrl: string;
                     sessionId: string;
@@ -206,9 +207,17 @@ export function createApiClient(options: ApiClientOptions) {
                     characterId: string;
                     characterName: string | null;
                     model: string;
+                    imageModel: string;
                 }>(`/api/games/${gameId}/play/start`, {
                     method: "POST",
-                    body: JSON.stringify({ sessionId, characterId, model }),
+                    body: JSON.stringify({ sessionId, characterId, model, imageModel }),
+                });
+            },
+
+            updateImageModel: (gameId: string, sessionId: string, imageModel: string) => {
+                return request<{ success: boolean; imageModel: string }>(`/api/games/${gameId}/play/${sessionId}/image-model`, {
+                    method: "PUT",
+                    body: JSON.stringify({ imageModel }),
                 });
             },
         },
@@ -271,6 +280,8 @@ export function createApiClient(options: ApiClientOptions) {
              * Get all available AI models with detailed info
              */
             getModels: () => request<{ models: AIModel[] }>("/api/settings/models"),
+
+            getImageModels: () => request<{ models: ImageModel[] }>("/api/settings/image-models"),
         },
 
     };

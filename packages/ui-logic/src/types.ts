@@ -319,3 +319,17 @@ export interface AIModel {
     speed: "instant" | "fast" | "balanced" | "slow" | "thorough";
     bestFor: string[];
 }
+
+export interface ImageModel {
+    id: string;
+    name: string;
+    displayName: string;
+    description: string;
+    isDefault?: boolean;
+    speed: "instant" | "fast" | "balanced" | "slow";
+    pros: string[];
+    cons: string[];
+    costLevel: 1 | 2 | 3 | 4 | 5;
+    costDescription: string;
+    bestFor: string[];
+}

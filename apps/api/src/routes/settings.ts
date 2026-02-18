@@ -6,6 +6,7 @@ import { drizzle } from "drizzle-orm/d1";
 import type { AppEnv } from "../lib/context";
 import { userSettings } from "@packages/db/schema/d1";
 import { getAllModels, getModelIds } from "../lib/models";
+import { getAllImageModels, getImageModelIds } from "../lib/image-models";
 
 const settingsRouter = new Hono<AppEnv>();
 
@@ -61,6 +62,27 @@ settingsRouter.get("/models", async (c) => {
         costLevel: m.costLevel,
         costDescription: m.costDescription,
         speed: m.speed,
+        bestFor: m.bestFor,
+    }));
+
+    return c.json({ models });
+});
+
+/**
+ * GET /api/settings/image-models - Get available image models with full details
+ */
+settingsRouter.get("/image-models", async (c) => {
+    const models = getAllImageModels().map(m => ({
+        id: m.id,
+        name: m.name,
+        displayName: m.displayName,
+        description: m.description,
+        isDefault: m.isDefault,
+        speed: m.speed,
+        pros: m.pros,
+        cons: m.cons,
+        costLevel: m.costLevel,
+        costDescription: m.costDescription,
         bestFor: m.bestFor,
     }));
 
