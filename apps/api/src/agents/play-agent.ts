@@ -741,8 +741,8 @@ export class PlayAgent extends Agent<Cloudflare.Env, GameSessionState> {
 
         const imageConfig = getImageModelConfig(imageModelId);
 
-        const response = await this.env.AI.run(
-            imageConfig.actualModel as "@cf/black-forest-labs/flux-1-schnell",
+        const response = await (this.env.AI as any).run(
+            imageConfig.actualModel,
             {
                 prompt,
                 width: imageConfig.width,

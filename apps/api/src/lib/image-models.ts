@@ -32,21 +32,22 @@ export interface ImageModel {
  * - Prism: Fast, efficient models (light refraction)
  * - Canvas: Detailed, artistic models
  * - Palette: Creative, varied styles
+ * - Lucid: Leonardo.AI premium models
  */
 export const IMAGE_MODELS: Record<string, ImageModel> = {
 	'prism-flash': {
 		id: 'prism-flash',
 		name: 'Prism Flash',
 		displayName: 'Prism Flash ⚡',
-		description: 'Lightning-fast image generation for dynamic scenes.',
-		actualModel: '@cf/black-forest-labs/flux-1-schnell',
+		description: 'Ultra-fast distilled model for instant scene generation.',
+		actualModel: '@cf/black-forest-labs/flux-2-klein-4b',
 		isDefault: true,
 		speed: 'instant',
 		pros: [
-			"Extremely fast generation",
+			"Ultra-fast generation",
 			"Great for action scenes",
-			"Low cost per image",
-			"Consistent quality"
+			"Lowest cost per image",
+			"Interactive workflows"
 		],
 		cons: [
 			"Less detail than premium models",
@@ -59,46 +60,21 @@ export const IMAGE_MODELS: Record<string, ImageModel> = {
 		height: 576,
 		steps: 4,
 	},
-	'canvas-pro': {
-		id: 'canvas-pro',
-		name: 'Canvas Pro',
-		displayName: 'Canvas Pro 🎨',
-		description: 'High-quality artistic generation with rich details.',
-		actualModel: '@cf/stabilityai/stable-diffusion-xl-base-1.0',
-		speed: 'slow',
-		pros: [
-			"Excellent detail and quality",
-			"Great for atmospheric scenes",
-			"Rich color reproduction",
-			"Artistic style variety"
-		],
-		cons: [
-			"Slower generation time",
-			"Higher cost per image",
-			"May need more steps for quality"
-		],
-		costLevel: 3,
-		costDescription: "$$ Moderate cost",
-		bestFor: ["Atmospheric scenes", "Detailed environments", "Portraits", "Key moments"],
-		width: 1024,
-		height: 576,
-		steps: 20,
-	},
 	'prism-hd': {
 		id: 'prism-hd',
 		name: 'Prism HD',
 		displayName: 'Prism HD ✨',
-		description: 'Enhanced quality with fast generation.',
-		actualModel: '@cf/black-forest-labs/flux-1-schnell',
+		description: 'Enhanced quality distilled model with fast generation.',
+		actualModel: '@cf/black-forest-labs/flux-2-klein-9b',
 		speed: 'fast',
 		pros: [
-			"Good balance of speed and quality",
-			"Higher step count for detail",
-			"Consistent style",
-			"Reliable output"
+			"Enhanced quality output",
+			"Fast generation",
+			"State-of-the-art clarity",
+			"Great balance"
 		],
 		cons: [
-			"Slightly slower than Flash",
+			"Slower than Flash",
 			"Uses more compute"
 		],
 		costLevel: 2,
@@ -107,6 +83,78 @@ export const IMAGE_MODELS: Record<string, ImageModel> = {
 		width: 1024,
 		height: 576,
 		steps: 8,
+	},
+	'canvas-pro': {
+		id: 'canvas-pro',
+		name: 'Canvas Pro',
+		displayName: 'Canvas Pro 🎨',
+		description: 'Highly realistic images with multi-reference support.',
+		actualModel: '@cf/black-forest-labs/flux-2-dev',
+		speed: 'balanced',
+		pros: [
+			"Highly realistic output",
+			"Multi-reference support",
+			"Excellent detail",
+			"Professional quality"
+		],
+		cons: [
+			"Longer generation time",
+			"Higher cost per image"
+		],
+		costLevel: 3,
+		costDescription: "$$$ Premium",
+		bestFor: ["Cinematic scenes", "Detailed environments", "Key story moments", "Portraits"],
+		width: 1024,
+		height: 576,
+		steps: 20,
+	},
+	'lucid-origin': {
+		id: 'lucid-origin',
+		name: 'Lucid Origin',
+		displayName: 'Lucid Origin 💎',
+		description: 'Leonardo.AI\'s most adaptable and prompt-responsive model.',
+		actualModel: '@cf/leonardo/lucid-origin',
+		speed: 'balanced',
+		pros: [
+			"Exceptional prompt adherence",
+			"Sharp graphic design",
+			"Accurate text rendering",
+			"Versatile style range"
+		],
+		cons: [
+			"Partner model pricing",
+			"May vary by style"
+		],
+		costLevel: 4,
+		costDescription: "$$$$ Leonardo",
+		bestFor: ["Concept art", "Product visuals", "Stylized scenes", "Creative direction"],
+		width: 1024,
+		height: 576,
+		steps: 20,
+	},
+	'sdxl-lightning': {
+		id: 'sdxl-lightning',
+		name: 'SDXL Lightning',
+		displayName: 'SDXL Lightning ⚡',
+		description: 'Lightning-fast SDXL for high-quality 1024px images.',
+		actualModel: '@cf/bytedance/stable-diffusion-xl-lightning',
+		speed: 'fast',
+		pros: [
+			"SDXL quality at speed",
+			"High resolution output",
+			"Few steps needed",
+			"Consistent results"
+		],
+		cons: [
+			"Less artistic variety",
+			"Standard SDXL look"
+		],
+		costLevel: 2,
+		costDescription: "$$ Fast SDXL",
+		bestFor: ["High-res scenes", "Fast quality", "Standard visuals", "Quick iterations"],
+		width: 1024,
+		height: 576,
+		steps: 4,
 	},
 } as const;
 

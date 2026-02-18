@@ -160,6 +160,9 @@ function ImageModelRow({ model, isSelected, isUpdating, isExpanded, onSelect, on
         if (model.id.includes("canvas")) {
             return <Palette size={14} weight="fill" className="text-purple-500" />;
         }
+        if (model.id.includes("lucid")) {
+            return <Palette size={14} weight="fill" className="text-cyan-500" />;
+        }
         return <ImageIcon size={14} weight="fill" className="text-blue-500" />;
     };
 
