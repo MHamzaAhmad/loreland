@@ -3,9 +3,10 @@ import { ActionConsole } from "./ActionConsole";
 import { CharacterHUD } from "./CharacterHUD";
 import { type CharacterStateSnapshot } from "@packages/ui-logic";
 import { CreditDisplay } from "@/components/CreditDisplay";
-import { ArrowLeft, Settings } from "lucide-react";
+import { ArrowLeft, Settings, User, Gamepad2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Coin } from "@phosphor-icons/react";
+import { useState, useRef, useEffect } from "react";
 
 interface GameInterfaceProps {
     gameId: string;
@@ -53,6 +54,18 @@ export function GameInterface({
     onToggleStatesPanel,
     storytellingMode,
 }: GameInterfaceProps) {
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setSettingsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
         <div className="h-[100dvh] w-full flex flex-col bg-[#fcfbf9] overflow-hidden relative selection:bg-primary/10">
@@ -90,14 +103,36 @@ export function GameInterface({
                             showAddButton={true}
                         />
                     )}
-                    <Link
-                        to="/games/$id/play/$sessionId/settings"
-                        params={{ id: gameId, sessionId }}
-                        className="p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                        title="Session Settings"
-                    >
-                        <Settings className="w-4 h-4" />
-                    </Link>
+                    <div className="relative" ref={dropdownRef}>
+                        <button
+                            onClick={() => setSettingsOpen(!settingsOpen)}
+                            className="p-2 hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                            title="Settings"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </button>
+                        {settingsOpen && (
+                            <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg border border-border/60 shadow-lg z-50 py-1">
+                                <Link
+                                    to="/games/$id/play/$sessionId/settings"
+                                    params={{ id: gameId, sessionId }}
+                                    onClick={() => setSettingsOpen(false)}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                                >
+                                    <Gamepad2 className="w-3.5 h-3.5" />
+                                    <span>Session Settings</span>
+                                </Link>
+                                <Link
+                                    to="/settings"
+                                    onClick={() => setSettingsOpen(false)}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                                >
+                                    <User className="w-3.5 h-3.5" />
+                                    <span>User Settings</span>
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </header>
 

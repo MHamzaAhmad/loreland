@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { useGameSession, useApiClient, useCreditBalance, useUserSettings } from "@packages/ui-logic";
 import { GameInterface } from "@/components/play/GameInterface";
 import { StatesPanel } from "@/components/play/StatesPanel";
@@ -23,6 +23,11 @@ function buildWebSocketUrl(relativePath: string): string {
 
 function ActiveGameRoute() {
     const { id: gameId, sessionId } = Route.useParams();
+    const location = useLocation();
+    const isChildRoute = useMemo(() => {
+        const basePath = `/games/${gameId}/play/${sessionId}`;
+        return location.pathname !== basePath;
+    }, [location.pathname, gameId, sessionId]);
     const api = useApiClient();
     const [wsUrl, setWsUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -80,6 +85,10 @@ function ActiveGameRoute() {
                 <span className="font-serif italic text-muted-foreground">Connecting to world...</span>
             </div>
         );
+    }
+
+    if (isChildRoute) {
+        return <Outlet />;
     }
 
     return (
